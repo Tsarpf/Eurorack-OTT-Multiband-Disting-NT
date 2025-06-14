@@ -3,3 +3,4 @@ ott_dsp.o
 ott.o
 
 ott_wrapper.o
+build/

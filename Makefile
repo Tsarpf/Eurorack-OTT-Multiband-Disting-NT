@@ -1,31 +1,51 @@
+# ⇢  adjust these two paths if needed
 SDK   ?= $(CURDIR)/distingnt_api
 FAUST ?= faust
+
 PLUGIN := ott
 
-# Build just the wrapper – it #includes ott_dsp.cpp
-#SRCS := ott_wrapper.cpp
-SRCS := ott_wrapper.cpp newlib_stub.cpp
-OBJS := $(SRCS:.cpp=.o)
-CXX  := arm-none-eabi-g++
+# ---------------------------------------------------------------------
+#  Source files (hand-written)
+SRCS := ott_algo.cpp \
+        ott_ui.cpp   \
+        ott_memory.cpp \
+        newlib_stub.cpp
 
+#  Faust-generated DSP
+DSP_CPP := ott_dsp.cpp
+
+#  Object files end up in build/ to keep the tree tidy
+OBJDIR := build
+OBJS   := $(patsubst %.cpp,$(OBJDIR)/%.o,$(notdir $(SRCS) $(DSP_CPP)))
+
+CXX  := arm-none-eabi-g++
+CXXFLAGS := -std=c++11 -mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -fPIC \
+            -I$(SDK)/include -I$(CURDIR)/faust/architecture \
+            -Os -ffast-math -fdata-sections -ffunction-sections \
+            -fno-exceptions -fno-rtti -fno-unwind-tables -fno-asynchronous-unwind-tables
+
+# ---------------------------------------------------------------------
+#  build rules
 all: $(PLUGIN).o
 
-# ❶ Generate plain C++ DSP with custom memory manager support
-ott_dsp.cpp: ott.dsp
-	$(FAUST) -cn FaustDsp -mem -nvi -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 0 $< -o $@
+#  ❶  generate the DSP
+$(DSP_CPP): ott.dsp
+	$(FAUST) -cn FaustDsp -mem -nvi -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 \
+	         -single -ftz 0 $< -o $@
 
-# ❷ Wrapper needs that file present when it’s compiled
-ott_wrapper.o: ott_dsp.cpp
+#  make sure the object directory exists
+$(OBJDIR):
+	@mkdir -p $(OBJDIR)
 
-%.o: %.cpp
-	$(CXX) -std=c++11 -mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -fPIC \
--I$(SDK)/include -I$(CURDIR)/faust/architecture \
-	       -Os -ffast-math -fdata-sections -ffunction-sections \
-	       -fno-exceptions -fno-rtti -fno-unwind-tables -fno-asynchronous-unwind-tables \
-	       -c $< -o $@
+#  generic pattern rule for every .cpp
+$(OBJDIR)/%.o: %.cpp | $(OBJDIR) $(DSP_CPP)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+#  link whole plug-in (partial link -r)
 $(PLUGIN).o: $(OBJS)
 	$(CXX) -r $^ -o $@
 
 clean:
-	rm -f ott_dsp.cpp $(OBJS) $(PLUGIN).o
+	rm -rf $(OBJDIR) $(DSP_CPP) $(PLUGIN).o
+
+.PHONY: all clean
