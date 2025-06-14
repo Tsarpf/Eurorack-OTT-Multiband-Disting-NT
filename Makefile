@@ -3,14 +3,14 @@ SDK      ?= $(CURDIR)/distingnt_api/
 FAUST    ?= faust
 
 PLUGIN   := ott
-SRCS     := ott_dsp.cpp ott_wrapper.cpp
+SRCS     := ott_dsp.cpp
 OBJS     := $(SRCS:.cpp=.o)
 
 # Build rules ------------------------------------------------------------------
 all: $(PLUGIN).o
 
 ott_dsp.cpp: ott.dsp
-	$(FAUST) -a $(SDK)/faust/nt_arch.cpp $< -o $@
+	$(FAUST) -a $(SDK)/faust/nt_arch.cpp -uim -nvi -mem $< -o $@
 
 %.o: %.cpp
 	$(CXX) -std=c++17 -I$(SDK)/include \
