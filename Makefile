@@ -1,19 +1,24 @@
-# Adjust these two paths to match your SDK install ------------------------------------------------
-SDK      ?= $(CURDIR)/distingnt_api
+# Adjust these two paths to match your SDK install -----------------------------
+SDK      ?= $(CURDIR)/distingnt_api/
 FAUST    ?= faust
 
 PLUGIN   := ott
 SRCS     := ott_dsp.cpp ott_wrapper.cpp
-OBJ      := $(PLUGIN).o
+OBJS     := $(SRCS:.cpp=.o)
 
 # Build rules ------------------------------------------------------------------
-all: $(OBJ)
+all: $(PLUGIN).o
 
 ott_dsp.cpp: ott.dsp
 	$(FAUST) -a $(SDK)/faust/nt_arch.cpp $< -o $@
 
-$(OBJ): $(SRCS)
-	$(CXX) -std=c++17 -I$(SDK)/distingnt -Os -ffast-math -fdata-sections -ffunction-sections -Wl,--gc-sections -c $^ -o $@
+%.o: %.cpp
+	$(CXX) -std=c++17 -I$(SDK)/include \
+	       -Os -ffast-math -fdata-sections -ffunction-sections \
+	       -c $< -o $@
+
+$(PLUGIN).o: $(OBJS)
+	$(CXX) -r $^ -o $@
 
 clean:
-	rm -f ott_dsp.cpp $(OBJ)
+	rm -f ott_dsp.cpp $(OBJS) $(PLUGIN).o

@@ -1,4 +1,4 @@
-#include "plugin_api.h"      // from distingNT SDK
+#include "api.h"      // from distingNT SDK
 #include "ott_dsp.h"         // created by Faust when you run the arch script
 
 struct UIState {
