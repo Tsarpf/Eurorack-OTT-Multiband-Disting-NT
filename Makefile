@@ -9,9 +9,9 @@ CXX  := arm-none-eabi-g++
 
 all: $(PLUGIN).o
 
-# ❶ Generate plain C++ DSP (no header, no NT symbols)
+# ❶ Generate plain C++ DSP with custom memory manager support
 ott_dsp.cpp: ott.dsp
-	$(FAUST) -cn FaustDsp $< -o $@
+	$(FAUST) -cn FaustDsp -mem -nvi -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 0 $< -o $@
 
 # ❷ Wrapper needs that file present when it’s compiled
 ott_wrapper.o: ott_dsp.cpp

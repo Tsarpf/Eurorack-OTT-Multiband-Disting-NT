@@ -4,7 +4,57 @@
 #include <distingnt/api.h>
 
 #include <dsp/dsp.h>
-#include <gui/APIUI.h>
+#include <gui/UI.h>
+#include <gui/meta.h>
+
+// Minimal UI collector
+struct ParamUI : public UI
+{
+    struct Entry { const char* label; FAUSTFLOAT* zone; };
+    Entry entries[64];
+    int count = 0;
+
+    void addEntry(const char* label, FAUSTFLOAT* zone)
+    {
+        if (count < 64) { entries[count].label = label; entries[count].zone = zone; ++count; }
+    }
+
+    // Layouts
+    void openTabBox(const char*) override {}
+    void openHorizontalBox(const char*) override {}
+    void openVerticalBox(const char*) override {}
+    void closeBox() override {}
+
+    // Widgets
+    void addButton(const char* label, FAUSTFLOAT* zone) override { addEntry(label, zone); }
+    void addCheckButton(const char* label, FAUSTFLOAT* zone) override { addEntry(label, zone); }
+    void addVerticalSlider(const char* label, FAUSTFLOAT* zone, FAUSTFLOAT, FAUSTFLOAT, FAUSTFLOAT, FAUSTFLOAT) override { addEntry(label, zone); }
+    void addHorizontalSlider(const char* label, FAUSTFLOAT* zone, FAUSTFLOAT, FAUSTFLOAT, FAUSTFLOAT, FAUSTFLOAT) override { addEntry(label, zone); }
+    void addNumEntry(const char* label, FAUSTFLOAT* zone, FAUSTFLOAT, FAUSTFLOAT, FAUSTFLOAT, FAUSTFLOAT) override { addEntry(label, zone); }
+
+    void addHorizontalBargraph(const char*, FAUSTFLOAT*, FAUSTFLOAT, FAUSTFLOAT) override {}
+    void addVerticalBargraph(const char*, FAUSTFLOAT*, FAUSTFLOAT, FAUSTFLOAT) override {}
+    void addSoundfile(const char*, const char*, Soundfile**) override {}
+
+    void declare(FAUSTFLOAT*, const char*, const char*) override {}
+
+    FAUSTFLOAT getParamValue(const char* name) const
+    {
+        for (int i = 0; i < count; ++i)
+            if (!strcmp(entries[i].label, name))
+                return *(entries[i].zone);
+        return 0.f;
+    }
+
+    void setParamValue(const char* name, FAUSTFLOAT v)
+    {
+        for (int i = 0; i < count; ++i)
+            if (!strcmp(entries[i].label, name)) {
+                *(entries[i].zone) = v;
+                break;
+            }
+    }
+};
 
 // ─────────────────────────── UI state ───────────────────────────
 struct UIState {
@@ -21,8 +71,49 @@ struct UIState {
 struct _ottAlgorithm : public _NT_algorithm
 {
     FaustDsp dsp;   // the Faust OTT compressor
-    APIUI    ui;    // to control parameters
+    ParamUI  ui;    // to control parameters
     UIState  state; // runtime UI state
+    uint8_t* dramBase; // pointer to DRAM used by Faust memory manager
+};
+
+// Simple memory manager mirroring distingnt's architecture
+struct MemoryMgr : public dsp_memory_manager
+{
+    enum Mode { ClassMem, InstanceMem };
+
+    size_t  total = 0;
+    bool    first = true;
+    Mode    mode;
+    uint8_t* base = nullptr;
+
+    MemoryMgr(Mode m) : mode(m) {}
+
+    void begin(size_t /*count*/) override { total = 0; first = true; }
+    void end() override {}
+
+    void info(size_t size, size_t /*reads*/, size_t writes) override
+    {
+        if (mode == ClassMem) {
+            if (writes == 0)
+                total += size;
+            return;
+        }
+        if (writes == 0)
+            return;
+        if (first)
+            first = false;
+        else
+            total += size;
+    }
+
+    void* allocate(size_t size) override
+    {
+        void* ptr = base + total;
+        total += size;
+        return ptr;
+    }
+
+    void destroy(void* /*ptr*/) override {}
 };
 
 // ───────────────────────────────────────────────────────────────────
@@ -72,9 +163,15 @@ static const char* kGainNames[3] = {
 // ───────────────── calc / construct ───────────────────────────────
 static void calculateRequirements(_NT_algorithmRequirements& r, const int32_t*)
 {
+    MemoryMgr mem(MemoryMgr::InstanceMem);
+    FaustDsp::fManager = &mem;
+    FaustDsp::memoryInfo();
+    FaustDsp::fManager = nullptr;
+
     r.numParameters = ARRAY_SIZE(params);
     r.sram = sizeof(_ottAlgorithm);
-    r.dram = 0; r.dtc = 0; r.itc = 0;
+    r.dram = mem.total;
+    r.dtc = 0; r.itc = 0;
 }
 
 static _NT_algorithm* construct(const _NT_algorithmMemoryPtrs& p,
@@ -83,8 +180,17 @@ static _NT_algorithm* construct(const _NT_algorithmMemoryPtrs& p,
     auto* a = new (p.sram) _ottAlgorithm();
     a->parameters = params;
     a->parameterPages = &paramPages;
+
+    MemoryMgr mem(MemoryMgr::InstanceMem);
+    mem.base = p.dram;
+    mem.total = 0;
+    FaustDsp::fManager = &mem;
+    a->dsp.memoryCreate();
+    FaustDsp::fManager = nullptr;
+
     a->dsp.buildUserInterface(&a->ui);
     a->dsp.init(NT_globals.sampleRate);
+    a->dramBase = p.dram;
     return a;
 }
 
