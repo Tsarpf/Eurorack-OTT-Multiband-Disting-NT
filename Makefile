@@ -1,5 +1,5 @@
 # Adjust these two paths to match your SDK install ------------------------------------------------
-SDK      ?= $(HOME)/distingNT_API
+SDK      ?= $(CURDIR)/distingnt_api
 FAUST    ?= faust
 
 PLUGIN   := ott
@@ -10,10 +10,10 @@ OBJ      := $(PLUGIN).o
 all: $(OBJ)
 
 ott_dsp.cpp: ott.dsp
-	$(FAUST) -a $(SDK)/faust/distingNT_arch.cpp $< -o $@
+	$(FAUST) -a $(SDK)/faust/nt_arch.cpp $< -o $@
 
 $(OBJ): $(SRCS)
-	$(CXX) -std=c++17 -I$(SDK)/include -Os -ffast-math -fdata-sections -ffunction-sections -Wl,--gc-sections -c $^ -o $@
+	$(CXX) -std=c++17 -I$(SDK)/distingnt -Os -ffast-math -fdata-sections -ffunction-sections -Wl,--gc-sections -c $^ -o $@
 
 clean:
 	rm -f ott_dsp.cpp $(OBJ)
