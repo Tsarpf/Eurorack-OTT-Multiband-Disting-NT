@@ -18,7 +18,7 @@ ott_wrapper.o: ott_dsp.cpp
 
 %.o: %.cpp
 	$(CXX) -std=c++11 -mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -fPIC \
-	       -I$(SDK)/include \
+       -I$(SDK)/include -I$(CURDIR)/local_faust \
 	       -Os -ffast-math -fdata-sections -ffunction-sections \
 	       -fno-exceptions -fno-rtti -fno-unwind-tables -fno-asynchronous-unwind-tables \
 	       -c $< -o $@

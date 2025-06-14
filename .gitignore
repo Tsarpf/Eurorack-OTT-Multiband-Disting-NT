@@ -2,3 +2,4 @@ ott_dsp.cpp
 ott_dsp.o
 ott.o
 
+ott_wrapper.o
