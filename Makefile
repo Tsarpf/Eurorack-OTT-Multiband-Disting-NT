@@ -1,16 +1,20 @@
-SDK      ?= $(CURDIR)/distingnt_api/
-FAUST    ?= faust
+SDK   ?= $(CURDIR)/distingnt_api
+FAUST ?= faust
+PLUGIN := ott
 
-PLUGIN   := ott
-SRCS     := ott_dsp.cpp
-OBJS     := $(SRCS:.cpp=.o)
-
-CXX      = arm-none-eabi-g++
+# Build just the wrapper – it #includes ott_dsp.cpp
+SRCS := ott_wrapper.cpp
+OBJS := $(SRCS:.cpp=.o)
+CXX  := arm-none-eabi-g++
 
 all: $(PLUGIN).o
 
+# ❶ Generate plain C++ DSP (no header, no NT symbols)
 ott_dsp.cpp: ott.dsp
-	$(FAUST) -a $(SDK)/faust/nt_arch.cpp -uim -nvi -mem $< -o $@
+	$(FAUST) -cn FaustDsp $< -o $@
+
+# ❷ Wrapper needs that file present when it’s compiled
+ott_wrapper.o: ott_dsp.cpp
 
 %.o: %.cpp
 	$(CXX) -std=c++11 -mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -fPIC \

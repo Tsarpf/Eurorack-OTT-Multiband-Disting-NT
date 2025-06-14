@@ -1,72 +1,134 @@
-#include "api.h"      // from distingNT SDK
-#include "ott_dsp.h"         // created by Faust when you run the arch script
+#include <math.h>
+#include <new>
+#include <distingnt/api.h>
 
-struct UIState {
-    enum PotMode { THRESH=0, RATIO=1, GAIN=2 } potMode = THRESH;   // cycles on BTN‑4
-    enum EncMode { XOVER=0, GLOBAL=1 } encMode = XOVER;           // toggles on BTN‑3
-    bool bypass = false;
+//#include "ott_dsp.h"          // class FaustDsp
+#include "ott_dsp.cpp"          // class FaustDsp
+
+// ───────────────────────────────────────────────────────────────────
+// per-plug-in SRAM object
+struct _ottAlgorithm : public _NT_algorithm
+{
+    FaustDsp dsp;          // the Faust OTT compressor
+    bool     bypass = false;
 };
 
-class OttPlugin : public PlugInWithCustomUi {
-public:
-    OttPlugin() { _dsp.init(getSampleRate()); setNumParameters(_dsp.getNumParams()); }
-
-    void processAudio(AudioBuffer &in, AudioBuffer &out) override {
-        if (_ui.bypass) { out = in; return; }
-        _dsp.compute(in.getNumFrames(), in.getData(), out.getData());
-    }
-
-    // --------------------- input handlers ----------------------------
-    void onButton(Button b, bool down) override {
-        if (!down) return;               // only on press
-        switch (b) {
-            case BTN_4:  _ui.potMode = UIState::PotMode((_ui.potMode + 1) % 3); break; // cycle pots
-            case BTN_3:  _ui.encMode = (_ui.encMode==UIState::XOVER ? UIState::GLOBAL : UIState::XOVER); break;
-            case BTN_2:  _ui.bypass = !_ui.bypass; break;                              // bypass toggle
-            default:    break; // BTN_1 unused
-        }
-    }
-
-    void onPot(int idx, float val, bool pushed) override {
-        // idx 0..2  → Low / Mid / High band
-        const int bandBase = 2 + idx*5;     // first band param index in Faust list
-        int p = bandBase;
-        switch (_ui.potMode) {
-            case UIState::THRESH: p += pushed ? 1 : 0; break; // 0 ↓, 1 ↑
-            case UIState::RATIO:  p += 2 + (pushed?1:0); break; // 2 ↓, 3 ↑
-            case UIState::GAIN:   p = bandBase + 4; break;     // 4 makeup
-        }
-        _dsp.setParameterValue(p, val);
-    }
-
-    void onEncoder(int idx, int delta, bool pushed) override {
-        // idx 0 = left, 1 = right
-        int p = (_ui.encMode==UIState::XOVER) ? idx            // 0/1 are crossover freqs
-                                              : 17 + idx;      // 17 wet, 18 outGain
-        float v = _dsp.getParameterValue(p);
-        float step = (_ui.encMode==UIState::XOVER ? (pushed?100:10) : (pushed?0.5:0.05));
-        _dsp.setParameterValue(p, v + delta*step);
-    }
-
-    // ----------------------- drawing --------------------------------
-    void draw(UiContext &ctx) override {
-        ctx.clear();
-        ctx.setFont(FONT_TINY);
-        // header
-        ctx.text(2,2, _ui.bypass ? "BYPASS" : (_ui.potMode==UIState::THRESH?"THRESH":(_ui.potMode==UIState::RATIO?"RATIO":"GAIN")) );
-        // crossover markers
-        int x1 = mapHzToX(_dsp.getParameterValue(0));
-        int x2 = mapHzToX(_dsp.getParameterValue(1));
-        ctx.drawLine(x1, 10, x1, 50);
-        ctx.drawLine(x2, 10, x2, 50);
-        // gain‑reduction meters per band (fake; sample env not exposed here)
-        for (int i=0;i<3;++i) ctx.fillRect(10, 60+i*10, 100, 8);
-    }
-
-private:
-    FaustDsp _dsp;
-    UIState  _ui;
-    int mapHzToX(float hz) { return int((log10f(hz)-1) * 240/3); }
+// ───────────────────────────────────────────────────────────────────
+// parameters (routing only, like SDK examples)
+enum {
+    kInL, kInR,
+    kOutL, kOutLMode,
+    kOutR, kOutRMode,
 };
 
-REGISTER_PLUGIN(OttPlugin);
+static const _NT_parameter params[] = {
+    NT_PARAMETER_AUDIO_INPUT ( "In L", 1, 1 )
+    NT_PARAMETER_AUDIO_INPUT ( "In R", 2, 2 )
+    NT_PARAMETER_AUDIO_OUTPUT_WITH_MODE( "Out L", 1, 13 )
+    NT_PARAMETER_AUDIO_OUTPUT_WITH_MODE( "Out R", 2, 14 )
+};
+
+static const uint8_t pageRouting[] = {
+    kInL, kInR, kOutL, kOutLMode, kOutR, kOutRMode
+};
+static const _NT_parameterPage pages[] = {
+    { "Routing", (uint8_t)ARRAY_SIZE(pageRouting), pageRouting }
+};
+static const _NT_parameterPages paramPages = {
+    (uint8_t)ARRAY_SIZE(pages), pages
+};
+
+// ───────────────── calc / construct ───────────────────────────────
+static void calculateRequirements(_NT_algorithmRequirements& r, const int32_t*)
+{
+    r.numParameters = ARRAY_SIZE(params);
+    r.sram = sizeof(_ottAlgorithm);
+    r.dram = 0; r.dtc = 0; r.itc = 0;
+}
+
+static _NT_algorithm* construct(const _NT_algorithmMemoryPtrs& p,
+                                const _NT_algorithmRequirements&, const int32_t*)
+{
+    auto* a = new (p.sram) _ottAlgorithm();
+    a->parameters = params;
+    a->parameterPages = &paramPages;
+    a->dsp.init(NT_globals.sampleRate);
+    return a;
+}
+
+// ───────────────── audio ──────────────────────────────────────────
+static void step(_NT_algorithm* s, float* bus, int nfBy4)
+{
+    auto* a = (_ottAlgorithm*)s;
+    int N  = nfBy4 * 4;
+    float* inL  = bus + (s->v[kInL]  - 1) * N;
+    float* inR  = bus + (s->v[kInR]  - 1) * N;
+    float* outL = bus + (s->v[kOutL] - 1) * N;
+    float* outR = bus + (s->v[kOutR] - 1) * N;
+    bool   repL =  s->v[kOutLMode];
+    bool   repR =  s->v[kOutRMode];
+
+    float* ins[2]  = { inL, inR };
+    float* outs[2] = { outL, outR };
+
+    if (a->bypass)
+    {
+        if (!repL) for (int i=0;i<N;++i) outL[i] += inL[i];
+        else       memcpy(outL, inL, N*sizeof(float));
+        if (!repR) for (int i=0;i<N;++i) outR[i] += inR[i];
+        else       memcpy(outR, inR, N*sizeof(float));
+    }
+    else
+    {
+        a->dsp.compute(N, ins, outs);
+        if (!repL) for (int i=0;i<N;++i) outL[i] += inL[i];
+        if (!repR) for (int i=0;i<N;++i) outR[i] += inR[i];
+    }
+}
+
+// ───────────────── UI: single centre pot toggles wet/dry ───────────
+static uint32_t hasCustomUi(_NT_algorithm*)
+{
+    return kNT_potC | kNT_button2;
+}
+
+static void customUi(_NT_algorithm* s, const _NT_uiData& d)
+{
+    auto* a = (_ottAlgorithm*)s;
+    if (d.controls & kNT_button2) a->bypass = !a->bypass;   // BTN-2 toggle
+
+    // centre pot (index 1) controls wet mix param #17 in Faust
+    a->dsp.setParameterValue(17, d.pots[1]);
+}
+
+static void setupUi(_NT_algorithm* s, _NT_float3& pots)
+{
+    pots[1] = ((_ottAlgorithm*)s)->dsp.getParameterValue(17);
+}
+// ───────────────── draw: simple status bar ─────────────────────────
+static bool draw(_NT_algorithm* s)
+{
+    memset(NT_screen, 0x00, sizeof(NT_screen));
+    NT_drawText(2, 2, ((_ottAlgorithm*)s)->bypass ? "BYPASS" : "ACTIVE");
+    return false;
+}
+
+// ───────────────── factory / entry ─────────────────────────────────
+static const _NT_factory factory = {
+    NT_MULTICHAR('O','T','T','1'), "Ott MB", "Faust OTT with UI",
+    0, calculateRequirements, construct,
+    nullptr, step, draw,           // no parameterChanged
+    kNT_tagUtility,
+    hasCustomUi, customUi, setupUi
+};
+
+uintptr_t pluginEntry(_NT_selector sel, uint32_t data)
+{
+    switch (sel)
+    {
+    case kNT_selector_version:      return kNT_apiVersionCurrent;
+    case kNT_selector_numFactories: return 1;
+    case kNT_selector_factoryInfo:  return (uintptr_t)((data==0)?&factory:NULL);
+    }
+    return 0;
+}
