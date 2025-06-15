@@ -24,26 +24,22 @@ bool draw(_NT_algorithm* self)
 
     std::memset(NT_screen, 0, sizeof(NT_screen));
 
-    /* header text */
+    /* defer text drawing until the end so it appears on top */
     bool bypass = a->state.bypass || self->vIncludingCommon[0];
     const char* hdr = bypass ? "BYPASS" :
                       ui.potMode == UIState::THRESH ? "THRESH" :
                       ui.potMode == UIState::RATIO  ? "RATIO"  : "GAIN";
-    NT_drawText(2, 0, hdr);
-
     const char* encMode = ui.encMode == UIState::XOVER ? "XOVER" : "GLOBAL";
-    NT_drawText(2, 8, encMode);
-
+    const char* lastName = nullptr;
+    char lastVal[40] = {0};
     if (a->lastParam >= 0) {
-        char buf[40];
-        NT_drawText(70, 0, params[a->lastParam].name);
+        lastName = params[a->lastParam].name;
         if (params[a->lastParam].scaling == kNT_scaling10)
-            NT_floatToString(buf, a->lastValue * 0.1f, 1);
+            NT_floatToString(lastVal, a->lastValue * 0.1f, 1);
         else if (params[a->lastParam].unit == kNT_unitPercent)
-            NT_floatToString(buf, a->lastValue * 0.01f, 2);
+            NT_floatToString(lastVal, a->lastValue * 0.01f, 2);
         else
-            NT_intToString(buf, a->lastValue);
-        NT_drawText(180, 0, buf);
+            NT_intToString(lastVal, a->lastValue);
     }
 
     // Draw the values of the pots according to our state
@@ -66,8 +62,8 @@ bool draw(_NT_algorithm* self)
         snprintf(key, sizeof(key), "%s/Makeup", name);
         float gain = a->ui.get(key);
 
-        int yDown = mapDbToY(dThr);
-        int yUp   = mapDbToY(uThr);
+        int yDown = mapDownThrToY(dThr);
+        int yUp   = mapUpThrToY(uThr);
 
         auto drawBox = [&](int y0, int y1, float ratio, bool fromTop){
             if (y1 <= y0) return;
@@ -76,7 +72,7 @@ bool draw(_NT_algorithm* self)
             for (int y = y0; y <= y1; y += kLineStep) {
                 float dist = fromTop ? float(y - y0) / float(y1 - y0)
                                      : float(y1 - y) / float(y1 - y0);
-                int col = 4 + int((1.f - dist) * rNorm * 11.f);
+                int col = 4 + int(dist * rNorm * 11.f);
                 if (col > 15) col = 15;
                 NT_drawShapeI(kNT_line, xStart, y, xEnd, y, col);
             }
@@ -99,6 +95,14 @@ bool draw(_NT_algorithm* self)
     int yGain = mapGainToY(a->ui.get("Global/OutGain"));
     NT_drawShapeI(kNT_line, xGW, 50, xGW, yWet, 14);
     NT_drawShapeI(kNT_line, xGW+5, 50, xGW+5, yGain, 14);
+
+    /* draw text last so it's always visible */
+    NT_drawText(2, 0, hdr);
+    NT_drawText(2, 8, encMode);
+    if (lastName) {
+        NT_drawText(70, 0, lastName);
+        NT_drawText(180, 0, lastVal);
+    }
 
     return true;    // suppress standard parameter strip
 }
@@ -191,9 +195,19 @@ int mapHzToX(float hz)
     return int((log10f(hz) - 1.f) * 240.f / 3.f);
 }
 
-int mapDbToY(float db)
+
+int mapDownThrToY(float db)
 {
-    return 50 - int(((db + 60.f) / 100.f) * 40.f);
+    // map -60..0 dB to screen Y 30..10
+    float norm = (db + 60.f) / 60.f;        // 0..1
+    return 30 - int(norm * 20.f);
+}
+
+int mapUpThrToY(float db)
+{
+    // map 0..40 dB to screen Y 50..30
+    float norm = db / 40.f;                 // 0..1
+    return 50 - int(norm * 20.f);
 }
 
 int mapGainToY(float db)

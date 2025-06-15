@@ -60,7 +60,8 @@ void     setupUi   (_NT_algorithm*, _NT_float3&);
 bool     draw      (_NT_algorithm*);
 
 int   mapHzToX(float hz);
-int   mapDbToY(float db);
+int   mapDownThrToY(float db);
+int   mapUpThrToY(float db);
 int   mapGainToY(float db);
 int   mapPercentToY(float p);
 int16_t scalePot(int idx, float pot);
