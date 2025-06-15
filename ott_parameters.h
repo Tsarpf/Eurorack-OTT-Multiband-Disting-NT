@@ -77,7 +77,7 @@ static const _NT_parameter params[kNumParams] = {
     P("Low/Makeup",  -240,  240,   0, kNT_unitDb,       kNT_scaling10),
 
     /*  X-over & global  */
-    P("Xover/LoMid",  100, 18000, 400,  kNT_unitHz,      0),
+    P("Xover/LoMid",   40, 18000, 400,  kNT_unitHz,      0),
     P("Xover/MidHi",  100, 20000,2500,  kNT_unitHz,      0),
     P("Global/Out",  -240,  240,    0,  kNT_unitDb,      kNT_scaling10),
     P("Global/Wet",     0,  100,  100,  kNT_unitPercent, 0),

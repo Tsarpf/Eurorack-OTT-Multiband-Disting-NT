@@ -1,7 +1,7 @@
 import("stdfaust.lib");
 
 //===== CROSSOVER FREQS ======================================
-c1 = hslider("Xover/LowMidFreq[unit:Hz]", 160, 20, 1000, 1);
+c1 = hslider("Xover/LowMidFreq[unit:Hz]", 160, 40, 1000, 1);
 c2 = hslider("Xover/MidHighFreq[unit:Hz]", 2500, 300, 16000, 1);
 
 //===== LOW BAND =============================================

@@ -4,6 +4,7 @@
 #include <string>
 
 static const int kLineStep = 2;   // spacing of ratio lines in pixels
+static const int kBandGap  = 5;   // spacing between bands in pixels
 
 /* sync soft-takeover when the algorithm page appears */
 void setupUi(_NT_algorithm* self, _NT_float3& pots)
@@ -67,7 +68,7 @@ bool draw(_NT_algorithm* self)
 
         auto drawBox = [&](int y0, int y1, float ratio, bool fromTop){
             if (y1 <= y0) return;
-            float rNorm = ratio <= 1.f ? 0.f : (ratio - 1.f) / 9.f;
+            float rNorm = ratio <= 1.f ? 0.f : (log10f(ratio) / 3.f);
             if (rNorm > 1.f) rNorm = 1.f;
             int steps = (y1 - y0) / kLineStep;
             float expn = 1.f + rNorm * 4.f;   // cluster lines for strong ratios
@@ -91,9 +92,15 @@ bool draw(_NT_algorithm* self)
         NT_drawShapeI(kNT_line, xBar, 60, xBar, yGain, 15);
     };
 
-    drawBand(0, x1, "Low");
-    drawBand(x1, x2, "Mid");
-    drawBand(x2, 240, "High");
+    int xMax = mapHzToX(20000.f);
+    int xLoEnd  = x1 - (kBandGap + 1) / 2;
+    int xMidSta = x1 + kBandGap / 2;
+    int xMidEnd = x2 - (kBandGap + 1) / 2;
+    int xHiSta  = x2 + kBandGap / 2;
+
+    drawBand(0,      xLoEnd, "Low");
+    drawBand(xMidSta, xMidEnd, "Mid");
+    drawBand(xHiSta,  xMax,    "High");
 
     int xGW = 250;
     int yWet = mapPercentToY(a->ui.get("Global/Wet"));
@@ -147,11 +154,14 @@ void customUi(_NT_algorithm* self, const _NT_uiData& data)
     };
 
     for (int p = 0; p < 3; ++p) {
-        bool pressed = data.controls & (p==0? kNT_potButtonL : p==1? kNT_potButtonC : kNT_potButtonR);
+        int btn = (p==0? kNT_potButtonL : p==1? kNT_potButtonC : kNT_potButtonR);
+        if ((data.controls & btn) && !(data.lastButtons & btn))
+            a->potUpper[p] = !a->potUpper[p];
+        bool upper = a->potUpper[p];
         int  tgt =
-            (ui.potMode == UIState::THRESH) ? (pressed? potTargetsUp[p][0] : potTargets[p][0]) :
-            (ui.potMode == UIState::RATIO ) ? (pressed? potTargetsUp[p][1] : potTargets[p][1]) :
-                                              potTargets[p][2];
+            (ui.potMode == UIState::THRESH) ? (upper? potTargetsUp[p][0] : potTargets[p][0]) :
+            (ui.potMode == UIState::RATIO ) ? (upper? potTargetsUp[p][1] : potTargets[p][1]) :
+                                             potTargets[p][2];
         if (tgt >= 0) {
             if (a->potTarget[p] != tgt) {
                 a->potTarget[p] = tgt;
@@ -178,11 +188,11 @@ void customUi(_NT_algorithm* self, const _NT_uiData& data)
     };
     const float encStep[2] = {
         (ui.encMode == UIState::XOVER)
-            ? (encPressL ? (self->v[kXoverLoMid] * 0.1f) : 10.f)
+            ? (encPressL ? 10.f : (self->v[kXoverLoMid] * 0.1f))
             : (encPressL ? 1.f : 0.1f),
         (ui.encMode == UIState::XOVER)
-            ? (encPressR ? (self->v[kXoverMidHi] * 0.1f) : 10.f)
-            : (encPressR ? 1.f : 0.1f),
+            ? (encPressR ? 10.f : (self->v[kXoverMidHi] * 0.1f))
+            : (encPressR ? 10.f : 1.f),
     };
 
     for (int e=0; e<2; ++e) {
