@@ -37,7 +37,9 @@ uint32_t hasCustomUi(_NT_algorithm*)
 {
     return kNT_potL | kNT_potC | kNT_potR |
            kNT_encoderL | kNT_encoderR |
-           kNT_button1 | kNT_button3 | kNT_button4;
+           kNT_button1 | kNT_button3 | kNT_button4 |
+           kNT_potButtonL | kNT_potButtonC | kNT_potButtonR |
+           kNT_encoderButtonL | kNT_encoderButtonR;
 }
 
 void customUi(_NT_algorithm* self, const _NT_uiData& data)
