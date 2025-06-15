@@ -5,6 +5,7 @@
 
 static const int kLineStep = 2;   // spacing of ratio lines in pixels
 static const int kBandGap  = 5;   // spacing between bands in pixels
+static const int kFreqWidth = 220;    // width of frequency display
 
 /* sync soft-takeover when the algorithm page appears */
 void setupUi(_NT_algorithm* self, _NT_float3& pots)
@@ -50,7 +51,7 @@ bool draw(_NT_algorithm* self)
     NT_drawShapeI(kNT_line, x1, 10, x1, 60, 8);
     NT_drawShapeI(kNT_line, x2, 10, x2, 60, 8);
 
-    auto drawBand = [&](int xStart, int xEnd, const char* name){
+    auto drawBand = [&](int idx, int xStart, int xEnd, const char* name){
         char key[32];
         snprintf(key, sizeof(key), "%s/DownThr", name);
         float dThr = a->ui.get(key);
@@ -87,26 +88,39 @@ bool draw(_NT_algorithm* self)
         drawBox(10,  yDown, dRat, true);   // downward compression from top
         drawBox(yUp, 60,   uRat, false);  // upward compression from bottom
 
+        if (ui.potMode != UIState::GAIN) {
+            bool upperSel = a->potUpper[idx];
+            int xMid = (xStart + xEnd) / 2;
+            if (upperSel)
+                NT_drawText(xMid, yUp - 6, "Up", 15, kNT_textCentre, kNT_textTiny);
+            else
+                NT_drawText(xMid, yDown + 1, "Down", 15, kNT_textCentre, kNT_textTiny);
+        }
+
         int xBar = (xStart + xEnd) / 2;
         int yGain = mapGainToY(gain);
         NT_drawShapeI(kNT_line, xBar, 60, xBar, yGain, 15);
     };
 
+    int xGW = 246;
     int xMax = mapHzToX(20000.f);
+    if (xMax > xGW - 6)
+        xMax = xGW - 6;   // leave room for meters on the right
     int xLoEnd  = x1 - (kBandGap + 1) / 2;
     int xMidSta = x1 + kBandGap / 2;
     int xMidEnd = x2 - (kBandGap + 1) / 2;
     int xHiSta  = x2 + kBandGap / 2;
 
-    drawBand(0,      xLoEnd, "Low");
-    drawBand(xMidSta, xMidEnd, "Mid");
-    drawBand(xHiSta,  xMax,    "High");
+    drawBand(0,      0,      xLoEnd, "Low");
+    drawBand(1,      xMidSta, xMidEnd, "Mid");
+    drawBand(2,      xHiSta,  xMax,    "High");
 
-    int xGW = 250;
     int yWet = mapPercentToY(a->ui.get("Global/Wet"));
     int yGain = mapGainToY(a->ui.get("Global/OutGain"));
     NT_drawShapeI(kNT_line, xGW, 60, xGW, yWet, 14);
     NT_drawShapeI(kNT_line, xGW+5, 60, xGW+5, yGain, 14);
+    NT_drawText(xGW+1, 62, "W", 14, kNT_textLeft, kNT_textTiny);
+    NT_drawText(xGW+6, 62, "G", 14, kNT_textLeft, kNT_textTiny);
 
     /* draw text last so it's always visible */
     NT_drawText(2, 8, hdr);
@@ -207,7 +221,7 @@ void customUi(_NT_algorithm* self, const _NT_uiData& data)
 }
 int mapHzToX(float hz)
 {
-    return int((log10f(hz) - 1.f) * 240.f / 3.f);
+    return int((log10f(hz) - 1.f) * kFreqWidth / 3.f);
 }
 
 
