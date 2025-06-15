@@ -3,6 +3,8 @@
 #include "ott_parameters.h"   // enums & params[] (see next section)
 #include <string>
 
+static const int kLineStep = 5;   // spacing of ratio lines in pixels
+
 /* sync soft-takeover when the algorithm page appears */
 void setupUi(_NT_algorithm* self, _NT_float3& pots)
 {
@@ -27,25 +29,24 @@ bool draw(_NT_algorithm* self)
     const char* hdr = bypass ? "BYPASS" :
                       ui.potMode == UIState::THRESH ? "THRESH" :
                       ui.potMode == UIState::RATIO  ? "RATIO"  : "GAIN";
-    NT_drawText(2, 20, hdr);
+    NT_drawText(2, 0, hdr);
 
     const char* encMode = ui.encMode == UIState::XOVER ? "XOVER" : "GLOBAL";
-    NT_drawText(2, 30, encMode);
+    NT_drawText(2, 8, encMode);
 
     if (a->lastParam >= 0) {
         char buf[40];
-        NT_drawText(70, 20, params[a->lastParam].name);
+        NT_drawText(70, 0, params[a->lastParam].name);
         if (params[a->lastParam].scaling == kNT_scaling10)
             NT_floatToString(buf, a->lastValue * 0.1f, 1);
         else if (params[a->lastParam].unit == kNT_unitPercent)
             NT_floatToString(buf, a->lastValue * 0.01f, 2);
         else
             NT_intToString(buf, a->lastValue);
-        NT_drawText(180, 20, buf);
+        NT_drawText(180, 0, buf);
     }
 
-    // Lets draw the values of the pots according to our state
-    int16_t hiDownThr = a->ui.get("High/DownThr");
+    // Draw the values of the pots according to our state
 
     int x1 = mapHzToX(a->ui.get("Xover/LowMidFreq"));
     int x2 = mapHzToX(a->ui.get("Xover/MidHighFreq"));
@@ -64,15 +65,27 @@ bool draw(_NT_algorithm* self)
         float uRat = a->ui.get(key);
         snprintf(key, sizeof(key), "%s/Makeup", name);
         float gain = a->ui.get(key);
+
         int yDown = mapDbToY(dThr);
         int yUp   = mapDbToY(uThr);
-        NT_drawShapeI(kNT_line, xStart, yDown, xEnd, yDown, 10);
-        NT_drawShapeI(kNT_line, xStart, yUp,   xEnd, yUp,   10);
-        int dTilt = int(5 * dRat);
-        int uTilt = int(5 * uRat);
-        NT_drawShapeI(kNT_line, xStart, yDown, xEnd, yDown-dTilt, 12);
-        NT_drawShapeI(kNT_line, xStart, yUp,   xEnd, yUp+uTilt,   12);
-        int xBar = (xStart+xEnd)/2;
+
+        auto drawBox = [&](int y0, int y1, float ratio, bool fromTop){
+            if (y1 <= y0) return;
+            float rNorm = ratio <= 1.f ? 0.f : (ratio - 1.f) / 9.f;
+            if (rNorm > 1.f) rNorm = 1.f;
+            for (int y = y0; y <= y1; y += kLineStep) {
+                float dist = fromTop ? float(y - y0) / float(y1 - y0)
+                                     : float(y1 - y) / float(y1 - y0);
+                int col = 4 + int((1.f - dist) * rNorm * 11.f);
+                if (col > 15) col = 15;
+                NT_drawShapeI(kNT_line, xStart, y, xEnd, y, col);
+            }
+        };
+
+        drawBox(10,  yDown, dRat, true);   // downward compression from top
+        drawBox(yUp, 50,   uRat, false);  // upward compression from bottom
+
+        int xBar = (xStart + xEnd) / 2;
         int yGain = mapGainToY(gain);
         NT_drawShapeI(kNT_line, xBar, 50, xBar, yGain, 15);
     };
@@ -87,7 +100,7 @@ bool draw(_NT_algorithm* self)
     NT_drawShapeI(kNT_line, xGW, 50, xGW, yWet, 14);
     NT_drawShapeI(kNT_line, xGW+5, 50, xGW+5, yGain, 14);
 
-    return false;   // keep standard parameter strip
+    return true;    // suppress standard parameter strip
 }
 
 uint32_t hasCustomUi(_NT_algorithm*)
