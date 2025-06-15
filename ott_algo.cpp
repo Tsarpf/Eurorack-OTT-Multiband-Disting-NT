@@ -81,6 +81,8 @@ static void parameterChanged(_NT_algorithm* s, int p)
 
     default: break;   // routing params have no Faust target
     }
+    a->lastParam = p;
+    a->lastValue = v;
 }
 
 /*──────────────────────────  Audio step  ───────────────────────────*/
