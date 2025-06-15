@@ -25,6 +25,9 @@ bool draw(_NT_algorithm* self)
     const char* encMode = ui.encMode == UIState::XOVER ? "XOVER" : "GLOBAL";
     NT_drawText(2, 30, encMode);
 
+    // Lets draw the values of the pots according to our state
+    int16_t hiDownThr = a->ui.get("High/DownThr");
+
     int x1 = mapHzToX(a->ui.get("Xover/LowMidFreq"));
     int x2 = mapHzToX(a->ui.get("Xover/MidHighFreq"));
     NT_drawShapeI(kNT_line, x1, 10, x1, 50, 8);
@@ -48,6 +51,8 @@ void customUi(_NT_algorithm* self, const _NT_uiData& data)
     UIState& ui = a->state;
 
     /* buttons */
+    if ((data.controls & kNT_button1) && !(data.lastButtons & kNT_button1))
+        ui.bypass = !ui.bypass;
     if ((data.controls & kNT_button3) && !(data.lastButtons & kNT_button3))
         ui.encMode = (ui.encMode == UIState::XOVER) ? UIState::GLOBAL : UIState::XOVER;
     if ((data.controls & kNT_button4) && !(data.lastButtons & kNT_button4))

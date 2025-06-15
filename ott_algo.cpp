@@ -97,10 +97,17 @@ static void step(_NT_algorithm* s, float* bus, int nfBy4)
     float* ins[2]  = { inL, inR };
     float* outs[2] = { outL, outR };
 
-    if (!s->vIncludingCommon[0])
+    bool bypass = a->state.bypass || s->vIncludingCommon[0];
+    if (!bypass) {
         a->dsp->compute(N, ins, outs);
-    if (!replL) for (int i=0;i<N;++i) outL[i] += inL[i];
-    if (!replR) for (int i=0;i<N;++i) outR[i] += inR[i];
+        if (!replL) for (int i=0;i<N;++i) outL[i] += inL[i];
+        if (!replR) for (int i=0;i<N;++i) outR[i] += inR[i];
+    } else {
+        for (int i=0;i<N;++i) {
+            outL[i] = inL[i];
+            outR[i] = inR[i];
+        }
+    }
 }
 
 
