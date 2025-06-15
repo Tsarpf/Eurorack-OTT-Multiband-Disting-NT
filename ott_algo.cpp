@@ -27,7 +27,9 @@ static _NT_algorithm* construct(const _NT_algorithmMemoryPtrs& p,
     a->dsp->memoryCreate();
     FaustDsp::fManager = nullptr;
     a->dsp->buildUserInterface(&a->ui);
-    a->dsp->init(NT_globals.sampleRate);
+
+    FaustDsp::classInit(NT_globals.sampleRate);   // static, safe to call many times
+    a->dsp->instanceInit(NT_globals.sampleRate);  // per-instance initialisation
     return a;
 }
 
