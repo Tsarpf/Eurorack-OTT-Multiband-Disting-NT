@@ -4,6 +4,14 @@ import("stdfaust.lib");
 c1 = hslider("Xover/LowMidFreq[unit:Hz]", 160, 40, 1000, 1);
 c2 = hslider("Xover/MidHighFreq[unit:Hz]", 2500, 300, 16000, 1);
 
+//===== ATTACK / RELEASE (ms converted to seconds) ============================
+L_att = hslider("Low/Attack[unit:ms]", 47.8, 0.1, 500, 0.1) / 1000.0;
+L_rel = hslider("Low/Release[unit:ms]", 282, 1, 2000, 0.1) / 1000.0;
+M_att = hslider("Mid/Attack[unit:ms]", 22.4, 0.1, 500, 0.1) / 1000.0;
+M_rel = hslider("Mid/Release[unit:ms]", 282, 1, 2000, 0.1) / 1000.0;
+H_att = hslider("High/Attack[unit:ms]", 13.5, 0.1, 500, 0.1) / 1000.0;
+H_rel = hslider("High/Release[unit:ms]", 132, 1, 2000, 0.1) / 1000.0;
+
 //===== LOW BAND =============================================
 L_thd  = hslider("Low/DownThr[dB]", -10, -60, 0, 0.1);
 L_thu  = hslider("Low/UpThr[dB]"  , -30, -60, 0, 0.1);
@@ -30,8 +38,9 @@ wet  = hslider("Global/Wet[unit:%]", 100, 0, 100, 0.1) / 100.0;
 outg = hslider("Global/OutGain[dB]",   0, -24, 24, 0.1);
 
 //===== HELPERS ==============================================
-db2lin(x)   = pow(10, x/20);
-env_foll(x) = abs(x) : si.smooth(0.05);
+db2lin(x) = pow(10, x/20);
+// envelope follower with attack and release times
+env_foll(at, rt, x) = abs(x) : an.amp_follower_ar(at, rt);
 
 // bidirectional gain (old-syntax safe)
 ud_gain(env, td, tu, rd, ru) = g with {
@@ -46,8 +55,8 @@ ud_gain(env, td, tu, rd, ru) = g with {
 };  // <- semicolon required for Faust 2.37
 
 // per-band processor
-band(sig, td, tu, rd, ru, mk) = sig * gain with {
-  env  = env_foll(sig);
+band(sig, td, tu, rd, ru, mk, at, rt) = sig * gain with {
+  env  = env_foll(at, rt, sig);
   gain = ud_gain(env, td, tu, rd, ru) * db2lin(mk);
 };
 
@@ -61,9 +70,9 @@ chain(x) = y with {
   hi_i = x : hp;
   mid_i= x - lo_i - hi_i;
 
-  lo_p  = band(lo_i , L_thd,L_thu,L_ratd,L_ratu,L_make);
-  mid_p = band(mid_i, M_thd,M_thu,M_ratd,M_ratu,M_make);
-  hi_p  = band(hi_i , H_thd,H_thu,H_ratd,H_ratu,H_make);
+  lo_p  = band(lo_i , L_thd,L_thu,L_ratd,L_ratu,L_make, L_att,L_rel);
+  mid_p = band(mid_i, M_thd,M_thu,M_ratd,M_ratu,M_make, M_att,M_rel);
+  hi_p  = band(hi_i , H_thd,H_thu,H_ratd,H_ratu,H_make, H_att,H_rel);
 
   wetmix = lo_p + mid_p + hi_p;
   y = (wetmix * wet + x * (1 - wet)) * db2lin(outg);

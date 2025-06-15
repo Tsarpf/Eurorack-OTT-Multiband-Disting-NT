@@ -58,6 +58,8 @@ static void parameterChanged(_NT_algorithm* s, int p)
     case kHiDownRat:   a->ui.set("High/DownRat",   0.01f * v); break;
     case kHiUpRat:     a->ui.set("High/UpRat",     0.01f * v); break;
     case kHiMakeup:    a->ui.set("High/Makeup",    0.1f * v); break;
+    case kHiAttack:    a->ui.set("High/Attack",    0.1f * v); break;
+    case kHiRelease:   a->ui.set("High/Release",   0.1f * v); break;
 
     /* Mid band */
     case kMidDownThr:
@@ -77,6 +79,8 @@ static void parameterChanged(_NT_algorithm* s, int p)
     case kMidDownRat:  a->ui.set("Mid/DownRat",    0.01f * v); break;
     case kMidUpRat:    a->ui.set("Mid/UpRat",      0.01f * v); break;
     case kMidMakeup:   a->ui.set("Mid/Makeup",     0.1f * v); break;
+    case kMidAttack:   a->ui.set("Mid/Attack",     0.1f * v); break;
+    case kMidRelease:  a->ui.set("Mid/Release",    0.1f * v); break;
 
     /* Low band */
     case kLoDownThr:
@@ -96,6 +100,8 @@ static void parameterChanged(_NT_algorithm* s, int p)
     case kLoDownRat:   a->ui.set("Low/DownRat",    0.01f * v); break;
     case kLoUpRat:     a->ui.set("Low/UpRat",      0.01f * v); break;
     case kLoMakeup:    a->ui.set("Low/Makeup",     0.1f * v); break;
+    case kLoAttack:    a->ui.set("Low/Attack",     0.1f * v); break;
+    case kLoRelease:   a->ui.set("Low/Release",    0.1f * v); break;
 
     /* X-over & global */
     case kXoverLoMid:
