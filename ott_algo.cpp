@@ -77,7 +77,7 @@ static void parameterChanged(_NT_algorithm* s, int p)
         a->ui.set("Xover/MidHighFreq", v);
         break;
     case kGlobalOut:   a->ui.set("Global/OutGain",   0.1f * v); break;
-    case kGlobalWet:   a->ui.set("Global/Wet",       0.01f * v); break;
+    case kGlobalWet:   a->ui.set("Global/Wet",       v); break;
 
     default: break;   // routing params have no Faust target
     }

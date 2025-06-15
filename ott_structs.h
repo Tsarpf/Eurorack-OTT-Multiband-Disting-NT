@@ -16,4 +16,5 @@ struct _ottAlgorithm : public _NT_algorithm
     float     potCatch[3] = {0.f,0.f,0.f};
     bool      potCaught[3] = {false,false,false};
     int       potTarget[3] = {-1,-1,-1};
+    bool      potUpper[3] = {false,false,false};
 };
