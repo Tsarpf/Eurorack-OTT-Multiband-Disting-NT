@@ -94,3 +94,14 @@ void customUi(_NT_algorithm* s, const _NT_uiData& d)
         pushParam(s, idx, cur + inc);
     }
 }
+int mapHzToX(float hz)
+{
+    return int((log10f(hz) - 1.f) * 240.f / 3.f);
+}
+
+int16_t scalePot(int idx, float pot)
+{
+    const _NT_parameter& p = params[idx];
+    return lrintf(p.min + pot * (p.max - p.min));
+}
+

@@ -59,5 +59,5 @@ void     customUi  (_NT_algorithm*, const _NT_uiData&);
 void     setupUi   (_NT_algorithm*, _NT_float3&);
 bool     draw      (_NT_algorithm*);
 
-int mapHzToX(float hz);
-int16_t scalePot(int idx, float p);
+int   mapHzToX(float hz);
+int16_t scalePot(int idx, float pot);

@@ -1,11 +1,14 @@
 #pragma once
-#include "ott_ui.h"        // brings ParamUI, UIState etc.
-#include "ott_dsp.cpp"
 
-/* full definition must be visible in both translation units */
+#include <distingnt/api.h>
+#include "ott_ui.h"        // brings ParamUI, UIState
+
+class FaustDsp;            // defined in ott_dsp.cpp
+
+/* per-instance struct */
 struct _ottAlgorithm : public _NT_algorithm
 {
-    FaustDsp dsp;
-    ParamUI  ui;
-    UIState  state;
+    FaustDsp* dsp = nullptr;
+    ParamUI   ui;
+    UIState   state;
 };

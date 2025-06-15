@@ -8,7 +8,6 @@ PLUGIN := ott
 #  Source files (hand-written)
 SRCS := ott_algo.cpp \
         ott_ui.cpp   \
-        ott_memory.cpp \
         newlib_stub.cpp
 
 #  Faust-generated DSP
@@ -16,7 +15,7 @@ DSP_CPP := ott_dsp.cpp
 
 #  Object files end up in build/ to keep the tree tidy
 OBJDIR := build
-OBJS   := $(patsubst %.cpp,$(OBJDIR)/%.o,$(notdir $(SRCS) $(DSP_CPP)))
+OBJS   := $(patsubst %.cpp,$(OBJDIR)/%.o,$(notdir $(SRCS)))
 
 CXX  := arm-none-eabi-g++
 CXXFLAGS := -std=c++11 -mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -fPIC \
