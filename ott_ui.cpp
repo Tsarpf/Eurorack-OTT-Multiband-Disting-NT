@@ -5,7 +5,22 @@
 /* sync soft-takeover when the algorithm page appears */
 void setupUi(_NT_algorithm* self, _NT_float3& pots)
 {
-    pots[0] = 0.5f; pots[1] = 0.5f; pots[2] = 0.5f;   // centre the knobs
+    auto* a  = (_ottAlgorithm*)self;
+    const UIState& ui = a->state;
+
+    const int potTargets[3][3] = {
+        { kHiDownThr, kHiDownRat, kHiMakeup },
+        { kMidDownThr,kMidDownRat,kMidMakeup },
+        { kLoDownThr, kLoDownRat, kLoMakeup }
+    };
+
+    int col = (ui.potMode == UIState::THRESH) ? 0 :
+              (ui.potMode == UIState::RATIO ) ? 1 : 2;
+
+    for (int p = 0; p < 3; ++p) {
+        int idx = potTargets[p][col];
+        pots[p] = paramToPot(idx, self->v[idx]);
+    }
 }
 
 bool draw(_NT_algorithm* self)
@@ -16,7 +31,7 @@ bool draw(_NT_algorithm* self)
     std::memset(NT_screen, 0, sizeof(NT_screen));
 
     /* header text */
-    bool bypass = self->vIncludingCommon[0];
+    bool bypass = a->state.bypass || self->vIncludingCommon[0];
     const char* hdr = bypass ? "BYPASS" :
                       ui.potMode == UIState::THRESH ? "THRESH" :
                       ui.potMode == UIState::RATIO  ? "RATIO"  : "GAIN";
@@ -46,6 +61,8 @@ void customUi(_NT_algorithm* self, const _NT_uiData& data)
     UIState& ui = a->state;
 
     /* buttons */
+    if ((data.controls & kNT_button1) && !(data.lastButtons & kNT_button1))
+        ui.bypass = !ui.bypass;
     if ((data.controls & kNT_button3) && !(data.lastButtons & kNT_button3))
         ui.encMode = (ui.encMode == UIState::XOVER) ? UIState::GLOBAL : UIState::XOVER;
     if ((data.controls & kNT_button4) && !(data.lastButtons & kNT_button4))
@@ -69,8 +86,11 @@ void customUi(_NT_algorithm* self, const _NT_uiData& data)
             (ui.potMode == UIState::THRESH) ? (pressed? potTargetsUp[p][0] : potTargets[p][0]) :
             (ui.potMode == UIState::RATIO ) ? (pressed? potTargetsUp[p][1] : potTargets[p][1]) :
                                               potTargets[p][2];
-        if (tgt >= 0)
-            pushParam(self, tgt, scalePot(tgt, data.pots[p]));
+        if (tgt >= 0) {
+            int16_t val = scalePot(tgt, data.pots[p]);
+            applyParam(self, tgt, val);
+            pushParam(self, tgt, val);
+        }
     }
 
     /* encoders */
@@ -93,7 +113,9 @@ void customUi(_NT_algorithm* self, const _NT_uiData& data)
         int16_t inc = fast_lrintf(encStep[e] * data.encoders[e] *
                              ((params[idx].unit == kNT_unitPercent) ? 1.0f
                              : (params[idx].scaling==kNT_scaling10 ? 10.f : 1.f)));
-        pushParam(self, idx, cur + inc);
+        int16_t val = cur + inc;
+        applyParam(self, idx, val);
+        pushParam(self, idx, val);
     }
 }
 int mapHzToX(float hz)
@@ -105,5 +127,12 @@ int16_t scalePot(int idx, float pot)
 {
     const _NT_parameter& p = params[idx];
     return fast_lrintf(p.min + pot * (p.max - p.min));
+}
+
+float paramToPot(int idx, int16_t value)
+{
+    const _NT_parameter& p = params[idx];
+    if (p.max == p.min) return 0.f;
+    return float(value - p.min) / float(p.max - p.min);
 }
 

@@ -81,6 +81,14 @@ static void parameterChanged(_NT_algorithm* s, int p)
     }
 }
 
+// apply a parameter update locally and notify the DSP immediately
+void applyParam(_NT_algorithm* s, int idx, int16_t value)
+{
+    int16_t* v = const_cast<int16_t*>(s->v);
+    v[idx] = value;
+    parameterChanged(s, idx);
+}
+
 /*──────────────────────────  Audio step  ───────────────────────────*/
 static void step(_NT_algorithm* s, float* bus, int nfBy4)
 {
@@ -97,10 +105,17 @@ static void step(_NT_algorithm* s, float* bus, int nfBy4)
     float* ins[2]  = { inL, inR };
     float* outs[2] = { outL, outR };
 
-    if (!s->vIncludingCommon[0])
+    bool bypass = a->state.bypass || s->vIncludingCommon[0];
+    if (!bypass) {
         a->dsp->compute(N, ins, outs);
-    if (!replL) for (int i=0;i<N;++i) outL[i] += inL[i];
-    if (!replR) for (int i=0;i<N;++i) outR[i] += inR[i];
+        if (!replL) for (int i=0;i<N;++i) outL[i] += inL[i];
+        if (!replR) for (int i=0;i<N;++i) outR[i] += inR[i];
+    } else {
+        for (int i=0;i<N;++i) {
+            outL[i] = inL[i];
+            outR[i] = inR[i];
+        }
+    }
 }
 
 

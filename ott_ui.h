@@ -50,6 +50,7 @@ struct ParamUI : public UI
 struct UIState {
     enum PotMode { THRESH, RATIO, GAIN } potMode = THRESH;
     enum EncMode { XOVER, GLOBAL } encMode = XOVER;
+    bool bypass = false;
 };
 
 /* forward declarations used by ott_algo.cpp */
@@ -60,6 +61,8 @@ bool     draw      (_NT_algorithm*);
 
 int   mapHzToX(float hz);
 int16_t scalePot(int idx, float pot);
+float   paramToPot(int idx, int16_t value);
+void    applyParam(_NT_algorithm* self, int idx, int16_t value);
 
 static inline int fast_lrintf(float x)
 {
