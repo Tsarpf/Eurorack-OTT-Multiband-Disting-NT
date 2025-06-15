@@ -13,22 +13,22 @@ H_att = hslider("High/Attack[unit:ms]", 13.5, 0.1, 500, 0.1) / 1000.0;
 H_rel = hslider("High/Release[unit:ms]", 132, 1, 2000, 0.1) / 1000.0;
 
 //===== LOW BAND =============================================
-L_thd  = hslider("Low/DownThr[dB]", -35, -60, 0, 0.1);
-L_thu  = hslider("Low/UpThr[dB]"  , -20, -60, 0, 0.1);
+L_thd  = hslider("Low/DownThr[dB]", -10, -60, 0, 0.1);
+L_thu  = hslider("Low/UpThr[dB]"  , -30, -60, 0, 0.1);
 L_ratd = hslider("Low/DownRat"    ,   4,   1, 20, 0.01);
 L_ratu = hslider("Low/UpRat"      ,   2,   1, 20, 0.01);
 L_make = hslider("Low/Makeup[dB]" ,   0, -24, 24, 0.1);
 
 //===== MID BAND =============================================
-M_thd  = hslider("Mid/DownThr[dB]", -35, -60, 0, 0.1);
-M_thu  = hslider("Mid/UpThr[dB]"  , -20, -60, 0, 0.1);
+M_thd  = hslider("Mid/DownThr[dB]", -10, -60, 0, 0.1);
+M_thu  = hslider("Mid/UpThr[dB]"  , -30, -60, 0, 0.1);
 M_ratd = hslider("Mid/DownRat"    ,   4,   1, 20, 0.01);
 M_ratu = hslider("Mid/UpRat"      ,   2,   1, 20, 0.01);
 M_make = hslider("Mid/Makeup[dB]" ,   0, -24, 24, 0.1);
 
 //===== HIGH BAND ============================================
-H_thd  = hslider("High/DownThr[dB]", -35, -60, 0, 0.1);
-H_thu  = hslider("High/UpThr[dB]"  , -20, -60, 0, 0.1);
+H_thd  = hslider("High/DownThr[dB]", -10, -60, 0, 0.1);
+H_thu  = hslider("High/UpThr[dB]"  , -30, -60, 0, 0.1);
 H_ratd = hslider("High/DownRat"    ,   4,   1, 20, 0.01);
 H_ratu = hslider("High/UpRat"      ,   2,   1, 20, 0.01);
 H_make = hslider("High/Makeup[dB]" ,   0, -24, 24, 0.1);

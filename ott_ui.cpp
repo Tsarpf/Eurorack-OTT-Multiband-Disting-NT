@@ -234,8 +234,8 @@ int mapDownThrToY(float db)
 
 int mapUpThrToY(float db)
 {
-    // map 0..40 dB to screen Y 60..30
-    float norm = db / 40.f;                 // 0..1
+    // map -60..0 dB to screen Y 60..30
+    float norm = (db + 60.f) / 60.f;        // 0..1
     return 60 - int(norm * 30.f);
 }
 
