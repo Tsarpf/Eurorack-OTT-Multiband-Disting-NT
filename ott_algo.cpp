@@ -1,23 +1,6 @@
 #include "ott_structs.h"
-#include <distingnt/api.h>
-#include "ott_memory.h"
-#include "ott_ui.h"
-#include "ott_dsp.cpp"           // include generated DSP
-
-/* 1) parameter enum + params[] + parameterPages… put those in a small
-      header if you like, e.g. ott_parameters.h, then include here & in
-      ott_ui.cpp                                                   */
-
 #include "ott_parameters.h"
-
-
-#include "ott_structs.h"
-///* per-instance struct */
-//struct _ottAlgorithm : public _NT_algorithm {
-//    FaustDsp dsp;
-//    ParamUI  ui;
-//    UIState  state;
-//};
+#include "ott_dsp.cpp"           // generated Faust DSP
 
 /*──────── requirements / construct / parameterChanged / step ───────*/
 static void calculateRequirements(_NT_algorithmRequirements& r, const int32_t*)
@@ -39,9 +22,12 @@ static _NT_algorithm* construct(const _NT_algorithmMemoryPtrs& p,
 
     MemoryMgr alloc(MemoryMgr::Allocate);
     alloc.base = p.dram;
-    FaustDsp::fManager = &alloc; a->dsp.memoryCreate(); FaustDsp::fManager = nullptr;
-    a->dsp.buildUserInterface(&a->ui);
-    a->dsp.init(NT_globals.sampleRate);
+    FaustDsp::fManager = &alloc;
+    a->dsp = new FaustDsp();
+    a->dsp->memoryCreate();
+    FaustDsp::fManager = nullptr;
+    a->dsp->buildUserInterface(&a->ui);
+    a->dsp->init(NT_globals.sampleRate);
     return a;
 }
 
@@ -108,7 +94,7 @@ static void step(_NT_algorithm* s, float* bus, int nfBy4)
     }
     else
     {
-        a->dsp.compute(N, ins, outs);
+        a->dsp->compute(N, ins, outs);
         if (!replL) for (int i=0;i<N;++i) outL[i] += inL[i];
         if (!replR) for (int i=0;i<N;++i) outR[i] += inR[i];
     }
