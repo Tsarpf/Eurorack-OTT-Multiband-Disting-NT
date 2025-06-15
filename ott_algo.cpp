@@ -42,14 +42,14 @@ static void parameterChanged(_NT_algorithm* s, int p)
     {
     /* Hi band */
     case kHiDownThr:
-        if (v > s->v[kHiUpThr]) {
+        if (v < s->v[kHiUpThr]) {
             pushParam(s, kHiDownThr, s->v[kHiUpThr]);
             return;
         }
         a->ui.set("High/DownThr",   0.1f * v);
         break;
     case kHiUpThr:
-        if (v < s->v[kHiDownThr]) {
+        if (v > s->v[kHiDownThr]) {
             pushParam(s, kHiUpThr, s->v[kHiDownThr]);
             return;
         }
@@ -63,14 +63,14 @@ static void parameterChanged(_NT_algorithm* s, int p)
 
     /* Mid band */
     case kMidDownThr:
-        if (v > s->v[kMidUpThr]) {
+        if (v < s->v[kMidUpThr]) {
             pushParam(s, kMidDownThr, s->v[kMidUpThr]);
             return;
         }
         a->ui.set("Mid/DownThr",    0.1f * v);
         break;
     case kMidUpThr:
-        if (v < s->v[kMidDownThr]) {
+        if (v > s->v[kMidDownThr]) {
             pushParam(s, kMidUpThr, s->v[kMidDownThr]);
             return;
         }
@@ -84,14 +84,14 @@ static void parameterChanged(_NT_algorithm* s, int p)
 
     /* Low band */
     case kLoDownThr:
-        if (v > s->v[kLoUpThr]) {
+        if (v < s->v[kLoUpThr]) {
             pushParam(s, kLoDownThr, s->v[kLoUpThr]);
             return;
         }
         a->ui.set("Low/DownThr",    0.1f * v);
         break;
     case kLoUpThr:
-        if (v < s->v[kLoDownThr]) {
+        if (v > s->v[kLoDownThr]) {
             pushParam(s, kLoUpThr, s->v[kLoDownThr]);
             return;
         }

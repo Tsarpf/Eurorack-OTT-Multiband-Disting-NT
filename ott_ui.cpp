@@ -227,16 +227,16 @@ int mapHzToX(float hz)
 
 int mapDownThrToY(float db)
 {
-    // map -60..0 dB to screen Y 30..10
+    // map -60..0 dB across the full vertical range 60..10
     float norm = (db + 60.f) / 60.f;        // 0..1
-    return 30 - int(norm * 20.f);
+    return 60 - int(norm * 50.f);
 }
 
 int mapUpThrToY(float db)
 {
-    // map -60..0 dB to screen Y 60..30
+    // map -60..0 dB across the full vertical range 60..10
     float norm = (db + 60.f) / 60.f;        // 0..1
-    return 60 - int(norm * 30.f);
+    return 60 - int(norm * 50.f);
 }
 
 int mapGainToY(float db)
