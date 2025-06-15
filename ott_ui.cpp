@@ -16,7 +16,7 @@ bool draw(_NT_algorithm* self)
     std::memset(NT_screen, 0, sizeof(NT_screen));
 
     /* header text */
-    bool bypass = self->vIncludingCommon[0];
+    bool bypass = a->state.bypass || self->vIncludingCommon[0];
     const char* hdr = bypass ? "BYPASS" :
                       ui.potMode == UIState::THRESH ? "THRESH" :
                       ui.potMode == UIState::RATIO  ? "RATIO"  : "GAIN";
