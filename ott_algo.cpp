@@ -41,22 +41,58 @@ static void parameterChanged(_NT_algorithm* s, int p)
     switch (p)
     {
     /* Hi band */
-    case kHiDownThr:   a->ui.set("High/DownThr",   0.1f * v); break;
-    case kHiUpThr:     a->ui.set("High/UpThr",     0.1f * v); break;
+    case kHiDownThr:
+        if (v > s->v[kHiUpThr]) {
+            pushParam(s, kHiDownThr, s->v[kHiUpThr]);
+            return;
+        }
+        a->ui.set("High/DownThr",   0.1f * v);
+        break;
+    case kHiUpThr:
+        if (v < s->v[kHiDownThr]) {
+            pushParam(s, kHiUpThr, s->v[kHiDownThr]);
+            return;
+        }
+        a->ui.set("High/UpThr",     0.1f * v);
+        break;
     case kHiDownRat:   a->ui.set("High/DownRat",   0.01f * v); break;
     case kHiUpRat:     a->ui.set("High/UpRat",     0.01f * v); break;
     case kHiMakeup:    a->ui.set("High/Makeup",    0.1f * v); break;
 
     /* Mid band */
-    case kMidDownThr:  a->ui.set("Mid/DownThr",    0.1f * v); break;
-    case kMidUpThr:    a->ui.set("Mid/UpThr",      0.1f * v); break;
+    case kMidDownThr:
+        if (v > s->v[kMidUpThr]) {
+            pushParam(s, kMidDownThr, s->v[kMidUpThr]);
+            return;
+        }
+        a->ui.set("Mid/DownThr",    0.1f * v);
+        break;
+    case kMidUpThr:
+        if (v < s->v[kMidDownThr]) {
+            pushParam(s, kMidUpThr, s->v[kMidDownThr]);
+            return;
+        }
+        a->ui.set("Mid/UpThr",      0.1f * v);
+        break;
     case kMidDownRat:  a->ui.set("Mid/DownRat",    0.01f * v); break;
     case kMidUpRat:    a->ui.set("Mid/UpRat",      0.01f * v); break;
     case kMidMakeup:   a->ui.set("Mid/Makeup",     0.1f * v); break;
 
     /* Low band */
-    case kLoDownThr:   a->ui.set("Low/DownThr",    0.1f * v); break;
-    case kLoUpThr:     a->ui.set("Low/UpThr",      0.1f * v); break;
+    case kLoDownThr:
+        if (v > s->v[kLoUpThr]) {
+            pushParam(s, kLoDownThr, s->v[kLoUpThr]);
+            return;
+        }
+        a->ui.set("Low/DownThr",    0.1f * v);
+        break;
+    case kLoUpThr:
+        if (v < s->v[kLoDownThr]) {
+            pushParam(s, kLoUpThr, s->v[kLoDownThr]);
+            return;
+        }
+        a->ui.set("Low/UpThr",      0.1f * v);
+        break;
     case kLoDownRat:   a->ui.set("Low/DownRat",    0.01f * v); break;
     case kLoUpRat:     a->ui.set("Low/UpRat",      0.01f * v); break;
     case kLoMakeup:    a->ui.set("Low/Makeup",     0.1f * v); break;
