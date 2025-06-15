@@ -16,7 +16,8 @@ bool draw(_NT_algorithm* s)
     std::memset(NT_screen, 0, sizeof(NT_screen));
 
     /* header text */
-    const char* hdr = ui.bypass ? "BYPASS" :
+    bool bypass = s->vIncludingCommon[0];
+    const char* hdr = bypass ? "BYPASS" :
                       ui.potMode == UIState::THRESH ? "THRESH" :
                       ui.potMode == UIState::RATIO  ? "RATIO"  : "GAIN";
     NT_drawText(2, 2, hdr);
@@ -33,7 +34,7 @@ uint32_t hasCustomUi(_NT_algorithm*)
 {
     return kNT_potL | kNT_potC | kNT_potR |
            kNT_encoderL | kNT_encoderR |
-           kNT_button1  | kNT_button3 | kNT_button4;
+           kNT_button3 | kNT_button4;
 }
 
 void customUi(_NT_algorithm* s, const _NT_uiData& d)
@@ -42,8 +43,6 @@ void customUi(_NT_algorithm* s, const _NT_uiData& d)
     UIState& ui = a->state;
 
     /* buttons */
-    if ((d.controls & kNT_button1) && !(d.lastButtons & kNT_button1))
-        ui.bypass = !ui.bypass;
     if ((d.controls & kNT_button3) && !(d.lastButtons & kNT_button3))
         ui.encMode = (ui.encMode == UIState::XOVER) ? UIState::GLOBAL : UIState::XOVER;
     if ((d.controls & kNT_button4) && !(d.lastButtons & kNT_button4))

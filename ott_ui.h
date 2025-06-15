@@ -50,7 +50,6 @@ struct ParamUI : public UI
 struct UIState {
     enum PotMode { THRESH, RATIO, GAIN } potMode = THRESH;
     enum EncMode { XOVER, GLOBAL } encMode = XOVER;
-    bool bypass = false;
 };
 
 /* forward declarations used by ott_algo.cpp */

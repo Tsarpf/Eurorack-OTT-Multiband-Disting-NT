@@ -28,9 +28,23 @@ enum {
 };
 
 
+static const uint8_t pageHi[]     = { kHiDownThr,kHiUpThr,kHiDownRat,kHiUpRat,kHiMakeup };
+static const uint8_t pageMid[]    = { kMidDownThr,kMidUpThr,kMidDownRat,kMidUpRat,kMidMakeup };
+static const uint8_t pageLow[]    = { kLoDownThr,kLoUpThr,kLoDownRat,kLoUpRat,kLoMakeup };
+static const uint8_t pageGlobal[] = { kXoverLoMid,kXoverMidHi,kGlobalOut,kGlobalWet };
 static const uint8_t pageRouting[] = { kInL,kInR,kOutL,kOutLMode,kOutR,kOutRMode };
-static const _NT_parameterPage pages[] = { { "Routing", ARRAY_SIZE(pageRouting), pageRouting } };
-static const _NT_parameterPages paramPages = { ARRAY_SIZE(pages), pages };
+
+static const _NT_parameterPage pages[] = {
+    { "High",    ARRAY_SIZE(pageHi),     pageHi     },
+    { "Mid",     ARRAY_SIZE(pageMid),    pageMid    },
+    { "Low",     ARRAY_SIZE(pageLow),    pageLow    },
+    { "Global",  ARRAY_SIZE(pageGlobal), pageGlobal },
+    { "Routing", ARRAY_SIZE(pageRouting), pageRouting }
+};
+
+static const _NT_parameterPages paramPages = {
+    ARRAY_SIZE(pages), pages
+};
 
 /* helper macros – scaling10 means 0.1 dB or 0.1 % steps */
 #define P(dbname,min,max,def,unit,sc) { dbname,min,max,def,unit,sc,nullptr }
