@@ -61,3 +61,9 @@ bool     draw      (_NT_algorithm*);
 
 int   mapHzToX(float hz);
 int16_t scalePot(int idx, float pot);
+
+static inline int fast_lrintf(float x)
+{
+    return (int)((x >= 0.f) ? x + 0.5f : x - 0.5f);
+}
+

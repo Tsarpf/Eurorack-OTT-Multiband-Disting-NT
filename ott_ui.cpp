@@ -88,7 +88,7 @@ void customUi(_NT_algorithm* s, const _NT_uiData& d)
         int idx = encParam[e];
         if (!d.encoders[e]) continue;
         int16_t cur = s->v[idx];
-        int16_t inc = lrintf(encStep[e] * d.encoders[e] *
+        int16_t inc = fast_lrintf(encStep[e] * d.encoders[e] *
                              ((params[idx].unit == kNT_unitPercent) ? 1.0f
                              : (params[idx].scaling==kNT_scaling10 ? 10.f : 1.f)));
         pushParam(s, idx, cur + inc);
@@ -102,6 +102,6 @@ int mapHzToX(float hz)
 int16_t scalePot(int idx, float pot)
 {
     const _NT_parameter& p = params[idx];
-    return lrintf(p.min + pot * (p.max - p.min));
+    return fast_lrintf(p.min + pot * (p.max - p.min));
 }
 
