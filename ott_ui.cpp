@@ -3,7 +3,7 @@
 #include "ott_parameters.h"   // enums & params[] (see next section)
 #include <string>
 
-static const int kLineStep = 5;   // spacing of ratio lines in pixels
+static const int kLineStep = 2;   // spacing of ratio lines in pixels
 
 /* sync soft-takeover when the algorithm page appears */
 void setupUi(_NT_algorithm* self, _NT_float3& pots)
@@ -46,8 +46,8 @@ bool draw(_NT_algorithm* self)
 
     int x1 = mapHzToX(a->ui.get("Xover/LowMidFreq"));
     int x2 = mapHzToX(a->ui.get("Xover/MidHighFreq"));
-    NT_drawShapeI(kNT_line, x1, 10, x1, 50, 8);
-    NT_drawShapeI(kNT_line, x2, 10, x2, 50, 8);
+    NT_drawShapeI(kNT_line, x1, 10, x1, 60, 8);
+    NT_drawShapeI(kNT_line, x2, 10, x2, 60, 8);
 
     auto drawBand = [&](int xStart, int xEnd, const char* name){
         char key[32];
@@ -69,21 +69,26 @@ bool draw(_NT_algorithm* self)
             if (y1 <= y0) return;
             float rNorm = ratio <= 1.f ? 0.f : (ratio - 1.f) / 9.f;
             if (rNorm > 1.f) rNorm = 1.f;
-            for (int y = y0; y <= y1; y += kLineStep) {
-                float dist = fromTop ? float(y - y0) / float(y1 - y0)
-                                     : float(y1 - y) / float(y1 - y0);
-                int col = 4 + int(dist * rNorm * 11.f);
+            int steps = (y1 - y0) / kLineStep;
+            float expn = 1.f + rNorm * 4.f;   // cluster lines for strong ratios
+            for (int i = 0; i <= steps; ++i) {
+                float t = float(i) / float(steps);
+                float dist = 1.f - powf(1.f - t, expn);  // 0..1 near threshold
+                int y = fromTop ? y0 + int(dist * (y1 - y0))
+                                : y1 - int(dist * (y1 - y0));
+                float cNorm = dist * dist * rNorm;       // emphasise threshold
+                int col = 2 + int(cNorm * 13.f);
                 if (col > 15) col = 15;
                 NT_drawShapeI(kNT_line, xStart, y, xEnd, y, col);
             }
         };
 
         drawBox(10,  yDown, dRat, true);   // downward compression from top
-        drawBox(yUp, 50,   uRat, false);  // upward compression from bottom
+        drawBox(yUp, 60,   uRat, false);  // upward compression from bottom
 
         int xBar = (xStart + xEnd) / 2;
         int yGain = mapGainToY(gain);
-        NT_drawShapeI(kNT_line, xBar, 50, xBar, yGain, 15);
+        NT_drawShapeI(kNT_line, xBar, 60, xBar, yGain, 15);
     };
 
     drawBand(0, x1, "Low");
@@ -93,15 +98,15 @@ bool draw(_NT_algorithm* self)
     int xGW = 250;
     int yWet = mapPercentToY(a->ui.get("Global/Wet"));
     int yGain = mapGainToY(a->ui.get("Global/OutGain"));
-    NT_drawShapeI(kNT_line, xGW, 50, xGW, yWet, 14);
-    NT_drawShapeI(kNT_line, xGW+5, 50, xGW+5, yGain, 14);
+    NT_drawShapeI(kNT_line, xGW, 60, xGW, yWet, 14);
+    NT_drawShapeI(kNT_line, xGW+5, 60, xGW+5, yGain, 14);
 
     /* draw text last so it's always visible */
-    NT_drawText(2, 0, hdr);
-    NT_drawText(2, 8, encMode);
+    NT_drawText(2, 8, hdr);
+    NT_drawText(60, 8, encMode);
     if (lastName) {
-        NT_drawText(70, 0, lastName);
-        NT_drawText(180, 0, lastVal);
+        NT_drawText(120, 8, lastName);
+        NT_drawText(220, 8, lastVal);
     }
 
     return true;    // suppress standard parameter strip
@@ -205,19 +210,19 @@ int mapDownThrToY(float db)
 
 int mapUpThrToY(float db)
 {
-    // map 0..40 dB to screen Y 50..30
+    // map 0..40 dB to screen Y 60..30
     float norm = db / 40.f;                 // 0..1
-    return 50 - int(norm * 20.f);
+    return 60 - int(norm * 30.f);
 }
 
 int mapGainToY(float db)
 {
-    return 50 - int(((db + 24.f) / 48.f) * 40.f);
+    return 60 - int(((db + 24.f) / 48.f) * 50.f);
 }
 
 int mapPercentToY(float p)
 {
-    return 50 - int((p / 100.f) * 40.f);
+    return 60 - int((p / 100.f) * 50.f);
 }
 
 int16_t scalePot(int idx, float pot)
