@@ -60,8 +60,20 @@ static void parameterChanged(_NT_algorithm* s, int p)
     case kLoMakeup:    a->ui.set("Low/Makeup",     0.1f * v); break;
 
     /* X-over & global */
-    case kXoverLoMid:  a->ui.set("Xover/LowMidFreq", v); break;
-    case kXoverMidHi:  a->ui.set("Xover/MidHighFreq", v); break;
+    case kXoverLoMid:
+        if (v > s->v[kXoverMidHi]) {
+            pushParam(s, kXoverLoMid, s->v[kXoverMidHi]);
+            return;
+        }
+        a->ui.set("Xover/LowMidFreq", v);
+        break;
+    case kXoverMidHi:
+        if (v < s->v[kXoverLoMid]) {
+            pushParam(s, kXoverMidHi, s->v[kXoverLoMid]);
+            return;
+        }
+        a->ui.set("Xover/MidHighFreq", v);
+        break;
     case kGlobalOut:   a->ui.set("Global/OutGain",   0.1f * v); break;
     case kGlobalWet:   a->ui.set("Global/Wet",       0.01f * v); break;
 
@@ -85,19 +97,10 @@ static void step(_NT_algorithm* s, float* bus, int nfBy4)
     float* ins[2]  = { inL, inR };
     float* outs[2] = { outL, outR };
 
-    if (a->state.bypass)
-    {
-        if (!replL) for (int i=0;i<N;++i) outL[i] += inL[i];
-        else        std::memcpy(outL, inL, N*sizeof(float));
-        if (!replR) for (int i=0;i<N;++i) outR[i] += inR[i];
-        else        std::memcpy(outR, inR, N*sizeof(float));
-    }
-    else
-    {
+    if (!s->vIncludingCommon[0])
         a->dsp->compute(N, ins, outs);
-        if (!replL) for (int i=0;i<N;++i) outL[i] += inL[i];
-        if (!replR) for (int i=0;i<N;++i) outR[i] += inR[i];
-    }
+    if (!replL) for (int i=0;i<N;++i) outL[i] += inL[i];
+    if (!replR) for (int i=0;i<N;++i) outR[i] += inR[i];
 }
 
 
