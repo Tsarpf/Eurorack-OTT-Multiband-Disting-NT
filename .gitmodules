@@ -4,3 +4,6 @@
 [submodule "distingNT_API"]
 	path = distingNT_API
 	url = git@github.com:expertsleepersltd/distingNT_API.git
+[submodule "distingnt_api"]
+	path = distingnt_api
+	url = git@github.com:expertsleepersltd/distingNT_API.git
