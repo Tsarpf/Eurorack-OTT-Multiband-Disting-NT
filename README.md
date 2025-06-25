@@ -39,3 +39,6 @@ loaded on a disting NT device.
 ## Environment and limitations
 
 This plug-in targets the [disting NT](https://www.expert-sleepers.co.uk/) hardware. The Makefile builds `ott.o` using partial linking (`-r`) and disables exceptions and RTTI. The firmware does not provide standard C or C++ libraries. Instead `newlib_stub.cpp` implements a tiny bump allocator and minimal runtime support. Only lightweight headers like `<cstdint>` are used; containers and other STL facilities are unavailable. See `distingnt_api/include/distingnt/api.h` for the full API.
+
+# License
+Everything written by me is MIT licensed, check other code for their respective licenses
