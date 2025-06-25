@@ -1,4 +1,10 @@
+
 # Faust OTT Disting Plugin
+
+Demo: https://www.youtube.com/watch?v=6zNhZXQEgkU
+
+Demo jam: https://soundcloud.com/tsarpf/disting-nt-ott-style-compressor-test
+
 
 This project builds a disting NT plug-in that uses DSP generated from the
 [Faust](https://github.com/grame-cncm/faust) compiler.
