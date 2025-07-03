@@ -8,19 +8,19 @@ enum {
     /* Hi band */
     kHiDownThr, kHiUpThr,
     kHiDownRat, kHiUpRat,
-    kHiMakeup,
+    kHiPreGain, kHiPostGain,
     kHiAttack, kHiRelease,
 
     /* Mid band */
     kMidDownThr, kMidUpThr,
     kMidDownRat, kMidUpRat,
-    kMidMakeup,
+    kMidPreGain, kMidPostGain,
     kMidAttack, kMidRelease,
 
     /* Lo band */
     kLoDownThr, kLoUpThr,
     kLoDownRat, kLoUpRat,
-    kLoMakeup,
+    kLoPreGain, kLoPostGain,
     kLoAttack, kLoRelease,
 
     /* X-over  + global */
@@ -31,9 +31,9 @@ enum {
 };
 
 
-static const uint8_t pageHi[]     = { kHiDownThr,kHiUpThr,kHiDownRat,kHiUpRat,kHiMakeup,kHiAttack,kHiRelease };
-static const uint8_t pageMid[]    = { kMidDownThr,kMidUpThr,kMidDownRat,kMidUpRat,kMidMakeup,kMidAttack,kMidRelease };
-static const uint8_t pageLow[]    = { kLoDownThr,kLoUpThr,kLoDownRat,kLoUpRat,kLoMakeup,kLoAttack,kLoRelease };
+static const uint8_t pageHi[]     = { kHiDownThr,kHiUpThr,kHiDownRat,kHiUpRat,kHiPreGain,kHiPostGain,kHiAttack,kHiRelease };
+static const uint8_t pageMid[]    = { kMidDownThr,kMidUpThr,kMidDownRat,kMidUpRat,kMidPreGain,kMidPostGain,kMidAttack,kMidRelease };
+static const uint8_t pageLow[]    = { kLoDownThr,kLoUpThr,kLoDownRat,kLoUpRat,kLoPreGain,kLoPostGain,kLoAttack,kLoRelease };
 static const uint8_t pageGlobal[] = { kXoverLoMid,kXoverMidHi,kGlobalOut,kGlobalWet };
 static const uint8_t pageRouting[] = { kInL,kInR,kOutL,kOutLMode,kOutR,kOutRMode };
 
@@ -63,7 +63,8 @@ static const _NT_parameter params[kNumParams] = {
     P("Hi/UpThr",  -600,   0, -300, kNT_unitDb,       kNT_scaling10),
     P("Hi/DownRat", 100, 10000, 400, kNT_unitPercent,  kNT_scaling10),
     P("Hi/UpRat",   100, 10000, 200, kNT_unitPercent,  kNT_scaling10),
-    P("Hi/Makeup",  -240,  240,   0, kNT_unitDb,       kNT_scaling10),
+    P("Hi/PreGain", -240,  240,   0, kNT_unitDb,       kNT_scaling10),
+    P("Hi/PostGain",-240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Hi/Attack",     1,  5000, 135, kNT_unitMs,      kNT_scaling10),
     P("Hi/Release",   10, 20000,1320, kNT_unitMs,      kNT_scaling10),
 
@@ -72,7 +73,8 @@ static const _NT_parameter params[kNumParams] = {
     P("Mid/UpThr",  -600,   0, -300, kNT_unitDb,       kNT_scaling10),
     P("Mid/DownRat", 100, 10000, 400, kNT_unitPercent,  kNT_scaling10),
     P("Mid/UpRat",   100, 10000, 200, kNT_unitPercent,  kNT_scaling10),
-    P("Mid/Makeup",  -240,  240,   0, kNT_unitDb,       kNT_scaling10),
+    P("Mid/PreGain", -240,  240,   0, kNT_unitDb,       kNT_scaling10),
+    P("Mid/PostGain",-240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Mid/Attack",     1,  5000, 224, kNT_unitMs,      kNT_scaling10),
     P("Mid/Release",   10, 20000,2820, kNT_unitMs,      kNT_scaling10),
 
@@ -81,7 +83,8 @@ static const _NT_parameter params[kNumParams] = {
     P("Low/UpThr",  -600,   0, -300, kNT_unitDb,       kNT_scaling10),
     P("Low/DownRat", 100, 10000, 400, kNT_unitPercent,  kNT_scaling10),
     P("Low/UpRat",   100, 10000, 200, kNT_unitPercent,  kNT_scaling10),
-    P("Low/Makeup",  -240,  240,   0, kNT_unitDb,       kNT_scaling10),
+    P("Low/PreGain", -240,  240,   0, kNT_unitDb,       kNT_scaling10),
+    P("Low/PostGain",-240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Low/Attack",     1,  5000, 478, kNT_unitMs,      kNT_scaling10),
     P("Low/Release",   10, 20000,2820, kNT_unitMs,      kNT_scaling10),
 

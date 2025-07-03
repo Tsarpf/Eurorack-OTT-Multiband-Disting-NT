@@ -17,21 +17,24 @@ L_thd  = hslider("Low/DownThr[dB]", -10, -60, 0, 0.1);
 L_thu  = hslider("Low/UpThr[dB]"  , -30, -60, 0, 0.1);
 L_ratd = hslider("Low/DownRat"    ,   4,   1, 100, 0.01);
 L_ratu = hslider("Low/UpRat"      ,   2,   1, 100, 0.01);
-L_make = hslider("Low/Makeup[dB]" ,   0, -24, 24, 0.1);
+L_pre  = hslider("Low/PreGain[dB]" ,   0, -24, 24, 0.1);
+L_post = hslider("Low/PostGain[dB]",   0, -24, 24, 0.1);
 
 //===== MID BAND =============================================
 M_thd  = hslider("Mid/DownThr[dB]", -10, -60, 0, 0.1);
 M_thu  = hslider("Mid/UpThr[dB]"  , -30, -60, 0, 0.1);
 M_ratd = hslider("Mid/DownRat"    ,   4,   1, 100, 0.01);
 M_ratu = hslider("Mid/UpRat"      ,   2,   1, 100, 0.01);
-M_make = hslider("Mid/Makeup[dB]" ,   0, -24, 24, 0.1);
+M_pre  = hslider("Mid/PreGain[dB]" ,   0, -24, 24, 0.1);
+M_post = hslider("Mid/PostGain[dB]",   0, -24, 24, 0.1);
 
 //===== HIGH BAND ============================================
 H_thd  = hslider("High/DownThr[dB]", -10, -60, 0, 0.1);
 H_thu  = hslider("High/UpThr[dB]"  , -30, -60, 0, 0.1);
 H_ratd = hslider("High/DownRat"    ,   4,   1, 100, 0.01);
 H_ratu = hslider("High/UpRat"      ,   2,   1, 100, 0.01);
-H_make = hslider("High/Makeup[dB]" ,   0, -24, 24, 0.1);
+H_pre  = hslider("High/PreGain[dB]" ,   0, -24, 24, 0.1);
+H_post = hslider("High/PostGain[dB]",   0, -24, 24, 0.1);
 
 //===== GLOBAL MIX / OUTPUT =================================
 wet  = hslider("Global/Wet[unit:%]", 100, 0, 100, 0.1) / 100.0;
@@ -55,9 +58,11 @@ ud_gain(env, td, tu, rd, ru) = g with {
 };  // <- semicolon required for Faust 2.37
 
 // per-band processor
-band(sig, td, tu, rd, ru, mk, at, rt) = sig * gain with {
-  env  = env_foll(at, rt, sig);
-  gain = ud_gain(env, td, tu, rd, ru) * db2lin(mk);
+band(sig, td, tu, rd, ru, pre, post, at, rt) = y with {
+  pg   = db2lin(pre);
+  env  = env_foll(at, rt, sig * pg);
+  comp = ud_gain(env, td, tu, rd, ru);
+  y    = sig * pg * comp * db2lin(post);
 };
 
 // 2-pole Butterworth crossovers
@@ -70,9 +75,9 @@ chain(x) = y with {
   hi_i = x : hp;
   mid_i= x - lo_i - hi_i;
 
-  lo_p  = band(lo_i , L_thd,L_thu,L_ratd,L_ratu,L_make, L_att,L_rel);
-  mid_p = band(mid_i, M_thd,M_thu,M_ratd,M_ratu,M_make, M_att,M_rel);
-  hi_p  = band(hi_i , H_thd,H_thu,H_ratd,H_ratu,H_make, H_att,H_rel);
+  lo_p  = band(lo_i , L_thd,L_thu,L_ratd,L_ratu,L_pre,L_post, L_att,L_rel);
+  mid_p = band(mid_i, M_thd,M_thu,M_ratd,M_ratu,M_pre,M_post, M_att,M_rel);
+  hi_p  = band(hi_i , H_thd,H_thu,H_ratd,H_ratu,H_pre,H_post, H_att,H_rel);
 
   wetmix = lo_p + mid_p + hi_p;
   y = (wetmix * wet + x * (1 - wet)) * db2lin(outg);
