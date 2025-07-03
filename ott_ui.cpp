@@ -10,8 +10,9 @@ static const int kFreqWidth = 220;    // width of frequency display
 /* sync soft-takeover when the algorithm page appears */
 void setupUi(_NT_algorithm* self, _NT_float3& pots)
 {
-    pots[0] = 0.5f; pots[1] = 0.5f; pots[2] = 0.5f;   // centre the knobs
     auto* a = (_ottAlgorithm*)self;
+    plugHeapUse(&a->heap);
+    pots[0] = 0.5f; pots[1] = 0.5f; pots[2] = 0.5f;   // centre the knobs
     for (int i=0;i<3;++i) {
         a->potCaught[i] = false;
         a->potTarget[i] = -1;
@@ -22,6 +23,7 @@ void setupUi(_NT_algorithm* self, _NT_float3& pots)
 bool draw(_NT_algorithm* self)
 {
     auto* a = (_ottAlgorithm*)self;
+    plugHeapUse(&a->heap);
     const UIState& ui = a->state;
 
     std::memset(NT_screen, 0, sizeof(NT_screen));
@@ -149,6 +151,7 @@ uint32_t hasCustomUi(_NT_algorithm*)
 void customUi(_NT_algorithm* self, const _NT_uiData& data)
 {
     auto* a  = (_ottAlgorithm*)self;
+    plugHeapUse(&a->heap);
     UIState& ui = a->state;
 
     /* buttons */

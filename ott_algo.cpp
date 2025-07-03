@@ -25,7 +25,8 @@ static _NT_algorithm* construct(const _NT_algorithmMemoryPtrs& p,
     FaustDsp::fManager = &probe;
     FaustDsp::memoryInfo();
     FaustDsp::fManager = nullptr;
-    plugHeapInit(p.dram + probe.total, kNewlibHeapSize);
+    plugHeapInit(&a->heap, p.dram + probe.total, kNewlibHeapSize);
+    plugHeapUse(&a->heap);
 
     MemoryMgr alloc(MemoryMgr::Allocate);
     alloc.base = p.dram;
@@ -43,6 +44,7 @@ static _NT_algorithm* construct(const _NT_algorithmMemoryPtrs& p,
 static void parameterChanged(_NT_algorithm* s, int p)
 {
     auto* a = (_ottAlgorithm*)s;
+    plugHeapUse(&a->heap);
     const int16_t v = s->v[p];
 
     switch (p)
@@ -138,6 +140,7 @@ static void parameterChanged(_NT_algorithm* s, int p)
 static void step(_NT_algorithm* s, float* bus, int nfBy4)
 {
     auto* a = (_ottAlgorithm*)s;
+    plugHeapUse(&a->heap);
     const int N = nfBy4 * 4;
 
     float* inL  = bus + (s->v[kInL]  - 1) * N;

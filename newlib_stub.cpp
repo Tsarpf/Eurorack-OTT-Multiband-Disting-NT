@@ -27,9 +27,19 @@ void  operator delete[](void* p, const std::nothrow_t&) noexcept    { std::free(
 #include <cstring>
 
 /* ───── very small bump-allocator ───── */
-static uint8_t* plugHeapBase = nullptr;
-static size_t   plugHeapSize = 0;
-static size_t   plugBrk = 0;
+static PlugHeap* currentHeap = nullptr;
+
+extern "C" void plugHeapInit(PlugHeap* heap, void* base, size_t size)
+{
+    heap->base = static_cast<uint8_t*>(base);
+    heap->size = size;
+    heap->brk  = 0;
+}
+
+extern "C" void plugHeapUse(PlugHeap* heap)
+{
+    currentHeap = heap;
+}
 
 extern "C" void plugHeapInit(void* base, size_t size)
 {
@@ -44,10 +54,10 @@ void* malloc(size_t n)
 {
     /* 4-byte alignment */
     n = (n + 3u) & ~3u;
-    if (!plugHeapBase || plugBrk + n > plugHeapSize)
+    if (!currentHeap || currentHeap->brk + n > currentHeap->size)
         return nullptr;       // out of memory → caller must handle
-    void* p = plugHeapBase + plugBrk;
-    plugBrk += n;
+    void* p = currentHeap->base + currentHeap->brk;
+    currentHeap->brk += n;
     return p;
 }
 
