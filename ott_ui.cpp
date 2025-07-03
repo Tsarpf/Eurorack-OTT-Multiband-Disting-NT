@@ -65,8 +65,10 @@ bool draw(_NT_algorithm* self)
         float dRat = a->ui.get(key);
         snprintf(key, sizeof(key), "%s/UpRat", name);
         float uRat = a->ui.get(key);
-        snprintf(key, sizeof(key), "%s/Makeup", name);
-        float gain = a->ui.get(key);
+        snprintf(key, sizeof(key), "%s/PreGain", name);
+        float pre = a->ui.get(key);
+        snprintf(key, sizeof(key), "%s/PostGain", name);
+        float post = a->ui.get(key);
 
         int yDown = mapDownThrToY(dThr);
         int yUp   = mapUpThrToY(uThr);
@@ -102,8 +104,17 @@ bool draw(_NT_algorithm* self)
         }
 
         int xBar = (xStart + xEnd) / 2;
-        int yGain = mapGainToY(gain);
-        NT_drawShapeI(kNT_line, xBar, 60, xBar, yGain, 15);
+        int xPre  = xBar - 1;
+        int xPost = xBar + 1;
+        int yPre  = mapGainToY(pre);
+        int yPost = mapGainToY(post);
+        NT_drawShapeI(kNT_line, xPre, 60, xPre, yPre, 15);
+        NT_drawShapeI(kNT_line, xPost,60, xPost,yPost,15);
+        if (ui.potMode == UIState::GAIN) {
+            bool upperSel = a->potUpper[idx];
+            int xText = upperSel ? xPre : xPost;
+            NT_drawText(xText, 62, upperSel?"pre":"post", 15, kNT_textCentre, kNT_textTiny);
+        }
     };
 
     int xGW = 246;
@@ -161,14 +172,14 @@ void customUi(_NT_algorithm* self, const _NT_uiData& data)
 
     /* pots → three bands */
     const int potTargets[3][3] = {
-        { kLoDownThr, kLoDownRat, kLoMakeup },
-        { kMidDownThr,kMidDownRat,kMidMakeup },
-        { kHiDownThr, kHiDownRat, kHiMakeup }
+        { kLoDownThr, kLoDownRat, kLoPostGain },
+        { kMidDownThr,kMidDownRat,kMidPostGain },
+        { kHiDownThr, kHiDownRat, kHiPostGain }
     };
     const int potTargetsUp[3][3] = {
-        { kLoUpThr, kLoUpRat, -1 },
-        { kMidUpThr,kMidUpRat,-1 },
-        { kHiUpThr, kHiUpRat, -1 }
+        { kLoUpThr, kLoUpRat, kLoPreGain },
+        { kMidUpThr,kMidUpRat,kMidPreGain },
+        { kHiUpThr, kHiUpRat, kHiPreGain }
     };
 
     for (int p = 0; p < 3; ++p) {
@@ -179,7 +190,7 @@ void customUi(_NT_algorithm* self, const _NT_uiData& data)
         int  tgt =
             (ui.potMode == UIState::THRESH) ? (upper? potTargetsUp[p][0] : potTargets[p][0]) :
             (ui.potMode == UIState::RATIO ) ? (upper? potTargetsUp[p][1] : potTargets[p][1]) :
-                                             potTargets[p][2];
+                                             (upper? potTargetsUp[p][2] : potTargets[p][2]);
         if (tgt >= 0) {
             if (a->potTarget[p] != tgt) {
                 a->potTarget[p] = tgt;
