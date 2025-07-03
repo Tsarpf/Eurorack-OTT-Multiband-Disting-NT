@@ -61,8 +61,8 @@ static const _NT_parameter params[kNumParams] = {
     /*  High band  (dB, %, dB) */
     P("Hi/DownThr", -600,   0, -100, kNT_unitDb,       kNT_scaling10),
     P("Hi/UpThr",  -600,   0, -300, kNT_unitDb,       kNT_scaling10),
-    P("Hi/DownRat", 100, 2000, 400, kNT_unitPercent,  kNT_scaling10),
-    P("Hi/UpRat",   100, 2000, 200, kNT_unitPercent,  kNT_scaling10),
+    P("Hi/DownRat", 100, 10000, 400, kNT_unitPercent,  kNT_scaling10),
+    P("Hi/UpRat",   100, 10000, 200, kNT_unitPercent,  kNT_scaling10),
     P("Hi/Makeup",  -240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Hi/Attack",     1,  5000, 135, kNT_unitMs,      kNT_scaling10),
     P("Hi/Release",   10, 20000,1320, kNT_unitMs,      kNT_scaling10),
@@ -70,8 +70,8 @@ static const _NT_parameter params[kNumParams] = {
     /*  Mid band  */
     P("Mid/DownThr", -600,   0, -100, kNT_unitDb,       kNT_scaling10),
     P("Mid/UpThr",  -600,   0, -300, kNT_unitDb,       kNT_scaling10),
-    P("Mid/DownRat", 100, 2000, 400, kNT_unitPercent,  kNT_scaling10),
-    P("Mid/UpRat",   100, 2000, 200, kNT_unitPercent,  kNT_scaling10),
+    P("Mid/DownRat", 100, 10000, 400, kNT_unitPercent,  kNT_scaling10),
+    P("Mid/UpRat",   100, 10000, 200, kNT_unitPercent,  kNT_scaling10),
     P("Mid/Makeup",  -240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Mid/Attack",     1,  5000, 224, kNT_unitMs,      kNT_scaling10),
     P("Mid/Release",   10, 20000,2820, kNT_unitMs,      kNT_scaling10),
@@ -79,8 +79,8 @@ static const _NT_parameter params[kNumParams] = {
     /*  Low band  */
     P("Low/DownThr", -600,   0, -100, kNT_unitDb,       kNT_scaling10),
     P("Low/UpThr",  -600,   0, -300, kNT_unitDb,       kNT_scaling10),
-    P("Low/DownRat", 100, 2000, 400, kNT_unitPercent,  kNT_scaling10),
-    P("Low/UpRat",   100, 2000, 200, kNT_unitPercent,  kNT_scaling10),
+    P("Low/DownRat", 100, 10000, 400, kNT_unitPercent,  kNT_scaling10),
+    P("Low/UpRat",   100, 10000, 200, kNT_unitPercent,  kNT_scaling10),
     P("Low/Makeup",  -240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Low/Attack",     1,  5000, 478, kNT_unitMs,      kNT_scaling10),
     P("Low/Release",   10, 20000,2820, kNT_unitMs,      kNT_scaling10),
