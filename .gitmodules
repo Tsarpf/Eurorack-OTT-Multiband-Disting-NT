@@ -3,4 +3,4 @@
 	url = https://github.com/grame-cncm/faust.git
 [submodule "distingnt_api"]
 	path = distingnt_api
-	url = git@github.com:expertsleepersltd/distingNT_API.git
+	url = https://github.com/expertsleepersltd/distingNT_API.git
