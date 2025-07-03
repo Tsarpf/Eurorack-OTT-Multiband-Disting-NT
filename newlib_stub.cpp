@@ -1,6 +1,7 @@
 #include <new>
 #include <cstdlib>
 #include <sys/reent.h>
+#include "newlib_heap.h"
 
 /* ───── minimal newlib re-entrancy ───── */
 static struct _reent _reent_obj;
@@ -26,9 +27,19 @@ void  operator delete[](void* p, const std::nothrow_t&) noexcept    { std::free(
 #include <cstring>
 
 /* ───── very small bump-allocator ───── */
-/* 8 kB static heap – adjust if needed */
-static uint8_t  plugHeap[8192];
-static size_t   plugBrk = 0;
+static PlugHeap* currentHeap = nullptr;
+
+extern "C" void plugHeapInit(PlugHeap* heap, void* base, size_t size)
+{
+    heap->base = static_cast<uint8_t*>(base);
+    heap->size = size;
+    heap->brk  = 0;
+}
+
+extern "C" void plugHeapUse(PlugHeap* heap)
+{
+    currentHeap = heap;
+}
 
 extern "C" {
 
@@ -36,10 +47,10 @@ void* malloc(size_t n)
 {
     /* 4-byte alignment */
     n = (n + 3u) & ~3u;
-    if (plugBrk + n > sizeof(plugHeap))
+    if (!currentHeap || currentHeap->brk + n > currentHeap->size)
         return nullptr;       // out of memory → caller must handle
-    void* p = &plugHeap[plugBrk];
-    plugBrk += n;
+    void* p = currentHeap->base + currentHeap->brk;
+    currentHeap->brk += n;
     return p;
 }
 

@@ -2,12 +2,14 @@
 
 #include <distingnt/api.h>
 #include "ott_ui.h"        // brings ParamUI, UIState
+#include "newlib_heap.h"
 
 class FaustDsp;            // defined in ott_dsp.cpp
 
 /* per-instance struct */
 struct _ottAlgorithm : public _NT_algorithm
 {
+    PlugHeap heap;
     FaustDsp* dsp = nullptr;
     ParamUI   ui;
     UIState   state;
