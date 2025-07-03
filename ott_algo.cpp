@@ -1,6 +1,7 @@
 #include "ott_structs.h"
 #include "ott_parameters.h"
 #include "ott_dsp.cpp"           // generated Faust DSP
+#include "newlib_heap.h"
 
 /*──────── requirements / construct / parameterChanged / step ───────*/
 static void calculateRequirements(_NT_algorithmRequirements& r, const int32_t*)
@@ -9,7 +10,7 @@ static void calculateRequirements(_NT_algorithmRequirements& r, const int32_t*)
     FaustDsp::fManager = &probe; FaustDsp::memoryInfo(); FaustDsp::fManager = nullptr;
     r.numParameters = kNumParams;
     r.sram = sizeof(_ottAlgorithm);
-    r.dram = probe.total;
+    r.dram = probe.total + kNewlibHeapSize;
     r.dtc  = r.itc = 0;
 }
 
@@ -19,6 +20,12 @@ static _NT_algorithm* construct(const _NT_algorithmMemoryPtrs& p,
     auto* a = new (p.sram) _ottAlgorithm();
     a->parameters     = params;
     a->parameterPages = &paramPages;
+
+    MemoryMgr probe(MemoryMgr::Probe);
+    FaustDsp::fManager = &probe;
+    FaustDsp::memoryInfo();
+    FaustDsp::fManager = nullptr;
+    plugHeapInit(p.dram + probe.total, kNewlibHeapSize);
 
     MemoryMgr alloc(MemoryMgr::Allocate);
     alloc.base = p.dram;
