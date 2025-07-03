@@ -160,14 +160,20 @@ static void step(_NT_algorithm* s, float* bus, int nfBy4)
 
 /*──────── factory / entry ───────*/
 static const _NT_factory factory = {
-    NT_MULTICHAR('O','T','T','1'), "OTT MB", "Faust multiband OTT with full UI",
-    0,nullptr,nullptr,nullptr,
-    calculateRequirements, construct,
-    parameterChanged, step, draw,
-    nullptr,nullptr,
-    kNT_tagUtility,
-    hasCustomUi, customUi, setupUi,
-    nullptr,nullptr
+    .guid = NT_MULTICHAR('O','T','T','1'),
+    .name = "OTT MB",
+    .description = "Faust multiband OTT with full UI",
+    .numSpecifications = 0, 
+    .calculateRequirements = calculateRequirements,
+    .construct = construct,
+    .parameterChanged = parameterChanged,
+    .step = step,
+    .draw = draw,
+    .tags = kNT_tagUtility,
+    .hasCustomUi = hasCustomUi,
+    .customUi = customUi,
+    .setupUi = setupUi,
+    //nullptr,nullptr
 };
 extern "C" uintptr_t pluginEntry(_NT_selector sel,uint32_t d)
 {
