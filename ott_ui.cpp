@@ -36,12 +36,16 @@ bool draw(_NT_algorithm* self)
     char lastVal[40] = {0};
     if (a->lastParam >= 0) {
         lastName = params[a->lastParam].name;
-        if (params[a->lastParam].scaling == kNT_scaling10)
+        if (params[a->lastParam].unit == kNT_unitPercent) {
+            if (params[a->lastParam].scaling == kNT_scaling10)
+                NT_floatToString(lastVal, a->lastValue * 0.01f, 1);
+            else
+                NT_floatToString(lastVal, a->lastValue * 0.01f, 2);
+        } else if (params[a->lastParam].scaling == kNT_scaling10) {
             NT_floatToString(lastVal, a->lastValue * 0.1f, 1);
-        else if (params[a->lastParam].unit == kNT_unitPercent)
-            NT_floatToString(lastVal, a->lastValue * 0.01f, 2);
-        else
+        } else {
             NT_intToString(lastVal, a->lastValue);
+        }
     }
 
     // Draw the values of the pots according to our state
