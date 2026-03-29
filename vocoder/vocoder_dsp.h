@@ -42,9 +42,15 @@ inline float vocoderMixCoeffFromSeconds(float sampleRate, float seconds) {
   return expf(-1.0f / (sampleRate * safeSeconds));
 }
 
-inline float vocoderSoftSaturate(float x) {
-  const float drive = 0.85f;
-  return tanhf(drive * x) / tanhf(drive);
+inline float vocoderTransparentLimit(float x, float threshold) {
+  const float ax = fabsf(x);
+  if (ax <= threshold) {
+    return x;
+  }
+  const float span = 1.0f - threshold;
+  const float compressed =
+      threshold + span * tanhf((ax - threshold) / (span > 1.0e-6f ? span : 1.0e-6f));
+  return x < 0.0f ? -compressed : compressed;
 }
 
 #endif // VOCODER_DSP_H

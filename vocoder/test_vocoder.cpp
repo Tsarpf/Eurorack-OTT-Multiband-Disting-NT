@@ -72,6 +72,7 @@ static HostAlgorithm makeAlgorithm() {
   host.values[kRelease] = 100;
   host.values[kEnhance] = 0;
   host.values[kWet] = 100;
+  host.values[kOutputGain] = 0;
 
   _NT_algorithmMemoryPtrs ptrs = {host.sram.data(), nullptr, host.dtc.data(),
                                   nullptr};

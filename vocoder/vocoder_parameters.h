@@ -24,6 +24,7 @@ enum {
   kRelease,
   kEnhance,
   kWet,
+  kPreGain,
 
   kNumParams
 };
@@ -31,7 +32,7 @@ enum {
 static const char *const onOffEnum[] = {"Off", "On", nullptr};
 
 static const uint8_t pageMain[] = {kBandCount, kBandWidth, kDepth, kFormant,
-                                   kWet};
+                                   kWet, kPreGain};
 static const uint8_t pageFreq[] = {kMinFreq, kMaxFreq, kEnhance};
 static const uint8_t pageEnv[] = {kAttack, kRelease};
 static const uint8_t pageRouting[] = {kInCarrier, kCarrierStereo, kInModulator,
@@ -59,7 +60,7 @@ static const _NT_parameter parameters[kNumParams] = {
     /* Controls */
     P("Bands", 4, 40, 16, kNT_unitNone, 0),
     P("Width", 0, 100, 50, kNT_unitPercent, 0),
-    P("Depth", 0, 100, 50, kNT_unitPercent, 0),
+    P("Depth", 0, 200, 100, kNT_unitPercent, 0),
     P("Formant", -240, 240, 0, kNT_unitSemitones, kNT_scaling10),
     P("Min Freq", 20, 1000, 35, kNT_unitHz, 0),
     P("Max Freq", 2000, 20000, 18000, kNT_unitHz, 0),
@@ -67,6 +68,7 @@ static const _NT_parameter parameters[kNumParams] = {
     P("Release", 10, 2000, 100, kNT_unitMs, 0),
     P("Enhance", 0, 1, 0, kNT_unitEnum, 0), // Off/On toggle
     P("Wet", 0, 100, 100, kNT_unitPercent, 0),
+    P("Pre", -600, 120, 0, kNT_unitNone, 0),
 };
 
 #undef P

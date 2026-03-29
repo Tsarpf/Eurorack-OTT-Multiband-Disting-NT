@@ -2,6 +2,7 @@
 #include "vocoder_parameters.h"
 #include "vocoder_structs.h"
 #include <distingnt/api.h>
+#include <distingnt/serialisation.h>
 #include <new>
 #include <string.h>
 
@@ -31,13 +32,41 @@ static float computeBandwidthCompensation(int bandCount, float bandwidthPct) {
   return vocoderLerp(t8, t40, mix);
 }
 
-static float computeDepthGain(float depthPct, float envNorm) {
-  const float depthD = vocoderClamp(depthPct / 100.0f, 0.0f, 1.0f) * 2.0f;
+static float computeDepthGain(float depthPct, float envAmplitude,
+                              float envNorm) {
+  const float depthControl = vocoderClamp(depthPct / 100.0f, 0.0f, 2.0f);
+  const float depthMix = vocoderClamp(depthControl, 0.0f, 1.0f);
+  const float presence = vocoderClamp(envAmplitude * 5.0f, 0.0f, 1.0f);
   const float clampedEnv = vocoderClamp(envNorm, 0.25f, 4.0f);
-  if (depthD <= 1.0f) {
-    return (1.0f - depthD) + depthD * clampedEnv;
+  const float classicShape = presence * clampedEnv;
+  if (depthControl <= 1.0f) {
+    return vocoderLerp(1.0f, classicShape, depthMix);
   }
-  return powf(clampedEnv, 1.0f + 1.5f * (depthD - 1.0f));
+
+  const float peakShape =
+      presence * powf(clampedEnv, 1.0f + 1.5f * (depthControl - 1.0f));
+  return peakShape;
+}
+
+static VocoderDepthShape computeDepthShape(float depthPct) {
+  VocoderDepthShape shape = {};
+  shape.depthControl = vocoderClamp(depthPct / 100.0f, 0.0f, 2.0f);
+  shape.depthMix = vocoderClamp(shape.depthControl, 0.0f, 1.0f);
+  shape.peakMode = shape.depthControl > 1.0f;
+  shape.peakExponent = 1.0f + 1.5f * (shape.depthControl - 1.0f);
+  return shape;
+}
+
+static float computeDepthGain(const VocoderDepthShape &shape,
+                              float envAmplitude, float envNorm) {
+  const float presence = vocoderClamp(envAmplitude * 5.0f, 0.0f, 1.0f);
+  const float clampedEnv = vocoderClamp(envNorm, 0.25f, 4.0f);
+  if (!shape.peakMode) {
+    const float classicShape = presence * clampedEnv;
+    return vocoderLerp(1.0f, classicShape, shape.depthMix);
+  }
+
+  return presence * powf(clampedEnv, shape.peakExponent);
 }
 
 static void clearDescriptor(VocoderDescriptor &descriptor) {
@@ -49,6 +78,17 @@ static void clearDescriptor(VocoderDescriptor &descriptor) {
 }
 
 static void clearState(VocoderDSPState &state) { memset(&state, 0, sizeof(state)); }
+
+static void syncSynthesisCoefficients(_vocoderAlgorithm *a) {
+  VocoderDescriptor &d = *a->descriptor;
+  VocoderDSPState &s = *a->state;
+  for (int band = 0; band < kVocoderMaxBands; ++band) {
+    s.sy_b0_current[band] = d.sy_b0[band];
+    s.sy_b2_current[band] = d.sy_b2[band];
+    s.sy_a1_current[band] = d.sy_a1[band];
+    s.sy_a2_current[band] = d.sy_a2[band];
+  }
+}
 
 static void rebuildDescriptor(_vocoderAlgorithm *a) {
   VocoderDescriptor &d = *a->descriptor;
@@ -112,6 +152,12 @@ static _NT_algorithm *construct(const _NT_algorithmMemoryPtrs &ptrs,
 
   clearDescriptor(*a->descriptor);
   clearState(*a->state);
+  a->state->wetMakeup[0] = 1.0f;
+  a->state->wetMakeup[1] = 1.0f;
+  a->state->inputGuard[0] = 1.0f;
+  a->state->inputGuard[1] = 1.0f;
+  a->state->outputGuard[0] = 1.0f;
+  a->state->outputGuard[1] = 1.0f;
 
   a->controls.currentBandwidth = 50.0f;
   a->controls.targetBandwidth = 50.0f;
@@ -119,7 +165,12 @@ static _NT_algorithm *construct(const _NT_algorithmMemoryPtrs &ptrs,
   a->controls.targetFormant = 0.0f;
   a->controls.currentWet = 100.0f;
   a->controls.targetWet = 100.0f;
+  a->controls.currentOutputGainDb = 0.0f;
+  a->controls.targetOutputGainDb = 0.0f;
+  a->uiWetDisplay = 100;
+  a->uiOutputGainDisplay = 0;
   a->controls.descriptorDirty = true;
+  a->controls.synthesisCoeffSmoothing = true;
   return a;
 }
 
@@ -136,6 +187,11 @@ static void parameterChanged(_NT_algorithm *self, int parameter) {
     break;
   case kWet:
     a->controls.targetWet = (float)self->v[kWet];
+    a->uiWetDisplay = self->v[kWet];
+    break;
+  case kPreGain:
+    a->uiOutputGainDisplay = self->v[kPreGain];
+    a->controls.targetOutputGainDb = self->v[kPreGain] * 0.1f;
     break;
   case kBandCount:
   case kMinFreq:
@@ -165,9 +221,18 @@ static void updateControlState(_vocoderAlgorithm *a) {
   a->controls.currentWet =
       vocoderSmoothToward(a->controls.currentWet, a->controls.targetWet,
                           kControlSmoothing);
+  a->controls.currentOutputGainDb =
+      vocoderSmoothToward(a->controls.currentOutputGainDb,
+                          a->controls.targetOutputGainDb, kControlSmoothing);
 
   if (a->controls.descriptorDirty || movingBandwidth || movingFormant) {
     rebuildDescriptor(a);
+    if (movingBandwidth || movingFormant) {
+      a->controls.synthesisCoeffSmoothing = true;
+    } else {
+      syncSynthesisCoefficients(a);
+      a->controls.synthesisCoeffSmoothing = false;
+    }
     a->controls.descriptorDirty = movingBandwidth || movingFormant;
   }
 }
@@ -178,6 +243,10 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
 
   const int N = nfBy4 * 4;
   const float wet = vocoderClamp(a->controls.currentWet / 100.0f, 0.0f, 1.0f);
+  const float preGainLinear =
+      a->uiOutputGainDisplay <= -600
+          ? 0.0f
+          : powf(10.0f, a->controls.currentOutputGainDb / 20.0f);
   const bool carrierStereo = self->v[kCarrierStereo] > 0;
   const bool modulatorStereo = self->v[kModulatorStereo] > 0;
   const bool stereoOutput = carrierStereo || modulatorStereo;
@@ -234,23 +303,65 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
       vocoderMixCoeffFromSeconds(sampleRate, 0.01f);
   const float carrierAvgFallMix =
       vocoderMixCoeffFromSeconds(sampleRate, 0.08f);
+  const float synthesisCoeffMix =
+      vocoderMixCoeffFromSeconds(sampleRate, 0.0015f);
   const float gainRiseMix = vocoderMixCoeffFromSeconds(sampleRate, 0.0015f);
   const float gainFallMix = vocoderMixCoeffFromSeconds(sampleRate, 0.005f);
-  const float masterScale = 1.4f / sqrtf((float)a->activeBands);
+  const float masterScale = 8.0f / sqrtf((float)a->activeBands);
+  const float levelAvgRiseMix = vocoderMixCoeffFromSeconds(sampleRate, 0.01f);
+  const float levelAvgFallMix = vocoderMixCoeffFromSeconds(sampleRate, 0.12f);
+  const float makeupRiseMix = vocoderMixCoeffFromSeconds(sampleRate, 0.05f);
+  const float makeupFallMix = vocoderMixCoeffFromSeconds(sampleRate, 0.008f);
+  const float inputGuardAttackMix =
+      vocoderMixCoeffFromSeconds(sampleRate, 0.00035f);
+  const float inputGuardReleaseMix =
+      vocoderMixCoeffFromSeconds(sampleRate, 0.04f);
+  const float inputGuardCeiling = 4.5f;
+  const float guardAttackMix = vocoderMixCoeffFromSeconds(sampleRate, 0.0005f);
+  const float guardReleaseMix = vocoderMixCoeffFromSeconds(sampleRate, 0.05f);
+  const float guardCeiling = 5.5f;
+  const VocoderDepthShape depthShape =
+      computeDepthShape((float)self->v[kDepth]);
   VocoderDescriptor &d = *a->descriptor;
   VocoderDSPState &s = *a->state;
+  float *sy_b0 = a->controls.synthesisCoeffSmoothing ? s.sy_b0_current : d.sy_b0;
+  float *sy_b2 = a->controls.synthesisCoeffSmoothing ? s.sy_b2_current : d.sy_b2;
+  float *sy_a1 = a->controls.synthesisCoeffSmoothing ? s.sy_a1_current : d.sy_a1;
+  float *sy_a2 = a->controls.synthesisCoeffSmoothing ? s.sy_a2_current : d.sy_a2;
 
   for (int i = 0; i < N; ++i) {
     float wetSample[2] = {0.0f, 0.0f};
-    float meterMax[kVocoderMaxBands] = {0.0f};
+    float carrierSample[2] = {0.0f, 0.0f};
+    float modSample[2] = {0.0f, 0.0f};
 
     const int channels = stereoOutput ? 2 : 1;
     for (int ch = 0; ch < channels; ++ch) {
-      const float carrierSample = ch == 0 ? carL[i] : carR[i];
-      const float modSample = ch == 0 ? modL[i] : modR[i];
+      const float rawCarrierSample = ch == 0 ? carL[i] : carR[i];
+      const float rawModSample = ch == 0 ? modL[i] : modR[i];
+      const float drivenCarrierSample = rawCarrierSample * preGainLinear;
+      const float drivenModSample = rawModSample * preGainLinear;
+      const float inputPeak = fabsf(drivenCarrierSample) > fabsf(drivenModSample)
+                                  ? fabsf(drivenCarrierSample)
+                                  : fabsf(drivenModSample);
+      const float targetInputGuard = vocoderClamp(
+          inputGuardCeiling / (inputPeak + 1.0e-3f), 0.0f, 1.0f);
+      const float inputGuardMix =
+          targetInputGuard < s.inputGuard[ch] ? inputGuardAttackMix
+                                              : inputGuardReleaseMix;
+      s.inputGuard[ch] =
+          inputGuardMix * s.inputGuard[ch] +
+          (1.0f - inputGuardMix) * targetInputGuard;
+      if (s.inputGuard[ch] <= 0.0f) {
+        s.inputGuard[ch] = 1.0f;
+      }
+      carrierSample[ch] = drivenCarrierSample * s.inputGuard[ch];
+      modSample[ch] = drivenModSample * s.inputGuard[ch];
+    }
 
-      for (int band = 0; band < a->activeBands; ++band) {
-        const float ya = d.an_b0[band] * modSample +
+    for (int band = 0; band < a->activeBands; ++band) {
+      float meterPeak = 0.0f;
+      for (int ch = 0; ch < channels; ++ch) {
+        const float ya = d.an_b0[band] * modSample[ch] +
                          d.an_b2[band] * s.mod_x2[ch] -
                          d.an_a1[band] * s.an_y1[ch][band] -
                          d.an_a2[band] * s.an_y2[ch][band];
@@ -269,13 +380,25 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
                            (1.0f - envAvgMix) * envAmplitude;
         const float envNorm =
             envAmplitude / (s.eAvg[ch][band] + kVocoderEpsilon);
-        const float rawBandGain = vocoderClamp(
-            computeDepthGain((float)self->v[kDepth], envNorm), 0.0f, 8.0f);
+        const float rawBandGain =
+            vocoderClamp(computeDepthGain(depthShape, envAmplitude, envNorm),
+                         0.0f, 8.0f);
 
-        const float ys = d.sy_b0[band] * carrierSample +
-                         d.sy_b2[band] * s.car_x2[ch] -
-                         d.sy_a1[band] * s.sy_y1[ch][band] -
-                         d.sy_a2[band] * s.sy_y2[ch][band];
+        if (a->controls.synthesisCoeffSmoothing) {
+          sy_b0[band] =
+              synthesisCoeffMix * sy_b0[band] + (1.0f - synthesisCoeffMix) * d.sy_b0[band];
+          sy_b2[band] =
+              synthesisCoeffMix * sy_b2[band] + (1.0f - synthesisCoeffMix) * d.sy_b2[band];
+          sy_a1[band] =
+              synthesisCoeffMix * sy_a1[band] + (1.0f - synthesisCoeffMix) * d.sy_a1[band];
+          sy_a2[band] =
+              synthesisCoeffMix * sy_a2[band] + (1.0f - synthesisCoeffMix) * d.sy_a2[band];
+        }
+
+        const float ys = sy_b0[band] * carrierSample[ch] +
+                         sy_b2[band] * s.car_x2[ch] -
+                         sy_a1[band] * s.sy_y1[ch][band] -
+                         sy_a2[band] * s.sy_y2[ch][band];
         s.sy_y2[ch][band] = s.sy_y1[ch][band];
         s.sy_y1[ch][band] = ys;
 
@@ -301,30 +424,61 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
         s.gainState[ch][band] =
             gainMix * s.gainState[ch][band] + (1.0f - gainMix) * targetGain;
 
-        wetSample[ch] += ys * s.gainState[ch][band];
-        if (s.gainState[ch][band] > meterMax[band]) {
-          meterMax[band] = s.gainState[ch][band];
+        const float bandWet = ys * s.gainState[ch][band];
+        wetSample[ch] += bandWet;
+        const float bandLevel = fabsf(bandWet);
+        if (bandLevel > meterPeak) {
+          meterPeak = bandLevel;
         }
       }
 
+      s.meters[band] = vocoderSmoothToward(
+          s.meters[band], vocoderClamp(2.5f * meterPeak, 0.0f, 1.0f), 0.18f);
+    }
+
+    for (int ch = 0; ch < channels; ++ch) {
       s.mod_x2[ch] = s.mod_x1[ch];
-      s.mod_x1[ch] = modSample;
+      s.mod_x1[ch] = modSample[ch];
       s.car_x2[ch] = s.car_x1[ch];
-      s.car_x1[ch] = carrierSample;
+      s.car_x1[ch] = carrierSample[ch];
     }
 
     for (int band = a->activeBands; band < kVocoderMaxBands; ++band) {
       s.meters[band] = vocoderSmoothToward(s.meters[band], 0.0f, 0.18f);
     }
 
-    for (int band = 0; band < a->activeBands; ++band) {
-      s.meters[band] = vocoderSmoothToward(
-          s.meters[band], vocoderClamp(0.25f * meterMax[band], 0.0f, 1.0f),
-          0.18f);
-    }
-
     const float shapedL = wetSample[0] * masterScale * d.bandwidthCompensation;
-    const float limitedWetL = vocoderSoftSaturate(shapedL);
+    const float dryLevelL = fabsf(carL[i]);
+    const float wetLevelL = fabsf(shapedL);
+    const float dryAvgMixL =
+        dryLevelL > s.dryAvg[0] ? levelAvgRiseMix : levelAvgFallMix;
+    const float wetAvgMixL =
+        wetLevelL > s.wetAvg[0] ? levelAvgRiseMix : levelAvgFallMix;
+    s.dryAvg[0] =
+        dryAvgMixL * s.dryAvg[0] + (1.0f - dryAvgMixL) * dryLevelL;
+    s.wetAvg[0] =
+        wetAvgMixL * s.wetAvg[0] + (1.0f - wetAvgMixL) * wetLevelL;
+    const float targetMakeupL = vocoderClamp(
+        1.35f * (s.dryAvg[0] + 0.01f) / (s.wetAvg[0] + 0.01f), 1.0f, 6.0f);
+    const float makeupMixL =
+        targetMakeupL < s.wetMakeup[0] ? makeupFallMix : makeupRiseMix;
+    s.wetMakeup[0] =
+        makeupMixL * s.wetMakeup[0] + (1.0f - makeupMixL) * targetMakeupL;
+    if (s.wetMakeup[0] < 1.0f) {
+      s.wetMakeup[0] = 1.0f;
+    }
+    const float matchedWetL = shapedL * s.wetMakeup[0];
+    const float targetGuardL =
+        vocoderClamp(guardCeiling / (fabsf(matchedWetL) + 1.0e-3f), 0.0f, 1.0f);
+    const float guardMixL =
+        targetGuardL < s.outputGuard[0] ? guardAttackMix : guardReleaseMix;
+    s.outputGuard[0] =
+        guardMixL * s.outputGuard[0] + (1.0f - guardMixL) * targetGuardL;
+    if (s.outputGuard[0] <= 0.0f) {
+      s.outputGuard[0] = 1.0f;
+    }
+    const float guardedWetL = matchedWetL * s.outputGuard[0];
+    const float limitedWetL = vocoderTransparentLimit(guardedWetL, 9.0f);
     const float mixedL = carL[i] * (1.0f - wet) + limitedWetL * wet;
 
     if (replace) {
@@ -336,7 +490,37 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
     if (stereoOutput) {
       const float shapedR =
           wetSample[1] * masterScale * d.bandwidthCompensation;
-      const float limitedWetR = vocoderSoftSaturate(shapedR);
+      const float dryLevelR = fabsf(carR[i]);
+      const float wetLevelR = fabsf(shapedR);
+      const float dryAvgMixR =
+          dryLevelR > s.dryAvg[1] ? levelAvgRiseMix : levelAvgFallMix;
+      const float wetAvgMixR =
+          wetLevelR > s.wetAvg[1] ? levelAvgRiseMix : levelAvgFallMix;
+      s.dryAvg[1] =
+          dryAvgMixR * s.dryAvg[1] + (1.0f - dryAvgMixR) * dryLevelR;
+      s.wetAvg[1] =
+          wetAvgMixR * s.wetAvg[1] + (1.0f - wetAvgMixR) * wetLevelR;
+      const float targetMakeupR = vocoderClamp(
+          1.35f * (s.dryAvg[1] + 0.01f) / (s.wetAvg[1] + 0.01f), 1.0f, 6.0f);
+      const float makeupMixR =
+          targetMakeupR < s.wetMakeup[1] ? makeupFallMix : makeupRiseMix;
+      s.wetMakeup[1] =
+          makeupMixR * s.wetMakeup[1] + (1.0f - makeupMixR) * targetMakeupR;
+      if (s.wetMakeup[1] < 1.0f) {
+        s.wetMakeup[1] = 1.0f;
+      }
+      const float matchedWetR = shapedR * s.wetMakeup[1];
+      const float targetGuardR =
+          vocoderClamp(guardCeiling / (fabsf(matchedWetR) + 1.0e-3f), 0.0f, 1.0f);
+      const float guardMixR =
+          targetGuardR < s.outputGuard[1] ? guardAttackMix : guardReleaseMix;
+      s.outputGuard[1] =
+          guardMixR * s.outputGuard[1] + (1.0f - guardMixR) * targetGuardR;
+      if (s.outputGuard[1] <= 0.0f) {
+        s.outputGuard[1] = 1.0f;
+      }
+      const float guardedWetR = matchedWetR * s.outputGuard[1];
+      const float limitedWetR = vocoderTransparentLimit(guardedWetR, 9.0f);
       const float mixedR = carR[i] * (1.0f - wet) + limitedWetR * wet;
       if (replace) {
         outR[i] = mixedR;
@@ -345,6 +529,63 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
       }
     }
   }
+
+  if (a->controls.synthesisCoeffSmoothing) {
+    float maxCoeffDelta = 0.0f;
+    for (int band = 0; band < a->activeBands; ++band) {
+      float delta = fabsf(s.sy_b0_current[band] - d.sy_b0[band]);
+      if (fabsf(s.sy_b2_current[band] - d.sy_b2[band]) > delta) {
+        delta = fabsf(s.sy_b2_current[band] - d.sy_b2[band]);
+      }
+      if (fabsf(s.sy_a1_current[band] - d.sy_a1[band]) > delta) {
+        delta = fabsf(s.sy_a1_current[band] - d.sy_a1[band]);
+      }
+      if (fabsf(s.sy_a2_current[band] - d.sy_a2[band]) > delta) {
+        delta = fabsf(s.sy_a2_current[band] - d.sy_a2[band]);
+      }
+      if (delta > maxCoeffDelta) {
+        maxCoeffDelta = delta;
+      }
+    }
+
+    if (maxCoeffDelta < 1.0e-4f) {
+      syncSynthesisCoefficients(a);
+      a->controls.synthesisCoeffSmoothing = false;
+    }
+  }
+}
+
+static void serialise(_NT_algorithm *self, _NT_jsonStream &stream) {
+  auto *a = (_vocoderAlgorithm *)self;
+  stream.addMemberName("pre_gain_tenths");
+  stream.addNumber(a->uiOutputGainDisplay);
+}
+
+static bool deserialise(_NT_algorithm *self, _NT_jsonParse &parse) {
+  auto *a = (_vocoderAlgorithm *)self;
+  int numMembers = 0;
+  if (!parse.numberOfObjectMembers(numMembers)) {
+    return false;
+  }
+
+  for (int i = 0; i < numMembers; ++i) {
+    if (parse.matchName("pre_gain_tenths")) {
+      int gain = 0;
+      if (!parse.number(gain)) {
+        return false;
+      }
+      gain = gain < -600 ? -600 : (gain > 120 ? 120 : gain);
+      a->uiOutputGainDisplay = gain;
+      a->controls.currentOutputGainDb = gain * 0.1f;
+      a->controls.targetOutputGainDb = gain * 0.1f;
+    } else {
+      if (!parse.skipMember()) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 static const _NT_factory factory = {
@@ -361,6 +602,8 @@ static const _NT_factory factory = {
     .hasCustomUi = hasCustomUi,
     .customUi = customUi,
     .setupUi = setupUi,
+    .serialise = serialise,
+    .deserialise = deserialise,
 };
 
 extern "C" uintptr_t pluginEntry(_NT_selector sel, uint32_t d) {

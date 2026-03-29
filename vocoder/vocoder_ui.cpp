@@ -10,12 +10,30 @@ static int mapMeterToHeight(float value) {
   return (int)(clamped * 30.0f);
 }
 
+static int roundTenths(float value) {
+  return (int)(value >= 0.0f ? value + 0.5f : value - 0.5f);
+}
+
+static void formatOutputGain(char *buf, size_t bufSize, int valueTenthsDb) {
+  if (valueTenthsDb <= -600) {
+    snprintf(buf, bufSize, "-inf");
+  } else if ((valueTenthsDb % 10) == 0) {
+    snprintf(buf, bufSize, "%+d", valueTenthsDb / 10);
+  } else {
+    const char sign = valueTenthsDb < 0 ? '-' : '+';
+    const int absTenths = valueTenthsDb < 0 ? -valueTenthsDb : valueTenthsDb;
+    snprintf(buf, bufSize, "%c%d.%1d", sign, absTenths / 10, absTenths % 10);
+  }
+}
+
 void setupUi(_NT_algorithm *self, _NT_float3 &pots) {
   auto *a = (_vocoderAlgorithm *)self;
   pots[0] = vocoderClamp((float)a->v[kBandWidth] / 100.0f, 0.0f, 1.0f);
-  pots[1] = vocoderClamp((float)a->v[kDepth] / 100.0f, 0.0f, 1.0f);
+  pots[1] = vocoderClamp((float)a->v[kDepth] / 200.0f, 0.0f, 1.0f);
   pots[2] =
       vocoderClamp(((float)a->v[kFormant] + 240.0f) / 480.0f, 0.0f, 1.0f);
+  a->uiWetDisplay = a->v[kWet];
+  a->uiOutputGainDisplay = a->v[kPreGain];
 }
 
 bool draw(_NT_algorithm *self) {
@@ -62,34 +80,45 @@ bool draw(_NT_algorithm *self) {
   }
 
   snprintf(buf, sizeof(buf), "BANDS %d", a->activeBands);
-  NT_drawText(64, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
+  NT_drawText(46, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
 
-  snprintf(buf, sizeof(buf), "WET %d%%", (int)a->v[kWet]);
-  NT_drawText(192, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
+  snprintf(buf, sizeof(buf), "WET %d%%", a->uiWetDisplay);
+  NT_drawText(136, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
+
+  snprintf(buf, sizeof(buf), "GAIN %d", a->uiOutputGainDisplay);
+  NT_drawText(220, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
+
+  if (a->rightEncoderControlsGain) {
+    NT_drawShapeI(kNT_line, 184, 63, 252, 63, 15);
+  } else {
+    NT_drawShapeI(kNT_line, 104, 63, 168, 63, 15);
+  }
 
   return true;
 }
 
 uint32_t hasCustomUi(_NT_algorithm *) {
-  return kNT_potL | kNT_potC | kNT_potR | kNT_encoderL | kNT_encoderR;
+  return kNT_potL | kNT_potC | kNT_potR | kNT_encoderL | kNT_encoderR |
+         kNT_encoderButtonR;
 }
 
 void customUi(_NT_algorithm *self, const _NT_uiData &data) {
   auto *a = (_vocoderAlgorithm *)self;
 
   if (data.controls & kNT_potL) {
+    const int value = (int)(data.pots[0] * 100.0f);
     NT_setParameterFromUi(NT_algorithmIndex(self),
-                          kBandWidth + NT_parameterOffset(),
-                          (int)(data.pots[0] * 100.0f));
+                          kBandWidth + NT_parameterOffset(), value);
   }
   if (data.controls & kNT_potC) {
+    const int value = (int)(data.pots[1] * 200.0f);
     NT_setParameterFromUi(NT_algorithmIndex(self), kDepth + NT_parameterOffset(),
-                          (int)(data.pots[1] * 100.0f));
+                          value);
   }
   if (data.controls & kNT_potR) {
+    const int value = (int)(data.pots[2] * 480.0f - 240.0f);
     NT_setParameterFromUi(NT_algorithmIndex(self),
-                          kFormant + NT_parameterOffset(),
-                          (int)(data.pots[2] * 480.0f - 240.0f));
+                          kFormant + NT_parameterOffset(), value);
   }
 
   if (data.encoders[0]) {
@@ -99,10 +128,25 @@ void customUi(_NT_algorithm *self, const _NT_uiData &data) {
                           kBandCount + NT_parameterOffset(), bandCount);
   }
 
+  if ((data.controls & kNT_encoderButtonR) &&
+      !(data.lastButtons & kNT_encoderButtonR)) {
+    a->rightEncoderControlsGain = !a->rightEncoderControlsGain;
+  }
+
   if (data.encoders[1]) {
-    int wet = a->v[kWet] + data.encoders[1] * 5;
-    wet = wet < 0 ? 0 : (wet > 100 ? 100 : wet);
-    NT_setParameterFromUi(NT_algorithmIndex(self), kWet + NT_parameterOffset(),
-                          wet);
+    if (a->rightEncoderControlsGain) {
+      int gain = a->uiOutputGainDisplay + data.encoders[1] * 5;
+      gain = gain < -600 ? -600 : (gain > 120 ? 120 : gain);
+      a->uiOutputGainDisplay = gain;
+      a->controls.targetOutputGainDb = gain * 0.1f;
+      NT_setParameterFromUi(NT_algorithmIndex(self),
+                            kPreGain + NT_parameterOffset(), gain);
+    } else {
+      int wet = a->uiWetDisplay + data.encoders[1] * 5;
+      wet = wet < 0 ? 0 : (wet > 100 ? 100 : wet);
+      a->uiWetDisplay = wet;
+      NT_setParameterFromUi(NT_algorithmIndex(self),
+                            kWet + NT_parameterOffset(), wet);
+    }
   }
 }

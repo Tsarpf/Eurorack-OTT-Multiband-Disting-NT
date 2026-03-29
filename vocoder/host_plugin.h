@@ -63,6 +63,7 @@ inline HostAlgorithm makeHostAlgorithm() {
   host.values[kRelease] = 120;
   host.values[kEnhance] = 1;
   host.values[kWet] = 100;
+  host.values[kOutputGain] = 0;
 
   _NT_algorithmMemoryPtrs ptrs = {host.sram.data(), nullptr, host.dtc.data(),
                                   nullptr};
