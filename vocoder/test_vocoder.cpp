@@ -1,4 +1,5 @@
 #include "../distingnt_api/include/distingnt/api.h"
+#include "../distingnt_api/include/distingnt/serialisation.h"
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -19,6 +20,17 @@ void NT_setParameterFromUi(int, int, int) {}
 int NT_algorithmIndex(_NT_algorithm *) { return 0; }
 uint32_t NT_parameterOffset(void) { return 0; }
 uint32_t NT_getCpuCycleCount(void) { return 0; }
+
+void _NT_jsonStream::addMemberName(const char *) {}
+void _NT_jsonStream::addNumber(int) {}
+void _NT_jsonStream::addNumber(float) {}
+bool _NT_jsonParse::numberOfObjectMembers(int &num) {
+  num = 0;
+  return true;
+}
+bool _NT_jsonParse::matchName(const char *) { return false; }
+bool _NT_jsonParse::number(int &) { return false; }
+bool _NT_jsonParse::skipMember(void) { return true; }
 
 bool draw(_NT_algorithm *) { return false; }
 uint32_t hasCustomUi(_NT_algorithm *) { return 0; }
@@ -66,13 +78,13 @@ static HostAlgorithm makeAlgorithm() {
   host.values[kBandWidth] = 50;
   host.values[kDepth] = 50;
   host.values[kFormant] = 0;
-  host.values[kMinFreq] = 35;
+  host.values[kMinFreq] = 40;
   host.values[kMaxFreq] = 18000;
   host.values[kAttack] = 10;
   host.values[kRelease] = 100;
   host.values[kEnhance] = 0;
   host.values[kWet] = 100;
-  host.values[kOutputGain] = 0;
+  host.values[kPreGain] = 0;
 
   _NT_algorithmMemoryPtrs ptrs = {host.sram.data(), nullptr, host.dtc.data(),
                                   nullptr};
@@ -147,7 +159,7 @@ static void testDescriptorLayout() {
   rebuildDescriptor(algo);
 
   require(algo->descriptor->activeBands == 8, "descriptor active band count");
-  require(nearlyEqual(algo->descriptor->analysisFreq[0], 35.0f, 0.01f),
+  require(nearlyEqual(algo->descriptor->analysisFreq[0], 40.0f, 0.01f),
           "first band frequency");
   require(nearlyEqual(algo->descriptor->analysisFreq[7], 18000.0f, 1.0f),
           "last band frequency");

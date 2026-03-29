@@ -57,13 +57,13 @@ inline HostAlgorithm makeHostAlgorithm() {
   host.values[kBandWidth] = 50;
   host.values[kDepth] = 70;
   host.values[kFormant] = 0;
-  host.values[kMinFreq] = 35;
+  host.values[kMinFreq] = 40;
   host.values[kMaxFreq] = 18000;
   host.values[kAttack] = 10;
   host.values[kRelease] = 120;
   host.values[kEnhance] = 1;
   host.values[kWet] = 100;
-  host.values[kOutputGain] = 0;
+  host.values[kPreGain] = 0;
 
   _NT_algorithmMemoryPtrs ptrs = {host.sram.data(), nullptr, host.dtc.data(),
                                   nullptr};

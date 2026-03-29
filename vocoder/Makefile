@@ -28,11 +28,8 @@ all: build
 
 build: $(PLUGIN).o
 
-$(OBJDIR)/.dir:
-	mkdir -p $(OBJDIR)
-	touch $@
-
-$(OBJDIR)/%.o: %.cpp | $(OBJDIR)/.dir
+$(OBJDIR)/%.o: %.cpp
+	@mkdir -p $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(PLUGIN).o: $(OBJS)

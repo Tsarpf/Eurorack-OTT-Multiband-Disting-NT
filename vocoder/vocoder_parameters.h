@@ -62,7 +62,7 @@ static const _NT_parameter parameters[kNumParams] = {
     P("Width", 0, 100, 50, kNT_unitPercent, 0),
     P("Depth", 0, 200, 100, kNT_unitPercent, 0),
     P("Formant", -240, 240, 0, kNT_unitSemitones, kNT_scaling10),
-    P("Min Freq", 20, 1000, 35, kNT_unitHz, 0),
+    P("Min Freq", 40, 1000, 40, kNT_unitHz, 0),
     P("Max Freq", 2000, 20000, 18000, kNT_unitHz, 0),
     P("Attack", 1, 500, 10, kNT_unitMs, 0),
     P("Release", 10, 2000, 100, kNT_unitMs, 0),

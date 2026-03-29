@@ -47,10 +47,25 @@ inline float vocoderTransparentLimit(float x, float threshold) {
   if (ax <= threshold) {
     return x;
   }
-  const float span = 1.0f - threshold;
-  const float compressed =
-      threshold + span * tanhf((ax - threshold) / (span > 1.0e-6f ? span : 1.0e-6f));
+  const float knee = threshold > 1.0f ? 1.0f : (1.0f - threshold);
+  const float safeKnee = knee > 1.0e-6f ? knee : 1.0e-6f;
+  const float compressed = threshold + safeKnee * tanhf((ax - threshold) / safeKnee);
   return x < 0.0f ? -compressed : compressed;
+}
+
+inline float vocoderSoftKneeCompress(float x, float knee, float ratio) {
+  if (x <= knee) {
+    return x;
+  }
+  const float safeRatio = ratio < 1.0f ? 1.0f : ratio;
+  return knee + (x - knee) / safeRatio;
+}
+
+inline float vocoderDcBlock(float x, float &x1, float &y1, float r) {
+  const float y = x - x1 + r * y1;
+  x1 = x;
+  y1 = y;
+  return y;
 }
 
 #endif // VOCODER_DSP_H

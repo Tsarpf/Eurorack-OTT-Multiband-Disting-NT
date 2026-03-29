@@ -34,13 +34,20 @@ struct VocoderDSPState {
   float an_y2[2][kVocoderMaxBands];
   float sy_y1[2][kVocoderMaxBands];
   float sy_y2[2][kVocoderMaxBands];
+  float prev_sy_y1[2][kVocoderMaxBands];
+  float prev_sy_y2[2][kVocoderMaxBands];
   float sy_b0_current[kVocoderMaxBands];
   float sy_b2_current[kVocoderMaxBands];
   float sy_a1_current[kVocoderMaxBands];
   float sy_a2_current[kVocoderMaxBands];
+  float prev_sy_b0[kVocoderMaxBands];
+  float prev_sy_b2[kVocoderMaxBands];
+  float prev_sy_a1[kVocoderMaxBands];
+  float prev_sy_a2[kVocoderMaxBands];
   float env[2][kVocoderMaxBands];
   float eAvg[2][kVocoderMaxBands];
   float cAvg[2][kVocoderMaxBands];
+  float gainTarget[2][kVocoderMaxBands];
   float gainState[2][kVocoderMaxBands];
   float meters[kVocoderMaxBands];
   float dryAvg[2];
@@ -52,6 +59,14 @@ struct VocoderDSPState {
   float mod_x2[2];
   float car_x1[2];
   float car_x2[2];
+  float carrierDcX1[2];
+  float carrierDcY1[2];
+  float modDcX1[2];
+  float modDcY1[2];
+  int prevActiveBands;
+  int synthesisXfadeRemaining;
+  int synthesisXfadeTotal;
+  int controlPhase;
 };
 
 struct VocoderControlState {
