@@ -1,0 +1,455 @@
+#!/usr/bin/env python3
+
+import argparse
+import sys
+import time
+from pathlib import Path, PurePath
+
+import mido
+
+EXPERT_SLEEPERS_HEADER = [0xF0, 0x00, 0x21, 0x27, 0x6D]
+
+K_OP_DOWNLOAD = 2
+K_OP_UPLOAD = 4
+K_OP_LISTING = 1
+K_OP_DELETE = 3
+K_OP_RENAME = 5
+K_OP_RESCAN = 8
+K_OP_REMOUNT = 6
+K_OP_NEW_FOLDER = 7
+
+VOCODER_GUID = b"VOC2"
+# SysEx parameter lists include the common bypass parameter at index 0.
+VOCODER_PARAM_BAND_COUNT = 7
+
+
+def pack_u16(value: int) -> list[int]:
+    value &= 0xFFFF
+    return [(value >> 14) & 0x03, (value >> 7) & 0x7F, value & 0x7F]
+
+
+def unpack_u16(data: list[int]) -> int:
+    if len(data) == 1:
+        return data[0]
+    if len(data) == 2:
+        return (data[0] << 7) | data[1]
+    return (data[0] << 14) | (data[1] << 7) | data[2]
+
+
+def pack_u35(value: int) -> list[int]:
+    return [
+        0,
+        0,
+        0,
+        0,
+        0,
+        (value >> 28) & 0x0F,
+        (value >> 21) & 0x7F,
+        (value >> 14) & 0x7F,
+        (value >> 7) & 0x7F,
+        value & 0x7F,
+    ]
+
+
+def decode_nibble_bytes(data: list[int]) -> bytes:
+    out = bytearray()
+    for i in range(0, len(data), 2):
+        out.append(((data[i] & 0x0F) << 4) | (data[i + 1] & 0x0F))
+    return bytes(out)
+
+
+def add_checksum(arr: list[int]) -> None:
+    total = 0
+    for byte in arr[7:]:
+        total += byte
+    arr.append((-total) & 0x7F)
+
+
+def make_message(sys_ex_id: int, opcode: int, payload: list[int] | None = None,
+                 checksum: bool = False) -> mido.Message:
+    arr = EXPERT_SLEEPERS_HEADER + [sys_ex_id, opcode]
+    if payload:
+        arr.extend(payload)
+    if checksum:
+        add_checksum(arr)
+    arr.append(0xF7)
+    return mido.Message.from_bytes(arr)
+
+
+class DistingClient:
+    def __init__(self, sys_ex_id: int, port_hint: str = "disting NT", timeout: float = 2.0):
+        self.sys_ex_id = sys_ex_id
+        self.timeout = timeout
+        outputs = mido.get_output_names()
+        inputs = mido.get_input_names()
+        try:
+            out_name = next(name for name in outputs if port_hint in name)
+            in_name = next(name for name in inputs if port_hint in name)
+        except StopIteration as exc:
+            raise RuntimeError(f"Could not find MIDI ports matching {port_hint!r}") from exc
+        self.out_port = mido.open_output(out_name)
+        self.in_port = mido.open_input(in_name)
+
+    def close(self) -> None:
+        self.in_port.close()
+        self.out_port.close()
+
+    def drain(self, duration: float = 0.1) -> None:
+        deadline = time.time() + duration
+        while time.time() < deadline:
+            msg = self.in_port.poll()
+            if msg is None:
+                time.sleep(0.01)
+
+    def send(self, opcode: int, payload: list[int] | None = None, checksum: bool = False) -> None:
+        self.out_port.send(make_message(self.sys_ex_id, opcode, payload, checksum))
+
+    def recv(self, expected_opcode: int | None = None, timeout: float | None = None) -> list[int]:
+        deadline = time.time() + (self.timeout if timeout is None else timeout)
+        while time.time() < deadline:
+            msg = self.in_port.poll()
+            if msg is None:
+                time.sleep(0.01)
+                continue
+            data = msg.bytes()
+            if data[:6] != EXPERT_SLEEPERS_HEADER + [self.sys_ex_id]:
+                continue
+            if expected_opcode is not None and data[6] != expected_opcode:
+                continue
+            return data
+        raise TimeoutError(f"Timed out waiting for SysEx opcode {expected_opcode!r}")
+
+    def request(self, request_opcode: int, expected_opcode: int | None = None,
+                payload: list[int] | None = None, checksum: bool = False,
+                timeout: float | None = None) -> list[int]:
+        self.drain()
+        self.send(request_opcode, payload, checksum)
+        return self.recv(request_opcode if expected_opcode is None else expected_opcode, timeout)
+
+    def version(self) -> str:
+        data = self.request(0x22, expected_opcode=0x32)
+        text = bytes(data[7:-1]).split(b"\x00")
+        return " | ".join(chunk.decode("ascii", errors="replace") for chunk in text if chunk)
+
+    def get_paths(self) -> list[str]:
+        data = self.request(0x56, expected_opcode=0x56)
+        raw = bytes(data[7:-1])
+        return [part.decode("ascii", errors="replace") for part in raw.split(b"\x00") if part]
+
+    def cpu_usage(self) -> tuple[int, int, list[int]]:
+        data = self.request(0x62, expected_opcode=0x62)
+        payload = data[7:-1]
+        return payload[0], payload[1], payload[2:]
+
+    def slot_count(self) -> int:
+        data = self.request(0x60, expected_opcode=0x60)
+        return unpack_u16(data[7:-1])
+
+    def algorithm_guid(self, slot: int) -> tuple[bytes, str]:
+        data = self.request(0x40, expected_opcode=0x40, payload=[slot])
+        guid = bytes(data[8:12])
+        name = bytes(data[12:-1]).split(b"\x00", 1)[0].decode("ascii", errors="replace")
+        return guid, name
+
+    def preset_name(self) -> str:
+        data = self.request(0x41, expected_opcode=0x41)
+        return bytes(data[7:-1]).split(b"\x00", 1)[0].decode("ascii", errors="replace")
+
+    def all_parameter_values(self, slot: int) -> list[int]:
+        data = self.request(0x44, expected_opcode=0x44, payload=[slot])
+        payload = data[7:-1]
+        if not payload:
+            return []
+        values = []
+        for i in range(1, len(payload), 3):
+            group = payload[i:i + 3]
+            if len(group) < 3:
+                break
+            values.append(unpack_u16(group))
+        return values
+
+    def parameter_value(self, slot: int, parameter: int) -> int:
+        values = self.all_parameter_values(slot)
+        return values[parameter]
+
+    def set_parameter_value(self, slot: int, parameter: int, value: int) -> None:
+        payload = [slot] + pack_u16(parameter) + pack_u16(value)
+        self.send(0x46, payload)
+
+    def new_preset(self) -> None:
+        self.send(0x35)
+
+    def set_preset_name(self, name: str) -> None:
+        self.send(0x47, [ord(ch) for ch in name] + [0])
+
+    def save_preset(self, overwrite: int = 2) -> None:
+        self.send(0x36, [overwrite])
+        time.sleep(0.5)
+
+    def load_preset(self, path: str) -> None:
+        self.send(0x34, [0] + [ord(ch) for ch in path] + [0])
+
+    def _fs_request(self, op: int, payload: list[int]) -> list[int]:
+        self.drain()
+        self.send(0x7A, [op] + payload, checksum=True)
+        return self.recv(expected_opcode=0x7A)
+
+    def list_dir(self, path: str) -> list[dict]:
+        data = self._fs_request(K_OP_LISTING, [ord(ch) for ch in path])
+        payload = data[9:-2]
+        items = []
+        i = 0
+        while i < len(payload):
+            remaining = len(payload) - i
+            if remaining < 18:
+                break
+            attrib = payload[i]
+            i += 1
+            date = unpack_u16(payload[i:i + 3])
+            i += 3
+            tm = unpack_u16(payload[i:i + 3])
+            i += 3
+            size = 0
+            for j in range(10):
+                size += payload[i] << ((9 - j) * 7)
+                i += 1
+            name_bytes = bytearray()
+            while i < len(payload):
+                byte = payload[i]
+                i += 1
+                if byte == 0:
+                    break
+                name_bytes.append(byte)
+            name = name_bytes.decode("ascii", errors="replace")
+            if not name:
+                break
+            is_dir = bool(attrib & 0x10)
+            items.append({
+                "name": name + ("/" if is_dir else ""),
+                "is_dir": is_dir,
+                "size": size,
+                "date": date,
+                "time": tm,
+            })
+        items.sort(key=lambda item: item["name"])
+        return items
+
+    def upload_file(self, local_path: Path, nt_path: str) -> None:
+        data = local_path.read_bytes()
+        ack_prefix = EXPERT_SLEEPERS_HEADER + [self.sys_ex_id, 0x7A, 0, K_OP_UPLOAD]
+        pos = 0
+        while pos < len(data):
+            count = min(512, len(data) - pos)
+            payload = [K_OP_UPLOAD]
+            payload.extend(ord(ch) for ch in nt_path)
+            payload.append(0)
+            payload.append(1 if pos == 0 else 0)
+            payload.extend(pack_u35(pos))
+            payload.extend(pack_u35(count))
+            for byte in data[pos:pos + count]:
+                payload.append((byte >> 4) & 0x0F)
+                payload.append(byte & 0x0F)
+            self.drain(0.02)
+            self.send(0x7A, payload, checksum=True)
+            resp = self.recv(expected_opcode=0x7A, timeout=5.0)
+            if resp[:9] != ack_prefix:
+                raise RuntimeError(f"Unexpected upload response: {resp}")
+            pos += count
+
+    def rescan_plugins(self) -> None:
+        self._fs_request(K_OP_RESCAN, [])
+
+
+def cmd_ports(_: argparse.Namespace) -> int:
+    print("Outputs:")
+    for name in mido.get_output_names():
+        print(name)
+    print("Inputs:")
+    for name in mido.get_input_names():
+        print(name)
+    return 0
+
+
+def with_client(args: argparse.Namespace, fn):
+    client = DistingClient(args.sys_ex_id, args.port_hint, args.timeout)
+    try:
+        return fn(client)
+    finally:
+        client.close()
+
+
+def cmd_version(args: argparse.Namespace) -> int:
+    return with_client(args, lambda client: print(client.version()) or 0)
+
+
+def cmd_paths(args: argparse.Namespace) -> int:
+    def run(client: DistingClient) -> int:
+        for path in client.get_paths():
+            print(path)
+        return 0
+    return with_client(args, run)
+
+
+def cmd_list(args: argparse.Namespace) -> int:
+    def run(client: DistingClient) -> int:
+        for item in client.list_dir(args.path):
+            kind = "dir " if item["is_dir"] else "file"
+            print(f"{kind:4} {item['size']:8d} {item['name']}")
+        return 0
+    return with_client(args, run)
+
+
+def cmd_cpu(args: argparse.Namespace) -> int:
+    def run(client: DistingClient) -> int:
+        for idx in range(args.samples):
+            alg, whole, slots = client.cpu_usage()
+            slot_text = " ".join(str(v) for v in slots)
+            print(f"{idx:02d} alg={alg:3d}% module={whole:3d}% slots=[{slot_text}]")
+            if idx + 1 < args.samples:
+                time.sleep(args.interval)
+        return 0
+    return with_client(args, run)
+
+
+def cmd_push_plugin(args: argparse.Namespace) -> int:
+    local_path = Path(args.local_plugin).resolve()
+    nt_plugin_path = "/programs/plug-ins/" + PurePath(local_path).name
+
+    def run(client: DistingClient) -> int:
+        paths = client.get_paths()
+        current_preset = paths[0] if paths else ""
+        if args.save_as:
+            client.set_preset_name(args.save_as)
+            client.save_preset(2)
+            current_preset = client.get_paths()[0]
+        client.new_preset()
+        client.upload_file(local_path, nt_plugin_path)
+        client.rescan_plugins()
+        if current_preset:
+            client.load_preset(current_preset)
+        print(f"Uploaded {local_path} -> {nt_plugin_path}")
+        if current_preset:
+            print(f"Reloaded preset {current_preset}")
+        return 0
+    return with_client(args, run)
+
+
+def find_vocoder_slot(client: DistingClient) -> int:
+    slot_count = client.slot_count()
+    for slot in range(slot_count):
+        guid, name = client.algorithm_guid(slot)
+        if guid == VOCODER_GUID:
+            return slot
+    raise RuntimeError("Could not find a VOC2 vocoder slot in the current preset")
+
+
+def cmd_benchmark_vocoder(args: argparse.Namespace) -> int:
+    def run(client: DistingClient) -> int:
+        preset_paths = client.get_paths()
+        preset_path = preset_paths[0] if preset_paths else ""
+        slot = args.slot if args.slot is not None else find_vocoder_slot(client)
+        guid, name = client.algorithm_guid(slot)
+        if guid != VOCODER_GUID:
+            raise RuntimeError(f"Slot {slot} is {guid!r} ({name}), not VOC2")
+
+        original = client.parameter_value(slot, VOCODER_PARAM_BAND_COUNT)
+        try:
+            print(f"slot={slot} name={name} original_bands={original}")
+            for band_count in args.band_counts:
+                if preset_path:
+                    client.load_preset(preset_path)
+                    time.sleep(args.reload_settle)
+                    slot = args.slot if args.slot is not None else find_vocoder_slot(client)
+                client.set_parameter_value(slot, VOCODER_PARAM_BAND_COUNT, band_count)
+                time.sleep(args.settle)
+                samples = []
+                for _ in range(args.samples):
+                    alg, whole, _ = client.cpu_usage()
+                    samples.append((alg, whole))
+                    time.sleep(args.interval)
+                alg_values = [s[0] for s in samples]
+                whole_values = [s[1] for s in samples]
+                overloaded = max(alg_values) >= 100 or max(whole_values) >= 100
+                muted = max(alg_values) == 0 and max(whole_values) <= 2
+                status = []
+                if overloaded:
+                    status.append("OVERLOAD")
+                if muted:
+                    status.append("MUTED")
+                suffix = f" [{' '.join(status)}]" if status else ""
+                print(
+                    f"bands={band_count:2d} "
+                    f"alg_avg={sum(alg_values)/len(alg_values):5.1f}% "
+                    f"alg_max={max(alg_values):3d}% "
+                    f"module_avg={sum(whole_values)/len(whole_values):5.1f}% "
+                    f"module_max={max(whole_values):3d}%"
+                    f"{suffix}"
+                )
+        finally:
+            if preset_path:
+                client.load_preset(preset_path)
+                time.sleep(args.reload_settle)
+                slot = args.slot if args.slot is not None else find_vocoder_slot(client)
+            client.set_parameter_value(slot, VOCODER_PARAM_BAND_COUNT, original)
+        return 0
+    return with_client(args, run)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Control a connected disting NT over MIDI SysEx")
+    parser.add_argument("--sys-ex-id", type=int, default=0)
+    parser.add_argument("--port-hint", default="disting NT")
+    parser.add_argument("--timeout", type=float, default=2.0)
+
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    ports = sub.add_parser("ports")
+    ports.set_defaults(func=cmd_ports)
+
+    version = sub.add_parser("version")
+    version.set_defaults(func=cmd_version)
+
+    paths = sub.add_parser("paths")
+    paths.set_defaults(func=cmd_paths)
+
+    listing = sub.add_parser("list")
+    listing.add_argument("path")
+    listing.set_defaults(func=cmd_list)
+
+    cpu = sub.add_parser("cpu")
+    cpu.add_argument("--samples", type=int, default=5)
+    cpu.add_argument("--interval", type=float, default=0.5)
+    cpu.set_defaults(func=cmd_cpu)
+
+    push = sub.add_parser("push-plugin")
+    push.add_argument("local_plugin")
+    push.add_argument("--save-as", default="codex-dev")
+    push.set_defaults(func=cmd_push_plugin)
+
+    bench = sub.add_parser("benchmark-vocoder")
+    bench.add_argument("--slot", type=int)
+    bench.add_argument("--samples", type=int, default=6)
+    bench.add_argument("--interval", type=float, default=0.5)
+    bench.add_argument("--settle", type=float, default=1.0)
+    bench.add_argument("--reload-settle", type=float, default=1.0)
+    bench.add_argument("--band-counts", type=lambda s: [int(x) for x in s.split(",")],
+                       default=[4, 8, 12, 16, 24, 32, 40])
+    bench.set_defaults(func=cmd_benchmark_vocoder)
+
+    return parser
+
+
+def main() -> int:
+    parser = build_parser()
+    args = parser.parse_args()
+    try:
+        return args.func(args)
+    except KeyboardInterrupt:
+        return 130
+    except Exception as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

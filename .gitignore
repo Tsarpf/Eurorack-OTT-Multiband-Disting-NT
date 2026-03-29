@@ -4,3 +4,6 @@ ott.o
 
 ott_wrapper.o
 build/
+*.o
+*.wav
+*.pyc

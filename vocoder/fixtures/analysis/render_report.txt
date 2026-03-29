@@ -1,0 +1,5 @@
+01_impulse,bands=8,width=35,depth=75,formant=0,enhance=1,raw_peak=4.277841,gain=0.222075,peak=0.950000,rms=0.047482
+02_noise,bands=16,width=50,depth=70,formant=0,enhance=1,raw_peak=3.830078,gain=0.248037,peak=0.950000,rms=0.044398
+03_sine,bands=16,width=40,depth=60,formant=12,enhance=0,raw_peak=1.738097,gain=0.546575,peak=0.950000,rms=0.071201
+04_motion_sweep,bands=16,width=50,depth=75,formant=0,enhance=1,raw_peak=5.664711,gain=0.167705,peak=0.950000,rms=0.042670
+05_neuro_bass,bands=24,width=45,depth=85,formant=-24,enhance=1,raw_peak=5.849185,gain=0.162416,peak=0.950000,rms=0.055143

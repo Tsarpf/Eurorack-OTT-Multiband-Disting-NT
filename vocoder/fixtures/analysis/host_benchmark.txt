@@ -1,0 +1,12 @@
+Host benchmark at 48 kHz, block size 24, duration 5 s
+Bands   Case        Elapsed ms    x realtime    ms/frame
+8       static      27.371        182.67        0.000114
+8       moving      28.105        177.90        0.000117
+16      static      48.707        102.66        0.000203
+16      moving      54.820        91.21         0.000228
+24      static      73.571        67.96         0.000307
+24      moving      80.103        62.42         0.000334
+32      static      101.170       49.42         0.000422
+32      moving      109.104       45.83         0.000455
+40      static      125.027       39.99         0.000521
+40      moving      132.490       37.74         0.000552

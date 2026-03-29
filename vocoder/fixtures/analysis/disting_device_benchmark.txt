@@ -1,0 +1,22 @@
+## Version
+v1.16.0beta | Mar 24 2026 15:33:26
+
+## Paths
+/presets/codex_dev.json
+/presets
+
+## Plugins
+file    41612 ott.o
+file    10772 vocoder.o
+
+## Benchmark
+slot=0 name=Vocoder                 original_bands=14
+bands= 4 alg_avg= 21.0% alg_max= 21% module_avg= 25.0% module_max= 25%
+bands= 8 alg_avg= 34.0% alg_max= 34% module_avg= 38.8% module_max= 41%
+bands=12 alg_avg= 47.0% alg_max= 47% module_avg= 51.5% module_max= 52%
+bands=16 alg_avg= 59.0% alg_max= 59% module_avg= 64.2% module_max= 65%
+bands=20 alg_avg= 72.0% alg_max= 72% module_avg= 78.0% module_max= 78%
+bands=24 alg_avg= 85.0% alg_max= 85% module_avg= 90.0% module_max= 91%
+bands=28 alg_avg= 24.2% alg_max= 97% module_avg= 26.5% module_max=100% [OVERLOAD]
+bands=32 alg_avg= 25.0% alg_max=100% module_avg= 26.2% module_max=100% [OVERLOAD]
+bands=40 alg_avg= 25.0% alg_max=100% module_avg= 26.5% module_max=100% [OVERLOAD]
