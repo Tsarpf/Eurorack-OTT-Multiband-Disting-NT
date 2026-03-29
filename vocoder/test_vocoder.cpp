@@ -78,7 +78,7 @@ static HostAlgorithm makeAlgorithm() {
   host.values[kBandWidth] = 50;
   host.values[kDepth] = 50;
   host.values[kFormant] = 0;
-  host.values[kMinFreq] = 40;
+  host.values[kMinFreq] = 30;
   host.values[kMaxFreq] = 18000;
   host.values[kAttack] = 10;
   host.values[kRelease] = 100;
@@ -159,7 +159,7 @@ static void testDescriptorLayout() {
   rebuildDescriptor(algo);
 
   require(algo->descriptor->activeBands == 8, "descriptor active band count");
-  require(nearlyEqual(algo->descriptor->analysisFreq[0], 40.0f, 0.01f),
+  require(nearlyEqual(algo->descriptor->analysisFreq[0], 30.0f, 0.01f),
           "first band frequency");
   require(nearlyEqual(algo->descriptor->analysisFreq[7], 18000.0f, 1.0f),
           "last band frequency");

@@ -118,7 +118,7 @@ static void rebuildDescriptor(_vocoderAlgorithm *a) {
 
   const int bandCount =
       a->v[kBandCount] < 4 ? 4 : (a->v[kBandCount] > 40 ? 40 : a->v[kBandCount]);
-  const float minFreq = (float)(a->v[kMinFreq] < 40 ? 40 : a->v[kMinFreq]);
+  const float minFreq = (float)(a->v[kMinFreq] < 30 ? 30 : a->v[kMinFreq]);
   const float maxFreq =
       (float)(a->v[kMaxFreq] > minFreq ? a->v[kMaxFreq] : minFreq + 20);
   const float formantRatio = powf(2.0f, a->controls.currentFormant / 120.0f);
@@ -140,7 +140,7 @@ static void rebuildDescriptor(_vocoderAlgorithm *a) {
   for (int i = 0; i < bandCount; ++i) {
     const float f = minFreq * powf(step, (float)i);
     d.analysisFreq[i] = f;
-    d.synthesisFreq[i] = vocoderClamp(f * formantRatio, 40.0f, 20000.0f);
+    d.synthesisFreq[i] = vocoderClamp(f * formantRatio, 30.0f, 20000.0f);
     d.enhanceTarget[i] =
         0.12f * powf(f / (minFreq > 1.0f ? minFreq : 1.0f), 0.1f);
 

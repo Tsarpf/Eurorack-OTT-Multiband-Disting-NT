@@ -57,7 +57,7 @@ inline HostAlgorithm makeHostAlgorithm() {
   host.values[kBandWidth] = 50;
   host.values[kDepth] = 70;
   host.values[kFormant] = 0;
-  host.values[kMinFreq] = 40;
+  host.values[kMinFreq] = 30;
   host.values[kMaxFreq] = 18000;
   host.values[kAttack] = 10;
   host.values[kRelease] = 120;

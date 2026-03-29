@@ -21,6 +21,8 @@ K_OP_NEW_FOLDER = 7
 VOCODER_GUID = b"VOC2"
 # SysEx parameter lists include the common bypass parameter at index 0.
 VOCODER_PARAM_BAND_COUNT = 7
+VOCODER_PARAM_BAND_WIDTH = 8
+VOCODER_PARAM_FORMANT = 10
 
 
 def pack_u16(value: int) -> list[int]:
@@ -395,6 +397,89 @@ def cmd_benchmark_vocoder(args: argparse.Namespace) -> int:
     return with_client(args, run)
 
 
+def motion_value(step_index: int, total_steps: int, lo: int, hi: int) -> int:
+    if total_steps <= 1 or hi <= lo:
+      return lo
+    phase = step_index % (2 * (total_steps - 1))
+    if phase >= total_steps:
+        phase = 2 * (total_steps - 1) - phase
+    return lo + ((hi - lo) * phase) // (total_steps - 1)
+
+
+def cmd_benchmark_vocoder_motion(args: argparse.Namespace) -> int:
+    def run(client: DistingClient) -> int:
+        preset_paths = client.get_paths()
+        preset_path = preset_paths[0] if preset_paths else ""
+        slot = args.slot if args.slot is not None else find_vocoder_slot(client)
+        guid, name = client.algorithm_guid(slot)
+        if guid != VOCODER_GUID:
+            raise RuntimeError(f"Slot {slot} is {guid!r} ({name}), not VOC2")
+
+        original_params = client.all_parameter_values(slot)
+        if len(original_params) <= VOCODER_PARAM_FORMANT:
+            raise RuntimeError("Could not read vocoder parameters for motion benchmark")
+
+        try:
+            print(
+                f"slot={slot} name={name} "
+                f"bandwidth={original_params[VOCODER_PARAM_BAND_WIDTH]} "
+                f"formant={original_params[VOCODER_PARAM_FORMANT]}"
+            )
+            for band_count in args.band_counts:
+                if preset_path:
+                    client.load_preset(preset_path)
+                    time.sleep(args.reload_settle)
+                    slot = args.slot if args.slot is not None else find_vocoder_slot(client)
+                client.set_parameter_value(slot, VOCODER_PARAM_BAND_COUNT, band_count)
+                time.sleep(args.settle)
+                samples = []
+                for sample_index in range(args.samples):
+                    width = motion_value(
+                        sample_index, args.motion_steps, args.width_min, args.width_max
+                    )
+                    formant = motion_value(
+                        sample_index + args.formant_phase,
+                        args.motion_steps,
+                        args.formant_min,
+                        args.formant_max,
+                    )
+                    client.set_parameter_value(slot, VOCODER_PARAM_BAND_WIDTH, width)
+                    client.set_parameter_value(slot, VOCODER_PARAM_FORMANT, formant)
+                    time.sleep(args.control_settle)
+                    alg, whole, _ = client.cpu_usage()
+                    samples.append((alg, whole, width, formant))
+                    time.sleep(args.interval)
+                alg_values = [s[0] for s in samples]
+                whole_values = [s[1] for s in samples]
+                overloaded = max(alg_values) >= 100 or max(whole_values) >= 100
+                suffix = " [OVERLOAD]" if overloaded else ""
+                print(
+                    f"bands={band_count:2d} "
+                    f"alg_avg={sum(alg_values)/len(alg_values):5.1f}% "
+                    f"alg_max={max(alg_values):3d}% "
+                    f"module_avg={sum(whole_values)/len(whole_values):5.1f}% "
+                    f"module_max={max(whole_values):3d}%"
+                    f"{suffix}"
+                )
+        finally:
+            if preset_path:
+                client.load_preset(preset_path)
+                time.sleep(args.reload_settle)
+                slot = args.slot if args.slot is not None else find_vocoder_slot(client)
+            if original_params:
+                client.set_parameter_value(
+                    slot, VOCODER_PARAM_BAND_COUNT, original_params[VOCODER_PARAM_BAND_COUNT]
+                )
+                client.set_parameter_value(
+                    slot, VOCODER_PARAM_BAND_WIDTH, original_params[VOCODER_PARAM_BAND_WIDTH]
+                )
+                client.set_parameter_value(
+                    slot, VOCODER_PARAM_FORMANT, original_params[VOCODER_PARAM_FORMANT]
+                )
+        return 0
+    return with_client(args, run)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Control a connected disting NT over MIDI SysEx")
     parser.add_argument("--sys-ex-id", type=int, default=0)
@@ -435,6 +520,23 @@ def build_parser() -> argparse.ArgumentParser:
     bench.add_argument("--band-counts", type=lambda s: [int(x) for x in s.split(",")],
                        default=[4, 8, 12, 16, 24, 32, 40])
     bench.set_defaults(func=cmd_benchmark_vocoder)
+
+    motion = sub.add_parser("benchmark-vocoder-motion")
+    motion.add_argument("--slot", type=int)
+    motion.add_argument("--samples", type=int, default=12)
+    motion.add_argument("--interval", type=float, default=0.25)
+    motion.add_argument("--settle", type=float, default=1.0)
+    motion.add_argument("--reload-settle", type=float, default=1.0)
+    motion.add_argument("--control-settle", type=float, default=0.05)
+    motion.add_argument("--motion-steps", type=int, default=6)
+    motion.add_argument("--width-min", type=int, default=15)
+    motion.add_argument("--width-max", type=int, default=85)
+    motion.add_argument("--formant-min", type=int, default=-180)
+    motion.add_argument("--formant-max", type=int, default=180)
+    motion.add_argument("--formant-phase", type=int, default=3)
+    motion.add_argument("--band-counts", type=lambda s: [int(x) for x in s.split(",")],
+                        default=[8, 12, 16, 20, 24, 28, 32])
+    motion.set_defaults(func=cmd_benchmark_vocoder_motion)
 
     return parser
 
