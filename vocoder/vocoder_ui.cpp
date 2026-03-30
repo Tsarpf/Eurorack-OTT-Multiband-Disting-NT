@@ -48,7 +48,7 @@ static int decayStepMs(int currentMs) {
 void setupUi(_NT_algorithm *self, _NT_float3 &pots) {
   auto *a = (_vocoderAlgorithm *)self;
   pots[0] = vocoderClamp((float)a->v[kBandWidth] / 100.0f, 0.0f, 1.0f);
-  pots[1] = vocoderClamp((float)a->v[kDepth] / 200.0f, 0.0f, 1.0f);
+  pots[1] = vocoderClamp((float)a->v[kDepth] / 800.0f, 0.0f, 1.0f);
   pots[2] =
       vocoderClamp(((float)a->v[kFormant] + 240.0f) / 480.0f, 0.0f, 1.0f);
   a->uiReleaseDisplay = a->v[kRelease];
@@ -142,7 +142,7 @@ void customUi(_NT_algorithm *self, const _NT_uiData &data) {
                           kBandWidth + NT_parameterOffset(), value);
   }
   if (data.controls & kNT_potC) {
-    const int value = (int)(data.pots[1] * 200.0f);
+    const int value = (int)(data.pots[1] * 800.0f);
     NT_setParameterFromUi(NT_algorithmIndex(self), kDepth + NT_parameterOffset(),
                           value);
   }

@@ -50,10 +50,10 @@ static float computeDepthGain(float depthPct, float envAmplitude,
 
 static VocoderDepthShape computeDepthShape(float depthPct) {
   VocoderDepthShape shape = {};
-  shape.depthControl = vocoderClamp(depthPct / 100.0f, 0.0f, 2.0f);
+  shape.depthControl = vocoderClamp(depthPct / 100.0f, 0.0f, 8.0f);
   shape.depthMix = vocoderClamp(shape.depthControl, 0.0f, 1.0f);
   shape.peakMode = shape.depthControl > 1.0f;
-  shape.peakExponent = 1.0f + 1.5f * (shape.depthControl - 1.0f);
+  shape.peakExponent = 1.0f + 1.2f * (shape.depthControl - 1.0f);
   return shape;
 }
 
@@ -72,7 +72,15 @@ static float computeDepthGain(const VocoderDepthShape &shape,
     return presence * vocoderLerp(x, x2, shape.peakExponent - 1.0f);
   }
   const float x3 = x2 * x;
-  return presence * vocoderLerp(x2, x3, shape.peakExponent - 2.0f);
+  if (shape.peakExponent <= 3.0f) {
+    return presence * vocoderLerp(x2, x3, shape.peakExponent - 2.0f);
+  }
+  const float x4 = x3 * x;
+  if (shape.peakExponent <= 4.0f) {
+    return presence * vocoderLerp(x3, x4, shape.peakExponent - 3.0f);
+  }
+  const float x5 = x4 * x;
+  return presence * vocoderLerp(x4, x5, shape.peakExponent - 4.0f);
 }
 
 static void clearDescriptor(VocoderDescriptor &descriptor) {
@@ -131,12 +139,13 @@ static void rebuildDescriptor(_vocoderAlgorithm *a) {
   const float sampleRate = (float)NT_globals.sampleRate;
   const float bandwidthPct = a->controls.currentBandwidth;
   const float bandwidthNorm = bandwidthPct / 100.0f;
+  const float bandwidthCurve = bandwidthNorm * bandwidthNorm;
   const float synthesisFloorHz = 30.0f;
   const float synthesisFadeStartHz = 20.0f;
 
   d.activeBands = bandCount;
-  d.analysisQ = powf(18.0f, 1.0f - bandwidthNorm) * powf(0.8f, bandwidthNorm);
-  d.synthesisQ = d.analysisQ * 0.7f + 0.5f;
+  d.analysisQ = powf(40.0f, 1.0f - bandwidthCurve) * powf(0.7f, bandwidthCurve);
+  d.synthesisQ = d.analysisQ * 0.85f + 1.0f;
   if (d.synthesisQ < 3.0f) {
     d.synthesisQ = 3.0f;
   }
