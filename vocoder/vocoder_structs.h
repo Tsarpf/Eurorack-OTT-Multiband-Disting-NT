@@ -8,6 +8,7 @@ struct VocoderDescriptor {
   int activeBands;
   float analysisFreq[kVocoderMaxBands];
   float synthesisFreq[kVocoderMaxBands];
+  float synthesisBandGain[kVocoderMaxBands];
   float enhanceTarget[kVocoderMaxBands];
   float an_b0[kVocoderMaxBands];
   float an_b2[kVocoderMaxBands];
@@ -50,11 +51,14 @@ struct VocoderDSPState {
   float gainTarget[2][kVocoderMaxBands];
   float gainState[2][kVocoderMaxBands];
   float meters[kVocoderMaxBands];
+  float meterPeakHold[kVocoderMaxBands];
   float dryAvg[2];
   float wetAvg[2];
   float wetMakeup[2];
   float inputGuard[2];
   float outputGuard[2];
+  float dryPeakHold[2];
+  float wetPeakHold[2];
   float mod_x1[2];
   float mod_x2[2];
   float car_x1[2];
@@ -85,8 +89,8 @@ struct VocoderControlState {
 struct _vocoderAlgorithm : public _NT_algorithm {
   _vocoderAlgorithm()
       : descriptor(nullptr), state(nullptr), activeBands(8), uiDirty(true),
-        rightEncoderControlsGain(false), uiWetDisplay(100),
-        uiOutputGainDisplay(0) {
+        leftEncoderControlsDecay(false), rightEncoderControlsGain(false),
+        uiReleaseDisplay(100), uiWetDisplay(100), uiOutputGainDisplay(0) {
     controls.currentBandwidth = 50.0f;
     controls.targetBandwidth = 50.0f;
     controls.currentFormant = 0.0f;
@@ -104,7 +108,9 @@ struct _vocoderAlgorithm : public _NT_algorithm {
   VocoderControlState controls;
   int activeBands;
   bool uiDirty;
+  bool leftEncoderControlsDecay;
   bool rightEncoderControlsGain;
+  int uiReleaseDisplay;
   int uiWetDisplay;
   int uiOutputGainDisplay;
 };

@@ -26,12 +26,32 @@ static void formatOutputGain(char *buf, size_t bufSize, int valueTenthsDb) {
   }
 }
 
+static void formatDecay(char *buf, size_t bufSize, int valueMs) {
+  if (valueMs < 1000) {
+    snprintf(buf, bufSize, "%dms", valueMs);
+  } else {
+    const int tenths = roundTenths((float)valueMs / 100.0f);
+    snprintf(buf, bufSize, "%d.%1ds", tenths / 10, tenths % 10);
+  }
+}
+
+static int decayStepMs(int currentMs) {
+  if (currentMs < 1000) {
+    return 25;
+  }
+  if (currentMs < 5000) {
+    return 100;
+  }
+  return 500;
+}
+
 void setupUi(_NT_algorithm *self, _NT_float3 &pots) {
   auto *a = (_vocoderAlgorithm *)self;
   pots[0] = vocoderClamp((float)a->v[kBandWidth] / 100.0f, 0.0f, 1.0f);
   pots[1] = vocoderClamp((float)a->v[kDepth] / 200.0f, 0.0f, 1.0f);
   pots[2] =
       vocoderClamp(((float)a->v[kFormant] + 240.0f) / 480.0f, 0.0f, 1.0f);
+  a->uiReleaseDisplay = a->v[kRelease];
   a->uiWetDisplay = a->v[kWet];
   a->uiOutputGainDisplay = a->v[kPreGain];
 }
@@ -80,18 +100,29 @@ bool draw(_NT_algorithm *self) {
   }
 
   snprintf(buf, sizeof(buf), "BANDS %d", a->activeBands);
-  NT_drawText(46, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
+  NT_drawText(34, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
+
+  char decayBuf[24];
+  formatDecay(decayBuf, sizeof(decayBuf), a->uiReleaseDisplay);
+  snprintf(buf, sizeof(buf), "DEC %s", decayBuf);
+  NT_drawText(96, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
 
   snprintf(buf, sizeof(buf), "WET %d%%", a->uiWetDisplay);
-  NT_drawText(136, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
+  NT_drawText(160, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
 
   snprintf(buf, sizeof(buf), "GAIN %d", a->uiOutputGainDisplay);
-  NT_drawText(220, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
+  NT_drawText(224, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
+
+  if (a->leftEncoderControlsDecay) {
+    NT_drawShapeI(kNT_line, 64, 63, 128, 63, 15);
+  } else {
+    NT_drawShapeI(kNT_line, 4, 63, 64, 63, 15);
+  }
 
   if (a->rightEncoderControlsGain) {
-    NT_drawShapeI(kNT_line, 184, 63, 252, 63, 15);
+    NT_drawShapeI(kNT_line, 192, 63, 252, 63, 15);
   } else {
-    NT_drawShapeI(kNT_line, 104, 63, 168, 63, 15);
+    NT_drawShapeI(kNT_line, 128, 63, 192, 63, 15);
   }
 
   return true;
@@ -99,7 +130,7 @@ bool draw(_NT_algorithm *self) {
 
 uint32_t hasCustomUi(_NT_algorithm *) {
   return kNT_potL | kNT_potC | kNT_potR | kNT_encoderL | kNT_encoderR |
-         kNT_encoderButtonR;
+         kNT_encoderButtonL | kNT_encoderButtonR;
 }
 
 void customUi(_NT_algorithm *self, const _NT_uiData &data) {
@@ -121,11 +152,25 @@ void customUi(_NT_algorithm *self, const _NT_uiData &data) {
                           kFormant + NT_parameterOffset(), value);
   }
 
+  if ((data.controls & kNT_encoderButtonL) &&
+      !(data.lastButtons & kNT_encoderButtonL)) {
+    a->leftEncoderControlsDecay = !a->leftEncoderControlsDecay;
+  }
+
   if (data.encoders[0]) {
-    int bandCount = a->v[kBandCount] + data.encoders[0];
-    bandCount = bandCount < 4 ? 4 : (bandCount > 40 ? 40 : bandCount);
-    NT_setParameterFromUi(NT_algorithmIndex(self),
-                          kBandCount + NT_parameterOffset(), bandCount);
+    if (a->leftEncoderControlsDecay) {
+      int decay = a->uiReleaseDisplay +
+                  data.encoders[0] * decayStepMs(a->uiReleaseDisplay);
+      decay = decay < 10 ? 10 : (decay > 20000 ? 20000 : decay);
+      a->uiReleaseDisplay = decay;
+      NT_setParameterFromUi(NT_algorithmIndex(self),
+                            kRelease + NT_parameterOffset(), decay);
+    } else {
+      int bandCount = a->v[kBandCount] + data.encoders[0];
+      bandCount = bandCount < 4 ? 4 : (bandCount > 40 ? 40 : bandCount);
+      NT_setParameterFromUi(NT_algorithmIndex(self),
+                            kBandCount + NT_parameterOffset(), bandCount);
+    }
   }
 
   if ((data.controls & kNT_encoderButtonR) &&

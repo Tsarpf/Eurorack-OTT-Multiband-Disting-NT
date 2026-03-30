@@ -65,7 +65,7 @@ static const _NT_parameter parameters[kNumParams] = {
     P("Min Freq", 30, 1000, 30, kNT_unitHz, 0),
     P("Max Freq", 2000, 20000, 18000, kNT_unitHz, 0),
     P("Attack", 1, 500, 10, kNT_unitMs, 0),
-    P("Release", 10, 2000, 100, kNT_unitMs, 0),
+    P("Decay", 10, 20000, 100, kNT_unitMs, 0),
     P("Enhance", 0, 1, 0, kNT_unitEnum, 0), // Off/On toggle
     P("Wet", 0, 100, 100, kNT_unitPercent, 0),
     P("Pre", -600, 120, 0, kNT_unitNone, 0),
