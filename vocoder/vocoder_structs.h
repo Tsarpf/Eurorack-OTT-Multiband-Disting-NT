@@ -48,6 +48,8 @@ struct VocoderDSPState {
   float env[2][kVocoderMaxBands];
   float eAvg[2][kVocoderMaxBands];
   float cAvg[2][kVocoderMaxBands];
+  float envPeakHold[2][kVocoderMaxBands];
+  float carrierPeakHold[2][kVocoderMaxBands];
   float gainTarget[2][kVocoderMaxBands];
   float gainState[2][kVocoderMaxBands];
   float meters[kVocoderMaxBands];
@@ -71,6 +73,7 @@ struct VocoderDSPState {
   int synthesisXfadeRemaining;
   int synthesisXfadeTotal;
   int controlPhase;
+  int bandControlPhase;
 };
 
 struct VocoderControlState {

@@ -349,6 +349,7 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
       vocoderMixCoeffFromSeconds(sampleRate, 0.0015f);
   const float gainRiseMix = vocoderMixCoeffFromSeconds(sampleRate, 0.0015f);
   const float gainFallMix = vocoderMixCoeffFromSeconds(sampleRate, 0.005f);
+  const int bandControlInterval = 4;
   const int controlInterval = 128;
   const float controlSampleRate = sampleRate / (float)controlInterval;
   const float masterScale = 8.0f / sqrtf((float)a->activeBands);
@@ -389,7 +390,7 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
     float wetSamplePrev[2] = {0.0f, 0.0f};
     float carrierSample[2] = {0.0f, 0.0f};
     float modSample[2] = {0.0f, 0.0f};
-    const bool updateBandControl = (s.controlPhase == 0);
+    const bool updateBandControl = (s.bandControlPhase == 0);
     const bool flushControl = (s.controlPhase + 1 >= controlInterval);
 
     const int channels = stereoOutput ? 2 : 1;
@@ -432,23 +433,10 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
         s.an_y2[ch][band] = s.an_y1[ch][band];
         s.an_y1[ch][band] = ya;
 
-        const float envInput = fabsf(ya);
-        const float envMix =
-            envInput > s.env[ch][band] ? attackMix : releaseMix;
-        s.env[ch][band] =
-            (1.0f - envMix) * envInput + envMix * s.env[ch][band];
-
-        const float envAmplitude = s.env[ch][band];
-        const float envAvgMix =
-            envAmplitude > s.eAvg[ch][band] ? envAvgRiseMix : envAvgFallMix;
-        s.eAvg[ch][band] = envAvgMix * s.eAvg[ch][band] +
-                           (1.0f - envAvgMix) * envAmplitude;
-        const float envNorm =
-            envAmplitude / (s.eAvg[ch][band] + kVocoderEpsilon);
-        const float rawBandGain = vocoderClamp(
-            vocoderSoftKneeCompress(
-                computeDepthGain(depthShape, envAmplitude, envNorm), 3.0f, 3.0f),
-            0.0f, 8.0f);
+        const float envPeak = fabsf(ya);
+        if (envPeak > s.envPeakHold[ch][band]) {
+          s.envPeakHold[ch][band] = envPeak;
+        }
 
         if (a->controls.synthesisCoeffSmoothing) {
           sy_b0[band] =
@@ -468,24 +456,50 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
         s.sy_y2[ch][band] = s.sy_y1[ch][band];
         s.sy_y1[ch][band] = ys;
 
-        float enhanceGain = 1.0f;
-        if (enhance) {
-          const float carrierAmplitude = fabsf(ys);
-          const float carrierAvgMix =
-              carrierAmplitude > s.cAvg[ch][band] ? carrierAvgRiseMix
-                                                  : carrierAvgFallMix;
-          s.cAvg[ch][band] = carrierAvgMix * s.cAvg[ch][band] +
-                             (1.0f - carrierAvgMix) * carrierAmplitude;
-          if (s.cAvg[ch][band] > 1.0e-5f) {
-            enhanceGain = vocoderClamp(
-                d.enhanceTarget[band] / (s.cAvg[ch][band] + kVocoderEpsilon),
-                0.67f, 1.5f);
-          }
+        const float carrierPeak = fabsf(ys);
+        if (carrierPeak > s.carrierPeakHold[ch][band]) {
+          s.carrierPeakHold[ch][band] = carrierPeak;
         }
 
         if (updateBandControl) {
+          const float envInput = s.envPeakHold[ch][band];
+          const float envMix =
+              envInput > s.env[ch][band] ? attackMix : releaseMix;
+          s.env[ch][band] =
+              (1.0f - envMix) * envInput + envMix * s.env[ch][band];
+
+          const float envAmplitude = s.env[ch][band];
+          const float envAvgMix =
+              envAmplitude > s.eAvg[ch][band] ? envAvgRiseMix : envAvgFallMix;
+          s.eAvg[ch][band] = envAvgMix * s.eAvg[ch][band] +
+                             (1.0f - envAvgMix) * envAmplitude;
+          const float envNorm =
+              envAmplitude / (s.eAvg[ch][band] + kVocoderEpsilon);
+          const float rawBandGain = vocoderClamp(
+              vocoderSoftKneeCompress(
+                  computeDepthGain(depthShape, envAmplitude, envNorm), 3.0f,
+                  3.0f),
+              0.0f, 8.0f);
+
+          float enhanceGain = 1.0f;
+          if (enhance) {
+            const float carrierAmplitude = s.carrierPeakHold[ch][band];
+            const float carrierAvgMix =
+                carrierAmplitude > s.cAvg[ch][band] ? carrierAvgRiseMix
+                                                    : carrierAvgFallMix;
+            s.cAvg[ch][band] = carrierAvgMix * s.cAvg[ch][band] +
+                               (1.0f - carrierAvgMix) * carrierAmplitude;
+            if (s.cAvg[ch][band] > 1.0e-5f) {
+              enhanceGain = vocoderClamp(
+                  d.enhanceTarget[band] / (s.cAvg[ch][band] + kVocoderEpsilon),
+                  0.67f, 1.5f);
+            }
+          }
+
           s.gainTarget[ch][band] =
               vocoderSoftKneeCompress(rawBandGain * enhanceGain, 2.5f, 6.0f);
+          s.envPeakHold[ch][band] = 0.0f;
+          s.carrierPeakHold[ch][band] = 0.0f;
         }
         const float gainMix =
             s.gainTarget[ch][band] > s.gainState[ch][band] ? gainRiseMix
@@ -632,6 +646,11 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
       s.controlPhase = 0;
     } else {
       ++s.controlPhase;
+    }
+
+    ++s.bandControlPhase;
+    if (s.bandControlPhase >= bandControlInterval) {
+      s.bandControlPhase = 0;
     }
   }
 
