@@ -80,13 +80,20 @@ static void clearState(VocoderDSPState &state) {
   memset(&state, 0, sizeof(state));
 }
 
-// Convert DF1 descriptor coefficients to batch biquad DF2T format
+// Convert DF1 descriptor coefficients to batch biquad DF2T format and update
+// the inst.pCoeffs pointer in each filter state.  On ARM/CMSIS-DSP the init
+// function stores a raw pointer to the coefficients array; if we update
+// anCoeffs[band] without also patching pCoeffs the ARM path reads stale/garbage
+// coefficients (dangling pointer to whatever batchBiquadInit was last given).
 static void syncAnalysisCoefficients(_vocoderAlgorithm *a) {
   VocoderDescriptor &d = *a->descriptor;
   VocoderDSPState &s = *a->state;
   for (int band = 0; band < d.activeBands; ++band) {
     s.anCoeffs[band] = batchBiquadFromDF1(d.an_b0[band], d.an_b2[band],
                                           d.an_a1[band], d.an_a2[band]);
+    for (int ch = 0; ch < 2; ++ch) {
+      batchBiquadUpdateCoeffs(s.anState[ch][band], s.anCoeffs[band]);
+    }
   }
 }
 
@@ -96,25 +103,41 @@ static void syncSynthesisCoefficients(_vocoderAlgorithm *a) {
   for (int band = 0; band < kVocoderMaxBands; ++band) {
     s.syCoeffs[band] = batchBiquadFromDF1(d.sy_b0[band], d.sy_b2[band],
                                           d.sy_a1[band], d.sy_a2[band]);
+    // Snap smooth values to match so the next smoothing pass starts from here,
+    // not from zero or a stale position.  Without this, synthesisCoeffSmoothing
+    // interpolates from zero on startup and from a wrong position on formant
+    // changes — both produce glitches or screeching.
+    s.sy_b0_smooth[band] = d.sy_b0[band];
+    s.sy_b2_smooth[band] = d.sy_b2[band];
+    s.sy_a1_smooth[band] = d.sy_a1[band];
+    s.sy_a2_smooth[band] = d.sy_a2[band];
     s.sy_b0_target[band] = d.sy_b0[band];
     s.sy_b2_target[band] = d.sy_b2[band];
     s.sy_a1_target[band] = d.sy_a1[band];
     s.sy_a2_target[band] = d.sy_a2[band];
+    for (int ch = 0; ch < 2; ++ch) {
+      batchBiquadUpdateCoeffs(s.syState[ch][band], s.syCoeffs[band]);
+    }
   }
 }
 
 static void beginSynthesisCrossfade(_vocoderAlgorithm *a) {
   VocoderDSPState &s = *a->state;
   s.prevActiveBands = a->activeBands;
-  for (int ch = 0; ch < 2; ++ch) {
-    for (int band = 0; band < s.prevActiveBands; ++band) {
-      s.prevSyState[ch][band] = s.syState[ch][band]; // Shallow copy of state
-      // Re-init the instance pointer to point to the copied state buffer
-      batchBiquadInit(s.prevSyState[ch][band], s.syCoeffs[band]);
-    }
-  }
   for (int band = 0; band < s.prevActiveBands; ++band) {
     s.prevSyCoeffs[band] = s.syCoeffs[band];
+  }
+  for (int ch = 0; ch < 2; ++ch) {
+    for (int band = 0; band < s.prevActiveBands; ++band) {
+      // Copy running filter state so the prev filter continues from where the
+      // current one is — no audible click at the crossfade start.
+      // batchBiquadInit is intentionally NOT used here: it calls memset on the
+      // state array, wiping out the running filter state and causing a click
+      // every block (~2 kHz artifact) while the formant is being moved.
+      s.prevSyState[ch][band] = s.syState[ch][band]; // copies inst + state[2]
+      s.prevSyState[ch][band].inst.pState = s.prevSyState[ch][band].state;
+      batchBiquadUpdateCoeffs(s.prevSyState[ch][band], s.prevSyCoeffs[band]);
+    }
   }
   s.synthesisXfadeTotal = NT_globals.sampleRate / 1000;
   if (s.synthesisXfadeTotal < 1) {
@@ -227,12 +250,14 @@ static _NT_algorithm *construct(const _NT_algorithmMemoryPtrs &ptrs,
     a->state->synthesisBandGainCurrent[band] = 1.0f;
   }
 
-  for (int ch = 0; ch < 2; ++ch) {
-    for (int band = 0; band < kVocoderMaxBands; ++band) {
-      // Need dummy coefficients for initialization
-      BatchBiquadCoeffs dummy = batchBiquadFromDF1(1.0f, 0.0f, 0.0f, 0.0f);
-      batchBiquadInit(a->state->anState[ch][band], dummy);
-      batchBiquadInit(a->state->syState[ch][band], dummy);
+  // Initialise all filter states pointing at their corresponding persistent
+  // coefficient structs (already zeroed by clearState above).  On ARM/CMSIS-DSP
+  // batchBiquadInit stores a raw pCoeffs pointer, so it must point into the
+  // long-lived state struct rather than a local variable.
+  for (int band = 0; band < kVocoderMaxBands; ++band) {
+    for (int ch = 0; ch < 2; ++ch) {
+      batchBiquadInit(a->state->anState[ch][band], a->state->anCoeffs[band]);
+      batchBiquadInit(a->state->syState[ch][band], a->state->syCoeffs[band]);
     }
   }
 
@@ -412,14 +437,19 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
     return;
   }
 
+  // The envelope follower and avg trackers are updated once per block (not per
+  // sample), so their mix coefficients must be calibrated to block rate.
+  // Using sampleRate-calibrated coefficients here would make time constants
+  // N×(blockSize) times too slow, causing bands to appear frozen.
+  const float blockRate = sampleRate / (float)N;
   const float attackMix =
-      vocoderMixCoeffFromSeconds(sampleRate, (float)self->v[kAttack] * 0.001f);
+      vocoderMixCoeffFromSeconds(blockRate, (float)self->v[kAttack] * 0.001f);
   const float releaseMix =
-      vocoderMixCoeffFromSeconds(sampleRate, (float)self->v[kRelease] * 0.001f);
-  const float envAvgRiseMix = vocoderMixCoeffFromSeconds(sampleRate, 0.015f);
-  const float envAvgFallMix = vocoderMixCoeffFromSeconds(sampleRate, 0.05f);
-  const float carrierAvgRiseMix = vocoderMixCoeffFromSeconds(sampleRate, 0.01f);
-  const float carrierAvgFallMix = vocoderMixCoeffFromSeconds(sampleRate, 0.08f);
+      vocoderMixCoeffFromSeconds(blockRate, (float)self->v[kRelease] * 0.001f);
+  const float envAvgRiseMix = vocoderMixCoeffFromSeconds(blockRate, 0.015f);
+  const float envAvgFallMix = vocoderMixCoeffFromSeconds(blockRate, 0.05f);
+  const float carrierAvgRiseMix = vocoderMixCoeffFromSeconds(blockRate, 0.01f);
+  const float carrierAvgFallMix = vocoderMixCoeffFromSeconds(blockRate, 0.08f);
   const float synthesisCoeffMix =
       vocoderMixCoeffFromSeconds(sampleRate, 0.0015f);
   const float synthesisScalarMix =
@@ -589,6 +619,12 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
       // Use peak from analysis batch as envelope input
       s.envPeakHold[ch][band] = analysisPeak;
 
+      // Meter tracks modulator (voice) energy per band, not synthesis output,
+      // so the display shows voice formants and responds to audio.
+      if (analysisPeak > meterPeakBand) {
+        meterPeakBand = analysisPeak;
+      }
+
       const float envInput = s.envPeakHold[ch][band];
       const float envMix = envInput > s.env[ch][band] ? attackMix : releaseMix;
       s.env[ch][band] = (1.0f - envMix) * envInput + envMix * s.env[ch][band];
@@ -652,10 +688,6 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
               prevSynthBuf[i] * s.gainState[ch][band] * bandGainScale;
         }
 
-        const float bandLevel = fabsf(bandWet);
-        if (bandLevel > meterPeakBand) {
-          meterPeakBand = bandLevel;
-        }
       }
     }
 

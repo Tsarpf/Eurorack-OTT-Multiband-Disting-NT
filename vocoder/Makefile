@@ -21,7 +21,14 @@ CFLAGS := -mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -fPIC \
 	-O2 -ffast-math -fdata-sections -ffunction-sections
 
 HOST_CXX ?= c++
-HOST_CXXFLAGS ?= -std=c++17 -I$(SDK)/include
+HOST_CC ?= cc
+HOST_CXXFLAGS ?= -std=c++17 -I$(SDK)/include \
+	-I$(CMSIS_DSP)/Include -I$(CMSIS_DSP)/PrivateInclude -I$(CMSIS_CORE)/CMSIS/Core/Include \
+	-DARM_MATH_CM7 -D__FPU_PRESENT=1
+HOST_CFLAGS ?= -I$(CMSIS_DSP)/Include -I$(CMSIS_DSP)/PrivateInclude -I$(CMSIS_CORE)/CMSIS/Core/Include \
+	-DARM_MATH_CM7 -D__FPU_PRESENT=1
+
+HOST_CMSIS_OBJS := $(OBJDIR)/host_cmsis_df2t.o $(OBJDIR)/host_cmsis_df2t_init.o
 
 PYTHON ?= python
 VENV_ACTIVATE := . $(abspath $(ROOT)/.venv-disting/bin/activate)
@@ -59,8 +66,16 @@ $(PLUGIN).o: $(OBJS)
 push: build
 	$(VENV_ACTIVATE) && $(NTCTL) push-plugin $(PLUGIN).o --save-as $(PRESET)
 
-test:
-	$(HOST_CXX) $(HOST_CXXFLAGS) test_vocoder.cpp -o /tmp/test_$(PLUGIN) && /tmp/test_$(PLUGIN)
+$(OBJDIR)/host_cmsis_df2t.o: $(CMSIS_DSP)/Source/FilteringFunctions/arm_biquad_cascade_df2T_f32.c
+	@mkdir -p $(OBJDIR)
+	$(HOST_CC) $(HOST_CFLAGS) -c $< -o $@
+
+$(OBJDIR)/host_cmsis_df2t_init.o: $(CMSIS_DSP)/Source/FilteringFunctions/arm_biquad_cascade_df2T_init_f32.c
+	@mkdir -p $(OBJDIR)
+	$(HOST_CC) $(HOST_CFLAGS) -c $< -o $@
+
+test: $(HOST_CMSIS_OBJS)
+	$(HOST_CXX) $(HOST_CXXFLAGS) test_vocoder.cpp $(HOST_CMSIS_OBJS) -o /tmp/test_$(PLUGIN) && /tmp/test_$(PLUGIN)
 
 benchmark-host:
 	$(HOST_CXX) -O3 $(HOST_CXXFLAGS) benchmark_vocoder.cpp -o /tmp/benchmark_$(PLUGIN) && /tmp/benchmark_$(PLUGIN)

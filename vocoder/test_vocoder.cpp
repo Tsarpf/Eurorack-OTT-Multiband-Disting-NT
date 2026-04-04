@@ -345,6 +345,50 @@ static void testMotionStaysFinite() {
   }
 }
 
+static void testMetersRespondToModulator() {
+  HostAlgorithm host = makeAlgorithm();
+  auto *algo = (_vocoderAlgorithm *)host.algorithm;
+
+  const int block = 24;
+  const int numBuses = 28;
+
+  // Run for 2 seconds of silence — meters should settle near 0
+  const int silenceFrames = 48000 * 2;
+  for (int offset = 0; offset < silenceFrames; offset += block) {
+    float bus[block * numBuses];
+    memset(bus, 0, sizeof(bus));
+    factory.step(host.algorithm, bus, block / 4);
+  }
+
+  float maxMeterSilence = 0.0f;
+  for (int b = 0; b < algo->activeBands; ++b) {
+    if (algo->state->meters[b] > maxMeterSilence)
+      maxMeterSilence = algo->state->meters[b];
+  }
+  require(maxMeterSilence < 0.05f, "meters should be near zero with no input");
+
+  // Now run with a tone into modulator — meters should rise
+  const int signalFrames = 48000;
+  for (int offset = 0; offset < signalFrames; offset += block) {
+    float bus[block * numBuses];
+    memset(bus, 0, sizeof(bus));
+    // 400 Hz carrier (bus 1, index 0)
+    for (int i = 0; i < block; ++i)
+      bus[0 * block + i] = 0.5f * sinf(2.0f * 3.14159265359f * 400.0f * (offset + i) / 48000.0f);
+    // 800 Hz modulator (bus 3, index 2)
+    for (int i = 0; i < block; ++i)
+      bus[2 * block + i] = 0.5f * sinf(2.0f * 3.14159265359f * 800.0f * (offset + i) / 48000.0f);
+    factory.step(host.algorithm, bus, block / 4);
+  }
+
+  float maxMeterSignal = 0.0f;
+  for (int b = 0; b < algo->activeBands; ++b) {
+    if (algo->state->meters[b] > maxMeterSignal)
+      maxMeterSignal = algo->state->meters[b];
+  }
+  require(maxMeterSignal > 0.1f, "meters should respond to modulator signal");
+}
+
 int main() {
   testDescriptorLayout();
   testWetZeroPassthrough();
@@ -354,6 +398,7 @@ int main() {
   testEnhanceChangesOutput();
   testFormantSmoothingMovesDescriptor();
   testMotionStaysFinite();
+  testMetersRespondToModulator();
   std::cout << "vocoder tests passed\n";
   return 0;
 }

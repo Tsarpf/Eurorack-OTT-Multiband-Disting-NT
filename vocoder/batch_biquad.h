@@ -1,16 +1,17 @@
 #ifndef VOCODER_BATCH_BIQUAD_H
 #define VOCODER_BATCH_BIQUAD_H
 
-// Batch biquad filter abstraction layer.
+// Batch biquad filter abstraction using CMSIS-DSP arm_biquad_cascade_df2T_f32.
 //
-// On ARM target: uses CMSIS-DSP arm_biquad_cascade_df2T_f32 (hand-optimized
-// assembly with 16x loop unrolling and pipeline-aware instruction scheduling).
+// On ARM target the library uses hand-optimised assembly with pipeline-aware
+// scheduling for the Cortex-M7 FPU.
 //
-// On host (macOS/Linux tests): uses a portable C implementation of the same
-// DF2T algorithm.
+// On host (macOS/Linux tests) the same CMSIS-DSP source is compiled but the
+// generic C fallback is selected automatically (no ARM SIMD extensions defined).
+// This means the tests exercise the real CMSIS-DSP code paths, including the
+// pCoeffs/pState pointer lifetime semantics that the host-only reimplementation
+// previously masked.
 
-#if defined(__arm__) && !defined(__APPLE__) && !defined(__aarch64__)
-// ── ARM target: use actual CMSIS-DSP library ──
 #include "dsp/filtering_functions.h"
 
 struct BatchBiquadCoeffs {
@@ -33,8 +34,7 @@ inline void batchBiquadProcess(const BatchBiquadCoeffs &, BatchBiquadState &s,
   arm_biquad_cascade_df2T_f32(&s.inst, src, dst, (uint32_t)blockSize);
 }
 
-// CMSIS-DSP doesn't have a built-in envelope variant, so we process then scan
-inline float batchBiquadProcessWithEnvelope(const BatchBiquadCoeffs &c,
+inline float batchBiquadProcessWithEnvelope(const BatchBiquadCoeffs &,
                                             BatchBiquadState &s,
                                             const float *src, float *dst,
                                             int blockSize) {
@@ -48,100 +48,33 @@ inline float batchBiquadProcessWithEnvelope(const BatchBiquadCoeffs &c,
   return peak;
 }
 
+// Convert DF1 feedback coefficients to CMSIS-DSP DF2T format.
+//
+// The descriptor stores a1/a2 with the DF1 sign convention:
+//   y[n] = b0*x[n] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
+// so a stable bandpass has a1 < 0 and a2 > 0.
+//
+// CMSIS-DSP DF2T uses the opposite sign in its state update:
+//   d1 += a1_cmsis * y[n]   (positive, not negative)
+// so a1_cmsis = -a1_df1 and a2_cmsis = -a2_df1.
 inline BatchBiquadCoeffs batchBiquadFromDF1(float b0, float b2, float a1,
                                             float a2) {
   BatchBiquadCoeffs c;
   c.coeffs[0] = b0;
   c.coeffs[1] = 0.0f; // b1 = 0 for bandpass
   c.coeffs[2] = b2;
-  c.coeffs[3] = a1;
-  c.coeffs[4] = a2;
+  c.coeffs[3] = -a1; // negate: DF1 sign convention is opposite to CMSIS-DSP
+  c.coeffs[4] = -a2;
   return c;
 }
 
-// Update coefficients in-place (after smoothing)
+// Update pCoeffs pointer after the BatchBiquadCoeffs struct is reassigned.
+// CMSIS-DSP stores a raw pointer to the coefficients array; call this whenever
+// the target BatchBiquadCoeffs object is updated in place so the instance keeps
+// pointing at valid memory.
 inline void batchBiquadUpdateCoeffs(BatchBiquadState &s,
                                     const BatchBiquadCoeffs &c) {
   s.inst.pCoeffs = c.coeffs;
 }
-
-#else
-// ── Host fallback: portable C implementation of DF2T ──
-// Same algorithm as CMSIS-DSP but without ARM-specific optimizations.
-
-struct BatchBiquadCoeffs {
-  float b0;
-  float b1; // always 0 for bandpass, kept for API compatibility
-  float b2;
-  float a1;
-  float a2;
-};
-
-struct BatchBiquadState {
-  float d1;
-  float d2;
-};
-
-inline void batchBiquadInit(BatchBiquadState &s, const BatchBiquadCoeffs &) {
-  s.d1 = 0.0f;
-  s.d2 = 0.0f;
-}
-
-inline void batchBiquadProcess(const BatchBiquadCoeffs &c, BatchBiquadState &s,
-                               const float *__restrict src,
-                               float *__restrict dst, int blockSize) {
-  float d1 = s.d1;
-  float d2 = s.d2;
-  for (int i = 0; i < blockSize; ++i) {
-    const float x = src[i];
-    const float y = c.b0 * x + d1;
-    d1 = c.b1 * x - c.a1 * y + d2;
-    d2 = c.b2 * x - c.a2 * y;
-    dst[i] = y;
-  }
-  s.d1 = d1;
-  s.d2 = d2;
-}
-
-inline float batchBiquadProcessWithEnvelope(const BatchBiquadCoeffs &c,
-                                            BatchBiquadState &s,
-                                            const float *__restrict src,
-                                            float *__restrict dst,
-                                            int blockSize) {
-  float d1 = s.d1;
-  float d2 = s.d2;
-  float peak = 0.0f;
-  for (int i = 0; i < blockSize; ++i) {
-    const float x = src[i];
-    const float y = c.b0 * x + d1;
-    d1 = c.b1 * x - c.a1 * y + d2;
-    d2 = c.b2 * x - c.a2 * y;
-    dst[i] = y;
-    const float ay = y < 0.0f ? -y : y;
-    if (ay > peak)
-      peak = ay;
-  }
-  s.d1 = d1;
-  s.d2 = d2;
-  return peak;
-}
-
-inline BatchBiquadCoeffs batchBiquadFromDF1(float b0, float b2, float a1,
-                                            float a2) {
-  BatchBiquadCoeffs c;
-  c.b0 = b0;
-  c.b1 = 0.0f;
-  c.b2 = b2;
-  c.a1 = a1;
-  c.a2 = a2;
-  return c;
-}
-
-inline void batchBiquadUpdateCoeffs(BatchBiquadState &,
-                                    const BatchBiquadCoeffs &) {
-  // No-op on host — coefficients are read directly from BatchBiquadCoeffs
-}
-
-#endif // __arm__
 
 #endif // VOCODER_BATCH_BIQUAD_H
