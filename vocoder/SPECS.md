@@ -31,3 +31,7 @@ Because the Disting NT SDK compiles via the ARM toolchain, the project has nativ
 * **32-bit implementation:** `arm_biquad_cascade_df1_q31`
 
 These are hand-optimized in assembly to pipeline `SMLAD` and `QADD` instructions to their maximum theoretical throughput on the MIMXRT1062 architecture.
+
+
+# Next steps
+see `vocoder/implementation_plan.md.resolved`

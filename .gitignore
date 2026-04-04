@@ -7,3 +7,17 @@ build/
 *.o
 *.wav
 *.pyc
+
+# CMSIS-DSP and CMSIS core libraries (large external deps, not committed)
+CMSIS-DSP/
+CMSIS_6/
+
+# Probe/debug artifacts
+intprobe/
+probe_voc2/
+
+# macOS
+.DS_Store
+
+# Implementation plan working files
+*.resolved

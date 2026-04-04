@@ -1,3 +1,4 @@
+#include "batch_biquad.h"
 #include "vocoder_dsp.h"
 #include "vocoder_parameters.h"
 #include "vocoder_structs.h"
@@ -30,22 +31,6 @@ static float computeBandwidthCompensation(int bandCount, float bandwidthPct) {
   const float t40 = bandwidthTableValue(table40, bw);
   const float mix = vocoderClamp(((float)bandCount - 8.0f) / 32.0f, 0.0f, 1.0f);
   return vocoderLerp(t8, t40, mix);
-}
-
-static float computeDepthGain(float depthPct, float envAmplitude,
-                              float envNorm) {
-  const float depthControl = vocoderClamp(depthPct / 100.0f, 0.0f, 2.0f);
-  const float depthMix = vocoderClamp(depthControl, 0.0f, 1.0f);
-  const float presence = vocoderClamp(envAmplitude * 5.0f, 0.0f, 1.0f);
-  const float clampedEnv = vocoderClamp(envNorm, 0.25f, 4.0f);
-  const float classicShape = presence * clampedEnv;
-  if (depthControl <= 1.0f) {
-    return vocoderLerp(1.0f, classicShape, depthMix);
-  }
-
-  const float peakShape =
-      presence * powf(clampedEnv, 1.0f + 1.5f * (depthControl - 1.0f));
-  return peakShape;
 }
 
 static VocoderDepthShape computeDepthShape(float depthPct) {
@@ -91,39 +76,51 @@ static void clearDescriptor(VocoderDescriptor &descriptor) {
   descriptor.synthesisQ = 1.0f;
 }
 
-static void clearState(VocoderDSPState &state) { memset(&state, 0, sizeof(state)); }
+static void clearState(VocoderDSPState &state) {
+  memset(&state, 0, sizeof(state));
+}
 
-static void beginSynthesisCrossfade(_vocoderAlgorithm *a) {
+// Convert DF1 descriptor coefficients to batch biquad DF2T format
+static void syncAnalysisCoefficients(_vocoderAlgorithm *a) {
+  VocoderDescriptor &d = *a->descriptor;
   VocoderDSPState &s = *a->state;
-  s.prevActiveBands = a->activeBands;
-  for (int ch = 0; ch < 2; ++ch) {
-    for (int band = 0; band < s.prevActiveBands; ++band) {
-      s.prev_sy_y1[ch][band] = s.sy_y1[ch][band];
-      s.prev_sy_y2[ch][band] = s.sy_y2[ch][band];
-    }
+  for (int band = 0; band < d.activeBands; ++band) {
+    s.anCoeffs[band] = batchBiquadFromDF1(d.an_b0[band], d.an_b2[band],
+                                          d.an_a1[band], d.an_a2[band]);
   }
-  for (int band = 0; band < s.prevActiveBands; ++band) {
-    s.prev_sy_b0[band] = s.sy_b0_current[band];
-    s.prev_sy_b2[band] = s.sy_b2_current[band];
-    s.prev_sy_a1[band] = s.sy_a1_current[band];
-    s.prev_sy_a2[band] = s.sy_a2_current[band];
-  }
-  s.synthesisXfadeTotal = NT_globals.sampleRate / 1000;
-  if (s.synthesisXfadeTotal < 1) {
-    s.synthesisXfadeTotal = 1;
-  }
-  s.synthesisXfadeRemaining = s.synthesisXfadeTotal;
 }
 
 static void syncSynthesisCoefficients(_vocoderAlgorithm *a) {
   VocoderDescriptor &d = *a->descriptor;
   VocoderDSPState &s = *a->state;
   for (int band = 0; band < kVocoderMaxBands; ++band) {
-    s.sy_b0_current[band] = d.sy_b0[band];
-    s.sy_b2_current[band] = d.sy_b2[band];
-    s.sy_a1_current[band] = d.sy_a1[band];
-    s.sy_a2_current[band] = d.sy_a2[band];
+    s.syCoeffs[band] = batchBiquadFromDF1(d.sy_b0[band], d.sy_b2[band],
+                                          d.sy_a1[band], d.sy_a2[band]);
+    s.sy_b0_target[band] = d.sy_b0[band];
+    s.sy_b2_target[band] = d.sy_b2[band];
+    s.sy_a1_target[band] = d.sy_a1[band];
+    s.sy_a2_target[band] = d.sy_a2[band];
   }
+}
+
+static void beginSynthesisCrossfade(_vocoderAlgorithm *a) {
+  VocoderDSPState &s = *a->state;
+  s.prevActiveBands = a->activeBands;
+  for (int ch = 0; ch < 2; ++ch) {
+    for (int band = 0; band < s.prevActiveBands; ++band) {
+      s.prevSyState[ch][band] = s.syState[ch][band]; // Shallow copy of state
+      // Re-init the instance pointer to point to the copied state buffer
+      batchBiquadInit(s.prevSyState[ch][band], s.syCoeffs[band]);
+    }
+  }
+  for (int band = 0; band < s.prevActiveBands; ++band) {
+    s.prevSyCoeffs[band] = s.syCoeffs[band];
+  }
+  s.synthesisXfadeTotal = NT_globals.sampleRate / 1000;
+  if (s.synthesisXfadeTotal < 1) {
+    s.synthesisXfadeTotal = 1;
+  }
+  s.synthesisXfadeRemaining = s.synthesisXfadeTotal;
 }
 
 static void rebuildSynthesisDescriptor(_vocoderAlgorithm *a) {
@@ -136,10 +133,10 @@ static void rebuildSynthesisDescriptor(_vocoderAlgorithm *a) {
   for (int i = 0; i < d.activeBands; ++i) {
     const float shiftedFreq = d.analysisFreq[i] * formantRatio;
     d.synthesisFreq[i] = vocoderClamp(shiftedFreq, synthesisFloorHz, 20000.0f);
-    d.synthesisBandGain[i] = vocoderClamp(
-        (shiftedFreq - synthesisFadeStartHz) /
-            (synthesisFloorHz - synthesisFadeStartHz),
-        0.0f, 1.0f);
+    d.synthesisBandGain[i] =
+        vocoderClamp((shiftedFreq - synthesisFadeStartHz) /
+                         (synthesisFloorHz - synthesisFadeStartHz),
+                     0.0f, 1.0f);
     vocoderCalculateBandpass(d.synthesisFreq[i], d.synthesisQ, sampleRate,
                              d.sy_b0[i], d.sy_b2[i], d.sy_a1[i], d.sy_a2[i]);
   }
@@ -151,8 +148,9 @@ static void rebuildDescriptor(_vocoderAlgorithm *a) {
   VocoderDescriptor &d = *a->descriptor;
   clearDescriptor(d);
 
-  const int bandCount =
-      a->v[kBandCount] < 4 ? 4 : (a->v[kBandCount] > 40 ? 40 : a->v[kBandCount]);
+  const int bandCount = a->v[kBandCount] < 4
+                            ? 4
+                            : (a->v[kBandCount] > 40 ? 40 : a->v[kBandCount]);
   const float minFreq = (float)(a->v[kMinFreq] < 30 ? 30 : a->v[kMinFreq]);
   const float maxFreq =
       (float)(a->v[kMaxFreq] > minFreq ? a->v[kMaxFreq] : minFreq + 20);
@@ -160,8 +158,9 @@ static void rebuildDescriptor(_vocoderAlgorithm *a) {
   const float bandwidthPct = a->controls.currentBandwidth;
   const float bandwidthNorm = bandwidthPct / 100.0f;
   const float bandwidthCurve = bandwidthNorm * bandwidthNorm;
-  const int analysisInterval = 2;
-  const float analysisSampleRate = sampleRate / (float)analysisInterval;
+  // Analysis runs at full sample rate now (batch processing makes decimation
+  // less necessary — the batch biquad already amortizes overhead)
+  const float analysisSampleRate = sampleRate;
 
   d.activeBands = bandCount;
   d.analysisQ = powf(40.0f, 1.0f - bandwidthCurve) * powf(0.7f, bandwidthCurve);
@@ -169,10 +168,12 @@ static void rebuildDescriptor(_vocoderAlgorithm *a) {
   if (d.synthesisQ < 3.0f) {
     d.synthesisQ = 3.0f;
   }
-  d.bandwidthCompensation = computeBandwidthCompensation(bandCount, bandwidthPct);
+  d.bandwidthCompensation =
+      computeBandwidthCompensation(bandCount, bandwidthPct);
 
   const float step =
-      bandCount > 1 ? powf(maxFreq / minFreq, 1.0f / (float)(bandCount - 1)) : 1.0f;
+      bandCount > 1 ? powf(maxFreq / minFreq, 1.0f / (float)(bandCount - 1))
+                    : 1.0f;
 
   for (int i = 0; i < bandCount; ++i) {
     const float f = minFreq * powf(step, (float)i);
@@ -184,12 +185,14 @@ static void rebuildDescriptor(_vocoderAlgorithm *a) {
   }
 
   rebuildSynthesisDescriptor(a);
+  syncAnalysisCoefficients(a);
 
   a->activeBands = bandCount;
   a->uiDirty = true;
 }
 
-static void calculateRequirements(_NT_algorithmRequirements &req, const int32_t *) {
+static void calculateRequirements(_NT_algorithmRequirements &req,
+                                  const int32_t *) {
   req.numParameters = kNumParams;
   req.sram = sizeof(_vocoderAlgorithm) + sizeof(VocoderDescriptor);
   req.dtc = sizeof(VocoderDSPState);
@@ -222,6 +225,15 @@ static _NT_algorithm *construct(const _NT_algorithmMemoryPtrs &ptrs,
   a->state->bandwidthCompCurrent = 1.0f;
   for (int band = 0; band < kVocoderMaxBands; ++band) {
     a->state->synthesisBandGainCurrent[band] = 1.0f;
+  }
+
+  for (int ch = 0; ch < 2; ++ch) {
+    for (int band = 0; band < kVocoderMaxBands; ++band) {
+      // Need dummy coefficients for initialization
+      BatchBiquadCoeffs dummy = batchBiquadFromDF1(1.0f, 0.0f, 0.0f, 0.0f);
+      batchBiquadInit(a->state->anState[ch][band], dummy);
+      batchBiquadInit(a->state->syState[ch][band], dummy);
+    }
   }
 
   a->controls.currentBandwidth = 50.0f;
@@ -276,20 +288,18 @@ static void parameterChanged(_NT_algorithm *self, int parameter) {
 
 static void updateControlState(_vocoderAlgorithm *a) {
   constexpr float kControlSmoothing = 0.35f;
-  const bool movingBandwidth =
-      fabsf(a->controls.targetBandwidth - a->controls.currentBandwidth) > 0.001f;
+  const bool movingBandwidth = fabsf(a->controls.targetBandwidth -
+                                     a->controls.currentBandwidth) > 0.001f;
   const bool movingFormant =
       fabsf(a->controls.targetFormant - a->controls.currentFormant) > 0.001f;
 
-  a->controls.currentBandwidth = vocoderSmoothToward(
-      a->controls.currentBandwidth, a->controls.targetBandwidth,
-      kControlSmoothing);
+  a->controls.currentBandwidth =
+      vocoderSmoothToward(a->controls.currentBandwidth,
+                          a->controls.targetBandwidth, kControlSmoothing);
   a->controls.currentFormant = vocoderSmoothToward(
-      a->controls.currentFormant, a->controls.targetFormant,
-      kControlSmoothing);
-  a->controls.currentWet =
-      vocoderSmoothToward(a->controls.currentWet, a->controls.targetWet,
-                          kControlSmoothing);
+      a->controls.currentFormant, a->controls.targetFormant, kControlSmoothing);
+  a->controls.currentWet = vocoderSmoothToward(
+      a->controls.currentWet, a->controls.targetWet, kControlSmoothing);
   a->controls.currentOutputGainDb =
       vocoderSmoothToward(a->controls.currentOutputGainDb,
                           a->controls.targetOutputGainDb, kControlSmoothing);
@@ -305,6 +315,15 @@ static void updateControlState(_vocoderAlgorithm *a) {
       rebuildSynthesisDescriptor(a);
     }
     if (movingBandwidth || movingFormant) {
+      // Set targets; smoothing will interpolate towards them
+      VocoderDescriptor &d = *a->descriptor;
+      VocoderDSPState &s = *a->state;
+      for (int band = 0; band < d.activeBands; ++band) {
+        s.sy_b0_target[band] = d.sy_b0[band];
+        s.sy_b2_target[band] = d.sy_b2[band];
+        s.sy_a1_target[band] = d.sy_a1[band];
+        s.sy_a2_target[band] = d.sy_a2[band];
+      }
       a->controls.synthesisCoeffSmoothing = true;
     } else {
       syncSynthesisCoefficients(a);
@@ -312,6 +331,31 @@ static void updateControlState(_vocoderAlgorithm *a) {
     }
     a->controls.descriptorDirty = movingBandwidth;
     a->controls.synthesisDirty = movingFormant;
+  }
+}
+
+// Smooth synthesis coefficients toward target (called once per block, not per
+// sample)
+static void smoothSynthesisCoefficients(VocoderDSPState &s, int activeBands,
+                                        float mix) {
+  const float oneMinusMix = 1.0f - mix;
+  for (int band = 0; band < activeBands; ++band) {
+    s.sy_b0_smooth[band] =
+        mix * s.sy_b0_smooth[band] + oneMinusMix * s.sy_b0_target[band];
+    s.sy_b2_smooth[band] =
+        mix * s.sy_b2_smooth[band] + oneMinusMix * s.sy_b2_target[band];
+    s.sy_a1_smooth[band] =
+        mix * s.sy_a1_smooth[band] + oneMinusMix * s.sy_a1_target[band];
+    s.sy_a2_smooth[band] =
+        mix * s.sy_a2_smooth[band] + oneMinusMix * s.sy_a2_target[band];
+
+    s.syCoeffs[band] =
+        batchBiquadFromDF1(s.sy_b0_smooth[band], s.sy_b2_smooth[band],
+                           s.sy_a1_smooth[band], s.sy_a2_smooth[band]);
+
+    for (int ch = 0; ch < 2; ++ch) {
+      batchBiquadUpdateCoeffs(s.syState[ch][band], s.syCoeffs[band]);
+    }
   }
 }
 
@@ -330,14 +374,14 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
   const bool stereoOutput = carrierStereo || modulatorStereo;
 
   const int carrierBusL = self->v[kInCarrier];
-  const int carrierBusR = carrierStereo && carrierBusL < 28 ? carrierBusL + 1
-                                                            : carrierBusL;
+  const int carrierBusR =
+      carrierStereo && carrierBusL < 28 ? carrierBusL + 1 : carrierBusL;
   const int modulatorBusL = self->v[kInModulator];
   const int modulatorBusR =
       modulatorStereo && modulatorBusL < 28 ? modulatorBusL + 1 : modulatorBusL;
   const int outputBusL = self->v[kOut];
-  const int outputBusR = stereoOutput && outputBusL < 28 ? outputBusL + 1
-                                                         : outputBusL;
+  const int outputBusR =
+      stereoOutput && outputBusL < 28 ? outputBusL + 1 : outputBusL;
 
   const float *carL = bus + (carrierBusL - 1) * N;
   const float *carR = bus + (carrierBusR - 1) * N;
@@ -372,29 +416,22 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
       vocoderMixCoeffFromSeconds(sampleRate, (float)self->v[kAttack] * 0.001f);
   const float releaseMix =
       vocoderMixCoeffFromSeconds(sampleRate, (float)self->v[kRelease] * 0.001f);
-  // Track normalization baselines quickly on rising energy to avoid transient
-  // overboost, but decay them more slowly so the vocoder still breathes
-  // naturally between hits.
   const float envAvgRiseMix = vocoderMixCoeffFromSeconds(sampleRate, 0.015f);
   const float envAvgFallMix = vocoderMixCoeffFromSeconds(sampleRate, 0.05f);
-  const float carrierAvgRiseMix =
-      vocoderMixCoeffFromSeconds(sampleRate, 0.01f);
-  const float carrierAvgFallMix =
-      vocoderMixCoeffFromSeconds(sampleRate, 0.08f);
+  const float carrierAvgRiseMix = vocoderMixCoeffFromSeconds(sampleRate, 0.01f);
+  const float carrierAvgFallMix = vocoderMixCoeffFromSeconds(sampleRate, 0.08f);
   const float synthesisCoeffMix =
       vocoderMixCoeffFromSeconds(sampleRate, 0.0015f);
   const float synthesisScalarMix =
       vocoderMixCoeffFromSeconds(sampleRate, 0.0015f);
   const float gainRiseMix = vocoderMixCoeffFromSeconds(sampleRate, 0.0015f);
   const float gainFallMix = vocoderMixCoeffFromSeconds(sampleRate, 0.005f);
-  const int analysisInterval = 2;
-  const int bandControlInterval = 4;
+  const int bandControlInterval = 8; // was 4 — envelope rates still well above
+                                     // attack/release timescales
   const int meterControlInterval = 128;
   const int levelControlInterval = 1;
-  const float meterControlSampleRate =
-      sampleRate / (float)meterControlInterval;
-  const float levelControlSampleRate =
-      sampleRate / (float)levelControlInterval;
+  const float meterControlSampleRate = sampleRate / (float)meterControlInterval;
+  const float levelControlSampleRate = sampleRate / (float)levelControlInterval;
   const float masterScale = 8.0f / sqrtf((float)a->activeBands);
   const float dcBlockR = expf(-2.0f * 3.14159265359f * 30.0f / sampleRate);
   const float levelAvgRiseMix =
@@ -411,8 +448,7 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
       vocoderMixCoeffFromSeconds(levelControlSampleRate, 0.008f);
   const float inputPeakRiseMix =
       vocoderMixCoeffFromSeconds(sampleRate, 0.0005f);
-  const float inputPeakFallMix =
-      vocoderMixCoeffFromSeconds(sampleRate, 0.008f);
+  const float inputPeakFallMix = vocoderMixCoeffFromSeconds(sampleRate, 0.008f);
   const float inputGuardAttackMix =
       vocoderMixCoeffFromSeconds(sampleRate, 0.00035f);
   const float inputGuardReleaseMix =
@@ -427,27 +463,75 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
       computeDepthShape((float)self->v[kDepth]);
   VocoderDescriptor &d = *a->descriptor;
   VocoderDSPState &s = *a->state;
-  float *sy_b0 = a->controls.synthesisCoeffSmoothing ? s.sy_b0_current : d.sy_b0;
-  float *sy_b2 = a->controls.synthesisCoeffSmoothing ? s.sy_b2_current : d.sy_b2;
-  float *sy_a1 = a->controls.synthesisCoeffSmoothing ? s.sy_a1_current : d.sy_a1;
-  float *sy_a2 = a->controls.synthesisCoeffSmoothing ? s.sy_a2_current : d.sy_a2;
+  const int channels = stereoOutput ? 2 : 1;
 
-  for (int i = 0; i < N; ++i) {
-    float wetSample[2] = {0.0f, 0.0f};
-    float wetSamplePrev[2] = {0.0f, 0.0f};
-    float carrierSample[2] = {0.0f, 0.0f};
-    float modSample[2] = {0.0f, 0.0f};
-    const bool updateBandControl = (s.bandControlPhase == 0);
-    const bool flushMeter = (s.controlPhase + 1 >= meterControlInterval);
-    const bool flushLevel = (s.levelPhase + 1 >= levelControlInterval);
-    const bool updateAnalysis = (s.analysisPhase + 1 >= analysisInterval);
+  // Per-block coefficient smoothing (was per-sample in old code —
+  // once-per-block is sufficient and saves 40×N iterations)
+  if (a->controls.synthesisCoeffSmoothing) {
+    // Use a per-block smoothing factor derived from the per-sample one
+    // mix^N ≈ exp(N * ln(mix)) but for small blocks just multiply N times
+    float blockMix = synthesisCoeffMix;
+    for (int i = 1; i < N; ++i) {
+      blockMix *= synthesisCoeffMix;
+    }
+    smoothSynthesisCoefficients(s, a->activeBands, blockMix);
+  }
 
-    const int channels = stereoOutput ? 2 : 1;
-    s.bandwidthCompCurrent =
-        synthesisScalarMix * s.bandwidthCompCurrent +
-        (1.0f - synthesisScalarMix) * d.bandwidthCompensation;
-    for (int ch = 0; ch < channels; ++ch) {
-      const float nextMakeup = s.wetMakeup[ch] + s.wetMakeupStep[ch];
+  // Smooth per-band scalars once per block
+  {
+    const float blockScalar = synthesisScalarMix;
+    const float oneMinusScalar = 1.0f - blockScalar;
+    for (int band = 0; band < a->activeBands; ++band) {
+      s.synthesisBandGainCurrent[band] =
+          blockScalar * s.synthesisBandGainCurrent[band] +
+          oneMinusScalar * d.synthesisBandGain[band];
+    }
+    s.bandwidthCompCurrent = blockScalar * s.bandwidthCompCurrent +
+                             oneMinusScalar * d.bandwidthCompensation;
+  }
+
+  // ── PHASE 1: Prepare input buffers with DC blocking + input guard ──
+  // Use stack buffers for the block (N ≤ 24)
+  float prepCarrier[2][24];
+  float prepMod[2][24];
+
+  for (int ch = 0; ch < channels; ++ch) {
+    const float *rawCar = ch == 0 ? carL : carR;
+    const float *rawMod = ch == 0 ? modL : modR;
+    for (int i = 0; i < N; ++i) {
+      const float drivenCar = rawCar[i] * preGainLinear;
+      const float drivenMod = rawMod[i] * preGainLinear;
+      const float dcCar = vocoderDcBlock(drivenCar, s.carrierDcX1[ch],
+                                         s.carrierDcY1[ch], dcBlockR);
+      const float dcMod =
+          vocoderDcBlock(drivenMod, s.modDcX1[ch], s.modDcY1[ch], dcBlockR);
+      // Input guard
+      const float inputPeak =
+          fabsf(dcCar) > fabsf(dcMod) ? fabsf(dcCar) : fabsf(dcMod);
+      const float ipMix = inputPeak > s.inputPeakSmoothed[ch]
+                              ? inputPeakRiseMix
+                              : inputPeakFallMix;
+      s.inputPeakSmoothed[ch] =
+          ipMix * s.inputPeakSmoothed[ch] + (1.0f - ipMix) * inputPeak;
+      const float targetIG = vocoderClamp(
+          inputGuardCeiling / (s.inputPeakSmoothed[ch] + 1.0e-3f), 0.0f, 1.0f);
+      const float igMix = targetIG < s.inputGuard[ch] ? inputGuardAttackMix
+                                                      : inputGuardReleaseMix;
+      s.inputGuard[ch] = igMix * s.inputGuard[ch] + (1.0f - igMix) * targetIG;
+      if (s.inputGuard[ch] <= 0.0f) {
+        s.inputGuard[ch] = 1.0f;
+      }
+      prepCarrier[ch][i] = dcCar * s.inputGuard[ch];
+      prepMod[ch][i] = dcMod * s.inputGuard[ch];
+    }
+  }
+
+  // ── PHASE 2: Makeup / guard ramps for the block ──
+  float makeupRamp[2][24];
+  float guardRamp[2][24];
+  for (int ch = 0; ch < channels; ++ch) {
+    for (int i = 0; i < N; ++i) {
+      float nextMakeup = s.wetMakeup[ch] + s.wetMakeupStep[ch];
       if ((s.wetMakeupStep[ch] >= 0.0f && nextMakeup > s.wetMakeupTarget[ch]) ||
           (s.wetMakeupStep[ch] < 0.0f && nextMakeup < s.wetMakeupTarget[ch])) {
         s.wetMakeup[ch] = s.wetMakeupTarget[ch];
@@ -455,195 +539,149 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
       } else {
         s.wetMakeup[ch] = nextMakeup;
       }
+      makeupRamp[ch][i] = s.wetMakeup[ch];
 
-      const float nextGuard = s.outputGuard[ch] + s.outputGuardStep[ch];
-      if ((s.outputGuardStep[ch] >= 0.0f && nextGuard > s.outputGuardTarget[ch]) ||
-          (s.outputGuardStep[ch] < 0.0f && nextGuard < s.outputGuardTarget[ch])) {
+      float nextGuard = s.outputGuard[ch] + s.outputGuardStep[ch];
+      if ((s.outputGuardStep[ch] >= 0.0f &&
+           nextGuard > s.outputGuardTarget[ch]) ||
+          (s.outputGuardStep[ch] < 0.0f &&
+           nextGuard < s.outputGuardTarget[ch])) {
         s.outputGuard[ch] = s.outputGuardTarget[ch];
         s.outputGuardStep[ch] = 0.0f;
       } else {
         s.outputGuard[ch] = nextGuard;
       }
+      guardRamp[ch][i] = s.outputGuard[ch];
     }
+  }
+
+  // ── PHASE 3: Band-first batch processing ──
+  // Accumulate wet output per channel
+  float wetAccum[2][24];
+  float wetAccumPrev[2][24];
+  memset(wetAccum, 0, sizeof(wetAccum));
+  memset(wetAccumPrev, 0, sizeof(wetAccumPrev));
+
+  // Temporary buffers for per-band filter output
+  float analysisBuf[24];
+  float synthesisBuf[24];
+  float prevSynthBuf[24];
+
+  for (int band = 0; band < a->activeBands; ++band) {
+    float meterPeakBand = 0.0f;
 
     for (int ch = 0; ch < channels; ++ch) {
-      const float rawCarrierSample = ch == 0 ? carL[i] : carR[i];
-      const float rawModSample = ch == 0 ? modL[i] : modR[i];
-      const float drivenCarrierSample = rawCarrierSample * preGainLinear;
-      const float drivenModSample = rawModSample * preGainLinear;
-      const float dcBlockedCarrier =
-          vocoderDcBlock(drivenCarrierSample, s.carrierDcX1[ch],
-                         s.carrierDcY1[ch], dcBlockR);
-      const float dcBlockedMod =
-          vocoderDcBlock(drivenModSample, s.modDcX1[ch], s.modDcY1[ch],
-                         dcBlockR);
-      const float inputPeak = fabsf(dcBlockedCarrier) > fabsf(dcBlockedMod)
-                                  ? fabsf(dcBlockedCarrier)
-                                  : fabsf(dcBlockedMod);
-      const float inputPeakMix =
-          inputPeak > s.inputPeakSmoothed[ch] ? inputPeakRiseMix
-                                              : inputPeakFallMix;
-      s.inputPeakSmoothed[ch] =
-          inputPeakMix * s.inputPeakSmoothed[ch] +
-          (1.0f - inputPeakMix) * inputPeak;
-      const float targetInputGuard = vocoderClamp(
-          inputGuardCeiling / (s.inputPeakSmoothed[ch] + 1.0e-3f), 0.0f,
-          1.0f);
-      const float inputGuardMix =
-          targetInputGuard < s.inputGuard[ch] ? inputGuardAttackMix
-                                              : inputGuardReleaseMix;
-      s.inputGuard[ch] =
-          inputGuardMix * s.inputGuard[ch] +
-          (1.0f - inputGuardMix) * targetInputGuard;
-      if (s.inputGuard[ch] <= 0.0f) {
-        s.inputGuard[ch] = 1.0f;
+      // ── Analysis: batch biquad on modulator → analysisBuf ──
+      const float analysisPeak = batchBiquadProcessWithEnvelope(
+          s.anCoeffs[band], s.anState[ch][band], prepMod[ch], analysisBuf, N);
+
+      // ── Synthesis: batch biquad on carrier → synthesisBuf ──
+      batchBiquadProcess(s.syCoeffs[band], s.syState[ch][band], prepCarrier[ch],
+                         synthesisBuf, N);
+
+      // Crossfade synthesis (previous coefficients) if active
+      if (s.synthesisXfadeRemaining > 0 && band < s.prevActiveBands) {
+        batchBiquadProcess(s.prevSyCoeffs[band], s.prevSyState[ch][band],
+                           prepCarrier[ch], prevSynthBuf, N);
       }
-      carrierSample[ch] = dcBlockedCarrier * s.inputGuard[ch];
-      modSample[ch] = dcBlockedMod * s.inputGuard[ch];
-      s.analysisAccum[ch] += modSample[ch];
-    }
 
-    for (int band = 0; band < a->activeBands; ++band) {
-      s.synthesisBandGainCurrent[band] =
-          synthesisScalarMix * s.synthesisBandGainCurrent[band] +
-          (1.0f - synthesisScalarMix) * d.synthesisBandGain[band];
-      float meterPeak = 0.0f;
-      for (int ch = 0; ch < channels; ++ch) {
-        if (updateAnalysis) {
-          const float analysisInput =
-              s.analysisAccum[ch] * (1.0f / (float)analysisInterval);
-          const float ya = d.an_b0[band] * analysisInput +
-                           d.an_b2[band] * s.an_mod_x2[ch] -
-                           d.an_a1[band] * s.an_y1[ch][band] -
-                           d.an_a2[band] * s.an_y2[ch][band];
-          s.an_y2[ch][band] = s.an_y1[ch][band];
-          s.an_y1[ch][band] = ya;
+      // ── Envelope follower: update once per block (was per 4 samples) ──
+      // Use peak from analysis batch as envelope input
+      s.envPeakHold[ch][band] = analysisPeak;
 
-          const float envPeak = fabsf(ya);
-          if (envPeak > s.envPeakHold[ch][band]) {
-            s.envPeakHold[ch][band] = envPeak;
-          }
+      const float envInput = s.envPeakHold[ch][band];
+      const float envMix = envInput > s.env[ch][band] ? attackMix : releaseMix;
+      s.env[ch][band] = (1.0f - envMix) * envInput + envMix * s.env[ch][band];
+
+      const float envAmplitude = s.env[ch][band];
+      const float envAvgMix =
+          envAmplitude > s.eAvg[ch][band] ? envAvgRiseMix : envAvgFallMix;
+      s.eAvg[ch][band] =
+          envAvgMix * s.eAvg[ch][band] + (1.0f - envAvgMix) * envAmplitude;
+      const float envNorm = envAmplitude / (s.eAvg[ch][band] + kVocoderEpsilon);
+      const float rawBandGain = vocoderClamp(
+          vocoderSoftKneeCompress(
+              computeDepthGain(depthShape, envAmplitude, envNorm), 3.0f, 3.0f),
+          0.0f, 8.0f);
+
+      float enhanceGain = 1.0f;
+      if (enhance) {
+        // Carrier peak from synthesis output
+        float carrierPeak = 0.0f;
+        for (int i = 0; i < N; ++i) {
+          const float ay = fabsf(synthesisBuf[i]);
+          if (ay > carrierPeak)
+            carrierPeak = ay;
         }
-
-        if (a->controls.synthesisCoeffSmoothing) {
-          sy_b0[band] =
-              synthesisCoeffMix * sy_b0[band] + (1.0f - synthesisCoeffMix) * d.sy_b0[band];
-          sy_b2[band] =
-              synthesisCoeffMix * sy_b2[band] + (1.0f - synthesisCoeffMix) * d.sy_b2[band];
-          sy_a1[band] =
-              synthesisCoeffMix * sy_a1[band] + (1.0f - synthesisCoeffMix) * d.sy_a1[band];
-          sy_a2[band] =
-              synthesisCoeffMix * sy_a2[band] + (1.0f - synthesisCoeffMix) * d.sy_a2[band];
+        s.carrierPeakHold[ch][band] = carrierPeak;
+        const float carrierAmplitude = s.carrierPeakHold[ch][band];
+        const float carrierAvgMix = carrierAmplitude > s.cAvg[ch][band]
+                                        ? carrierAvgRiseMix
+                                        : carrierAvgFallMix;
+        s.cAvg[ch][band] = carrierAvgMix * s.cAvg[ch][band] +
+                           (1.0f - carrierAvgMix) * carrierAmplitude;
+        if (s.cAvg[ch][band] > 1.0e-5f) {
+          enhanceGain = vocoderClamp(d.enhanceTarget[band] /
+                                         (s.cAvg[ch][band] + kVocoderEpsilon),
+                                     0.67f, 1.5f);
         }
+      }
 
-        const float ys = sy_b0[band] * carrierSample[ch] +
-                         sy_b2[band] * s.car_x2[ch] -
-                         sy_a1[band] * s.sy_y1[ch][band] -
-                         sy_a2[band] * s.sy_y2[ch][band];
-        s.sy_y2[ch][band] = s.sy_y1[ch][band];
-        s.sy_y1[ch][band] = ys;
+      const float finalGainTarget =
+          vocoderSoftKneeCompress(rawBandGain * enhanceGain, 2.5f, 6.0f);
+      s.gainTarget[ch][band] = finalGainTarget;
+      s.envPeakHold[ch][band] = 0.0f;
+      s.carrierPeakHold[ch][band] = 0.0f;
 
-        const float carrierPeak = fabsf(ys);
-        if (carrierPeak > s.carrierPeakHold[ch][band]) {
-          s.carrierPeakHold[ch][band] = carrierPeak;
-        }
-
-        if (updateBandControl) {
-          const float envInput = s.envPeakHold[ch][band];
-          const float envMix =
-              envInput > s.env[ch][band] ? attackMix : releaseMix;
-          s.env[ch][band] =
-              (1.0f - envMix) * envInput + envMix * s.env[ch][band];
-
-          const float envAmplitude = s.env[ch][band];
-          const float envAvgMix =
-              envAmplitude > s.eAvg[ch][band] ? envAvgRiseMix : envAvgFallMix;
-          s.eAvg[ch][band] = envAvgMix * s.eAvg[ch][band] +
-                             (1.0f - envAvgMix) * envAmplitude;
-          const float envNorm =
-              envAmplitude / (s.eAvg[ch][band] + kVocoderEpsilon);
-          const float rawBandGain = vocoderClamp(
-              vocoderSoftKneeCompress(
-                  computeDepthGain(depthShape, envAmplitude, envNorm), 3.0f,
-                  3.0f),
-              0.0f, 8.0f);
-
-          float enhanceGain = 1.0f;
-          if (enhance) {
-            const float carrierAmplitude = s.carrierPeakHold[ch][band];
-            const float carrierAvgMix =
-                carrierAmplitude > s.cAvg[ch][band] ? carrierAvgRiseMix
-                                                    : carrierAvgFallMix;
-            s.cAvg[ch][band] = carrierAvgMix * s.cAvg[ch][band] +
-                               (1.0f - carrierAvgMix) * carrierAmplitude;
-            if (s.cAvg[ch][band] > 1.0e-5f) {
-              enhanceGain = vocoderClamp(
-                  d.enhanceTarget[band] / (s.cAvg[ch][band] + kVocoderEpsilon),
-                  0.67f, 1.5f);
-            }
-          }
-
-          s.gainTarget[ch][band] =
-              vocoderSoftKneeCompress(rawBandGain * enhanceGain, 2.5f, 6.0f);
-          s.envPeakHold[ch][band] = 0.0f;
-          s.carrierPeakHold[ch][band] = 0.0f;
-        }
-        const float gainMix =
-            s.gainTarget[ch][band] > s.gainState[ch][band] ? gainRiseMix
-                                                           : gainFallMix;
-        s.gainState[ch][band] =
-            gainMix * s.gainState[ch][band] +
-            (1.0f - gainMix) * s.gainTarget[ch][band];
+      // ── Apply gain and accumulate ──
+      // Smooth gain across the block using per-sample smoothing
+      const float bandGainScale = s.synthesisBandGainCurrent[band];
+      for (int i = 0; i < N; ++i) {
+        const float gainMix = s.gainTarget[ch][band] > s.gainState[ch][band]
+                                  ? gainRiseMix
+                                  : gainFallMix;
+        s.gainState[ch][band] = gainMix * s.gainState[ch][band] +
+                                (1.0f - gainMix) * s.gainTarget[ch][band];
 
         const float bandWet =
-            ys * s.gainState[ch][band] * s.synthesisBandGainCurrent[band];
-        wetSample[ch] += bandWet;
+            synthesisBuf[i] * s.gainState[ch][band] * bandGainScale;
+        wetAccum[ch][i] += bandWet;
+
         if (s.synthesisXfadeRemaining > 0 && band < s.prevActiveBands) {
-          const float prevYs = s.prev_sy_b0[band] * carrierSample[ch] +
-                               s.prev_sy_b2[band] * s.car_x2[ch] -
-                               s.prev_sy_a1[band] * s.prev_sy_y1[ch][band] -
-                               s.prev_sy_a2[band] * s.prev_sy_y2[ch][band];
-          s.prev_sy_y2[ch][band] = s.prev_sy_y1[ch][band];
-          s.prev_sy_y1[ch][band] = prevYs;
-          wetSamplePrev[ch] +=
-              prevYs * s.gainState[ch][band] * s.synthesisBandGainCurrent[band];
+          wetAccumPrev[ch][i] +=
+              prevSynthBuf[i] * s.gainState[ch][band] * bandGainScale;
         }
+
         const float bandLevel = fabsf(bandWet);
-        if (bandLevel > meterPeak) {
-          meterPeak = bandLevel;
+        if (bandLevel > meterPeakBand) {
+          meterPeakBand = bandLevel;
         }
       }
-
-      if (meterPeak > s.meterPeakHold[band]) {
-        s.meterPeakHold[band] = meterPeak;
-      }
     }
 
-    for (int ch = 0; ch < channels; ++ch) {
-      if (updateAnalysis) {
-        const float analysisInput =
-            s.analysisAccum[ch] * (1.0f / (float)analysisInterval);
-        s.an_mod_x2[ch] = s.an_mod_x1[ch];
-        s.an_mod_x1[ch] = analysisInput;
-        s.analysisAccum[ch] = 0.0f;
-      }
-      s.car_x2[ch] = s.car_x1[ch];
-      s.car_x1[ch] = carrierSample[ch];
+    if (meterPeakBand > s.meterPeakHold[band]) {
+      s.meterPeakHold[band] = meterPeakBand;
     }
+  }
 
-    if (s.synthesisXfadeRemaining > 0) {
-      const float xfade = 1.0f -
-                          (float)s.synthesisXfadeRemaining /
-                              (float)s.synthesisXfadeTotal;
+  // ── PHASE 4: Crossfade, output mixing, metering ──
+  if (s.synthesisXfadeRemaining > 0) {
+    for (int i = 0; i < N; ++i) {
+      const float xfade = 1.0f - (float)s.synthesisXfadeRemaining /
+                                     (float)s.synthesisXfadeTotal;
       const float mix = vocoderClamp(xfade, 0.0f, 1.0f);
       for (int ch = 0; ch < channels; ++ch) {
-        wetSample[ch] = vocoderLerp(wetSamplePrev[ch], wetSample[ch], mix);
+        wetAccum[ch][i] =
+            vocoderLerp(wetAccumPrev[ch][i], wetAccum[ch][i], mix);
       }
-      --s.synthesisXfadeRemaining;
+      if (s.synthesisXfadeRemaining > 0) {
+        --s.synthesisXfadeRemaining;
+      }
     }
+  }
 
-    const float shapedL =
-        wetSample[0] * masterScale * s.bandwidthCompCurrent;
+  for (int i = 0; i < N; ++i) {
+    const float shapedL = wetAccum[0][i] * masterScale * s.bandwidthCompCurrent;
     const float dryLevelL = fabsf(carL[i]);
     const float wetLevelL = fabsf(shapedL);
     if (dryLevelL > s.dryPeakHold[0]) {
@@ -652,8 +690,8 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
     if (wetLevelL > s.wetPeakHold[0]) {
       s.wetPeakHold[0] = wetLevelL;
     }
-    const float matchedWetL = shapedL * s.wetMakeup[0];
-    const float guardedWetL = matchedWetL * s.outputGuard[0];
+    const float matchedWetL = shapedL * makeupRamp[0][i];
+    const float guardedWetL = matchedWetL * guardRamp[0][i];
     const float limitedWetL = vocoderTransparentLimit(guardedWetL, 9.0f);
     const float mixedL = carL[i] * (1.0f - wet) + limitedWetL * wet;
 
@@ -665,7 +703,7 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
 
     if (stereoOutput) {
       const float shapedR =
-          wetSample[1] * masterScale * s.bandwidthCompCurrent;
+          wetAccum[1][i] * masterScale * s.bandwidthCompCurrent;
       const float dryLevelR = fabsf(carR[i]);
       const float wetLevelR = fabsf(shapedR);
       if (dryLevelR > s.dryPeakHold[1]) {
@@ -674,8 +712,8 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
       if (wetLevelR > s.wetPeakHold[1]) {
         s.wetPeakHold[1] = wetLevelR;
       }
-      const float matchedWetR = shapedR * s.wetMakeup[1];
-      const float guardedWetR = matchedWetR * s.outputGuard[1];
+      const float matchedWetR = shapedR * makeupRamp[1][i];
+      const float guardedWetR = matchedWetR * guardRamp[1][i];
       const float limitedWetR = vocoderTransparentLimit(guardedWetR, 9.0f);
       const float mixedR = carR[i] * (1.0f - wet) + limitedWetR * wet;
       if (replace) {
@@ -684,97 +722,83 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
         outR[i] += mixedR;
       }
     }
-
-    if (flushMeter) {
-      for (int band = 0; band < a->activeBands; ++band) {
-        const float meterTarget = vocoderClamp(2.5f * s.meterPeakHold[band], 0.0f, 1.0f);
-        const float meterMix =
-            meterTarget > s.meters[band] ? meterRiseMix : meterFallMix;
-        s.meters[band] =
-            meterMix * s.meters[band] + (1.0f - meterMix) * meterTarget;
-        s.meterPeakHold[band] = 0.0f;
-      }
-      for (int band = a->activeBands; band < kVocoderMaxBands; ++band) {
-        s.meters[band] =
-            meterFallMix * s.meters[band] + (1.0f - meterFallMix) * 0.0f;
-        s.meterPeakHold[band] = 0.0f;
-      }
-      s.controlPhase = 0;
-    } else {
-      ++s.controlPhase;
-    }
-
-    if (flushLevel) {
-      for (int ch = 0; ch < channels; ++ch) {
-        const float dryLevel = s.dryPeakHold[ch];
-        const float wetLevel = s.wetPeakHold[ch];
-        const float dryAvgMix =
-            dryLevel > s.dryAvg[ch] ? levelAvgRiseMix : levelAvgFallMix;
-        const float wetAvgMix =
-            wetLevel > s.wetAvg[ch] ? levelAvgRiseMix : levelAvgFallMix;
-        s.dryAvg[ch] =
-            dryAvgMix * s.dryAvg[ch] + (1.0f - dryAvgMix) * dryLevel;
-        s.wetAvg[ch] =
-            wetAvgMix * s.wetAvg[ch] + (1.0f - wetAvgMix) * wetLevel;
-        const float targetMakeup = vocoderClamp(
-            1.35f * (s.dryAvg[ch] + 0.01f) / (s.wetAvg[ch] + 0.01f), 1.0f, 6.0f);
-        const float makeupMix =
-            targetMakeup < s.wetMakeup[ch] ? makeupFallMix : makeupRiseMix;
-        s.wetMakeupTarget[ch] =
-            makeupMix * s.wetMakeupTarget[ch] + (1.0f - makeupMix) * targetMakeup;
-        if (s.wetMakeupTarget[ch] < 1.0f) {
-          s.wetMakeupTarget[ch] = 1.0f;
-        }
-        s.wetMakeupStep[ch] =
-            (s.wetMakeupTarget[ch] - s.wetMakeup[ch]) /
-            (float)levelControlInterval;
-
-        const float matchedWetPeak = wetLevel * s.wetMakeupTarget[ch];
-        const float targetGuard =
-            vocoderClamp(guardCeiling / (matchedWetPeak + 1.0e-3f), 0.0f, 1.0f);
-        const float guardMix =
-            targetGuard < s.outputGuard[ch] ? guardAttackMix : guardReleaseMix;
-        s.outputGuardTarget[ch] =
-            guardMix * s.outputGuardTarget[ch] + (1.0f - guardMix) * targetGuard;
-        if (s.outputGuardTarget[ch] <= 0.0f) {
-          s.outputGuardTarget[ch] = 1.0f;
-        }
-        s.outputGuardStep[ch] =
-            (s.outputGuardTarget[ch] - s.outputGuard[ch]) /
-            (float)levelControlInterval;
-
-        s.dryPeakHold[ch] = 0.0f;
-        s.wetPeakHold[ch] = 0.0f;
-      }
-      s.levelPhase = 0;
-    } else {
-      ++s.levelPhase;
-    }
-
-    ++s.bandControlPhase;
-    if (s.bandControlPhase >= bandControlInterval) {
-      s.bandControlPhase = 0;
-    }
-
-    ++s.analysisPhase;
-    if (s.analysisPhase >= analysisInterval) {
-      s.analysisPhase = 0;
-    }
   }
 
+  // ── PHASE 5: Metering and level matching (at reduced rates) ──
+  s.controlPhase += N;
+  if (s.controlPhase >= meterControlInterval) {
+    for (int band = 0; band < a->activeBands; ++band) {
+      const float meterTarget =
+          vocoderClamp(2.5f * s.meterPeakHold[band], 0.0f, 1.0f);
+      const float meterMix =
+          meterTarget > s.meters[band] ? meterRiseMix : meterFallMix;
+      s.meters[band] =
+          meterMix * s.meters[band] + (1.0f - meterMix) * meterTarget;
+      s.meterPeakHold[band] = 0.0f;
+    }
+    for (int band = a->activeBands; band < kVocoderMaxBands; ++band) {
+      s.meters[band] = meterFallMix * s.meters[band];
+      s.meterPeakHold[band] = 0.0f;
+    }
+    s.controlPhase = 0;
+  }
+
+  s.levelPhase += N;
+  if (s.levelPhase >= levelControlInterval) {
+    for (int ch = 0; ch < channels; ++ch) {
+      const float dryLevel = s.dryPeakHold[ch];
+      const float wetLevel = s.wetPeakHold[ch];
+      const float dryAvgMix =
+          dryLevel > s.dryAvg[ch] ? levelAvgRiseMix : levelAvgFallMix;
+      const float wetAvgMix =
+          wetLevel > s.wetAvg[ch] ? levelAvgRiseMix : levelAvgFallMix;
+      s.dryAvg[ch] = dryAvgMix * s.dryAvg[ch] + (1.0f - dryAvgMix) * dryLevel;
+      s.wetAvg[ch] = wetAvgMix * s.wetAvg[ch] + (1.0f - wetAvgMix) * wetLevel;
+      const float targetMakeup = vocoderClamp(
+          1.35f * (s.dryAvg[ch] + 0.01f) / (s.wetAvg[ch] + 0.01f), 1.0f, 6.0f);
+      const float mMix =
+          targetMakeup < s.wetMakeup[ch] ? makeupFallMix : makeupRiseMix;
+      s.wetMakeupTarget[ch] =
+          mMix * s.wetMakeupTarget[ch] + (1.0f - mMix) * targetMakeup;
+      if (s.wetMakeupTarget[ch] < 1.0f) {
+        s.wetMakeupTarget[ch] = 1.0f;
+      }
+      s.wetMakeupStep[ch] = (s.wetMakeupTarget[ch] - s.wetMakeup[ch]) /
+                            (float)levelControlInterval;
+
+      const float matchedWetPeak = wetLevel * s.wetMakeupTarget[ch];
+      const float targetGuard =
+          vocoderClamp(guardCeiling / (matchedWetPeak + 1.0e-3f), 0.0f, 1.0f);
+      const float gMix =
+          targetGuard < s.outputGuard[ch] ? guardAttackMix : guardReleaseMix;
+      s.outputGuardTarget[ch] =
+          gMix * s.outputGuardTarget[ch] + (1.0f - gMix) * targetGuard;
+      if (s.outputGuardTarget[ch] <= 0.0f) {
+        s.outputGuardTarget[ch] = 1.0f;
+      }
+      s.outputGuardStep[ch] = (s.outputGuardTarget[ch] - s.outputGuard[ch]) /
+                              (float)levelControlInterval;
+
+      s.dryPeakHold[ch] = 0.0f;
+      s.wetPeakHold[ch] = 0.0f;
+    }
+    s.levelPhase = 0;
+  }
+
+  // Check if coefficient smoothing has converged
   if (a->controls.synthesisCoeffSmoothing) {
     float maxCoeffDelta = 0.0f;
     for (int band = 0; band < a->activeBands; ++band) {
-      float delta = fabsf(s.sy_b0_current[band] - d.sy_b0[band]);
-      if (fabsf(s.sy_b2_current[band] - d.sy_b2[band]) > delta) {
-        delta = fabsf(s.sy_b2_current[band] - d.sy_b2[band]);
-      }
-      if (fabsf(s.sy_a1_current[band] - d.sy_a1[band]) > delta) {
-        delta = fabsf(s.sy_a1_current[band] - d.sy_a1[band]);
-      }
-      if (fabsf(s.sy_a2_current[band] - d.sy_a2[band]) > delta) {
-        delta = fabsf(s.sy_a2_current[band] - d.sy_a2[band]);
-      }
+      float delta = fabsf(s.sy_b0_smooth[band] - s.sy_b0_target[band]);
+      float d2 = fabsf(s.sy_b2_smooth[band] - s.sy_b2_target[band]);
+      if (d2 > delta)
+        delta = d2;
+      d2 = fabsf(s.sy_a1_smooth[band] - s.sy_a1_target[band]);
+      if (d2 > delta)
+        delta = d2;
+      d2 = fabsf(s.sy_a2_smooth[band] - s.sy_a2_target[band]);
+      if (d2 > delta)
+        delta = d2;
       if (delta > maxCoeffDelta) {
         maxCoeffDelta = delta;
       }

@@ -3,11 +3,22 @@ SDK ?= $(abspath $(ROOT)/distingnt_api)
 PLUGIN := vocoder
 OBJDIR := build
 
+CMSIS_DSP := $(abspath $(ROOT)/CMSIS-DSP)
+CMSIS_CORE := $(abspath $(ROOT)/CMSIS_6)
+
 CXX := arm-none-eabi-g++
 CXXFLAGS := -std=c++11 -mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -fPIC \
 	-I$(SDK)/include \
-	-Os -ffast-math -fdata-sections -ffunction-sections \
+	-I$(CMSIS_DSP)/Include -I$(CMSIS_DSP)/PrivateInclude -I$(CMSIS_CORE)/CMSIS/Core/Include \
+	-DARM_MATH_CM7 -D__FPU_PRESENT=1 \
+	-O2 -ffast-math -fdata-sections -ffunction-sections \
 	-fno-exceptions -fno-rtti -fno-unwind-tables -fno-asynchronous-unwind-tables
+
+CC := arm-none-eabi-gcc
+CFLAGS := -mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -fPIC \
+	-I$(CMSIS_DSP)/Include -I$(CMSIS_DSP)/PrivateInclude -I$(CMSIS_CORE)/CMSIS/Core/Include \
+	-DARM_MATH_CM7 -D__FPU_PRESENT=1 \
+	-O2 -ffast-math -fdata-sections -ffunction-sections
 
 HOST_CXX ?= c++
 HOST_CXXFLAGS ?= -std=c++17 -I$(SDK)/include
@@ -20,7 +31,13 @@ BENCH_SAMPLES ?= 8
 BENCH_INTERVAL ?= 0.5
 
 SRCS := vocoder_algo.cpp vocoder_ui.cpp
-OBJS := $(patsubst %.cpp,$(OBJDIR)/%.o,$(SRCS))
+C_SRCS := $(CMSIS_DSP)/Source/FilteringFunctions/arm_biquad_cascade_df2T_f32.c \
+          $(CMSIS_DSP)/Source/FilteringFunctions/arm_biquad_cascade_df2T_init_f32.c
+
+CXX_OBJS := $(patsubst %.cpp,$(OBJDIR)/%.o,$(SRCS))
+C_OBJS := $(patsubst $(CMSIS_DSP)/Source/FilteringFunctions/%.c,$(OBJDIR)/cmsis_%.o,$(C_SRCS))
+
+OBJS := $(CXX_OBJS) $(C_OBJS)
 
 .PHONY: all build push test benchmark-host benchmark-device benchmark-device-motion version paths list clean
 
@@ -31,6 +48,10 @@ build: $(PLUGIN).o
 $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJDIR)/cmsis_%.o: $(CMSIS_DSP)/Source/FilteringFunctions/%.c
+	@mkdir -p $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(PLUGIN).o: $(OBJS)
 	$(CXX) -r $^ -o $@

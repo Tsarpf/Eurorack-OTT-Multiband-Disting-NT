@@ -1,6 +1,7 @@
 #ifndef VOCODER_STRUCTS_H
 #define VOCODER_STRUCTS_H
 
+#include "batch_biquad.h"
 #include "vocoder_dsp.h"
 #include <distingnt/api.h>
 
@@ -10,6 +11,7 @@ struct VocoderDescriptor {
   float synthesisFreq[kVocoderMaxBands];
   float synthesisBandGain[kVocoderMaxBands];
   float enhanceTarget[kVocoderMaxBands];
+  // DF1 coefficients computed by vocoderCalculateBandpass
   float an_b0[kVocoderMaxBands];
   float an_b2[kVocoderMaxBands];
   float an_a1[kVocoderMaxBands];
@@ -31,20 +33,29 @@ struct VocoderDepthShape {
 };
 
 struct VocoderDSPState {
-  float an_y1[2][kVocoderMaxBands];
-  float an_y2[2][kVocoderMaxBands];
-  float sy_y1[2][kVocoderMaxBands];
-  float sy_y2[2][kVocoderMaxBands];
-  float prev_sy_y1[2][kVocoderMaxBands];
-  float prev_sy_y2[2][kVocoderMaxBands];
-  float sy_b0_current[kVocoderMaxBands];
-  float sy_b2_current[kVocoderMaxBands];
-  float sy_a1_current[kVocoderMaxBands];
-  float sy_a2_current[kVocoderMaxBands];
-  float prev_sy_b0[kVocoderMaxBands];
-  float prev_sy_b2[kVocoderMaxBands];
-  float prev_sy_a1[kVocoderMaxBands];
-  float prev_sy_a2[kVocoderMaxBands];
+  // Batch biquad DF2T state (2 floats per filter vs 4 in old DF1)
+  BatchBiquadState anState[2][kVocoderMaxBands];
+  BatchBiquadState syState[2][kVocoderMaxBands];
+  BatchBiquadState prevSyState[2][kVocoderMaxBands];
+
+  // Batch biquad coefficients (opaque — accessed via batchBiquad* API)
+  BatchBiquadCoeffs anCoeffs[kVocoderMaxBands];
+  BatchBiquadCoeffs syCoeffs[kVocoderMaxBands];
+  BatchBiquadCoeffs prevSyCoeffs[kVocoderMaxBands];
+
+  // DF1-level synthesis coefficients for smoothing (plain floats)
+  // Smoothed per-block, then converted to BatchBiquadCoeffs
+  float sy_b0_smooth[kVocoderMaxBands];
+  float sy_b2_smooth[kVocoderMaxBands];
+  float sy_a1_smooth[kVocoderMaxBands];
+  float sy_a2_smooth[kVocoderMaxBands];
+
+  float sy_b0_target[kVocoderMaxBands];
+  float sy_b2_target[kVocoderMaxBands];
+  float sy_a1_target[kVocoderMaxBands];
+  float sy_a2_target[kVocoderMaxBands];
+
+  // Envelope follower state
   float env[2][kVocoderMaxBands];
   float eAvg[2][kVocoderMaxBands];
   float cAvg[2][kVocoderMaxBands];
@@ -52,8 +63,12 @@ struct VocoderDSPState {
   float carrierPeakHold[2][kVocoderMaxBands];
   float gainTarget[2][kVocoderMaxBands];
   float gainState[2][kVocoderMaxBands];
+
+  // Metering
   float meters[kVocoderMaxBands];
   float meterPeakHold[kVocoderMaxBands];
+
+  // Level matching
   float dryAvg[2];
   float wetAvg[2];
   float wetMakeup[2];
@@ -66,26 +81,25 @@ struct VocoderDSPState {
   float outputGuardStep[2];
   float dryPeakHold[2];
   float wetPeakHold[2];
+
+  // Band gain smoothing
   float synthesisBandGainCurrent[kVocoderMaxBands];
   float bandwidthCompCurrent;
-  float analysisAccum[2];
-  float an_mod_x1[2];
-  float an_mod_x2[2];
-  float mod_x1[2];
-  float mod_x2[2];
-  float car_x1[2];
-  float car_x2[2];
+
+  // DC blocking
   float carrierDcX1[2];
   float carrierDcY1[2];
   float modDcX1[2];
   float modDcY1[2];
+
+  // Crossfade
   int prevActiveBands;
   int synthesisXfadeRemaining;
   int synthesisXfadeTotal;
+
+  // Phase counters
   int controlPhase;
   int levelPhase;
-  int bandControlPhase;
-  int analysisPhase;
 };
 
 struct VocoderControlState {
