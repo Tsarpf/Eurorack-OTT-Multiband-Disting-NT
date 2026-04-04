@@ -95,6 +95,37 @@ struct VocoderDSPState {
   int levelPhase;
 };
 
+struct VocoderCachedCoeffs {
+  float attackMix;
+  float releaseMix;
+  float envAvgRiseMix;
+  float envAvgFallMix;
+  float synthesisCoeffMix;
+  float synthesisScalarMix;
+  float gainRiseMix;
+  float gainFallMix;
+  float masterScale;
+  float dcBlockR;
+  float levelAvgRiseMix;
+  float levelAvgFallMix;
+  float meterRiseMix;
+  float meterFallMix;
+  float makeupRiseMix;
+  float makeupFallMix;
+  float inputPeakRiseMix;
+  float inputPeakFallMix;
+  float inputGuardAttackMix;
+  float inputGuardReleaseMix;
+  float guardAttackMix;
+  float guardReleaseMix;
+  // Keys used to detect staleness
+  int   lastN;
+  float lastSampleRate;
+  int   lastAttack;
+  int   lastRelease;
+  int   lastActiveBands;
+};
+
 struct VocoderControlState {
   float currentBandwidth;
   float targetBandwidth;
@@ -113,7 +144,8 @@ struct _vocoderAlgorithm : public _NT_algorithm {
   _vocoderAlgorithm()
       : descriptor(nullptr), state(nullptr), activeBands(8), uiDirty(true),
         leftEncoderControlsDecay(false), rightEncoderControlsGain(false),
-        uiReleaseDisplay(100), uiWetDisplay(100), uiOutputGainDisplay(0) {
+        uiReleaseDisplay(100), uiWetDisplay(100), uiOutputGainDisplay(0),
+        blockCoeffs{} {
     controls.currentBandwidth = 50.0f;
     controls.targetBandwidth = 50.0f;
     controls.currentFormant = 0.0f;
@@ -137,6 +169,8 @@ struct _vocoderAlgorithm : public _NT_algorithm {
   int uiReleaseDisplay;
   int uiWetDisplay;
   int uiOutputGainDisplay;
+  // Appended last — must not be reordered or removed (NT memory layout rule)
+  VocoderCachedCoeffs blockCoeffs;
 };
 
 #endif // VOCODER_STRUCTS_H

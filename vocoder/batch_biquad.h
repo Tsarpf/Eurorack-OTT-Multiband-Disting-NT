@@ -77,4 +77,43 @@ inline void batchBiquadUpdateCoeffs(BatchBiquadState &s,
   s.inst.pCoeffs = c.coeffs;
 }
 
+// Reseat pCoeffs and pState pointers without zeroing state.
+// Use instead of batchBiquadInit when the filter is already running and you
+// only need to point the instance at (possibly-moved) memory.
+// batchBiquadInit zeros the state via CMSIS init, causing audible zipper noise
+// on live filters (e.g. bandwidth sweeps).
+inline void batchBiquadReseat(BatchBiquadState &s, const BatchBiquadCoeffs &c) {
+  s.inst.pCoeffs = c.coeffs;
+  s.inst.pState  = s.state;
+}
+
+// Process one DF2T biquad stage (b1=0 bandpass) and immediately apply
+// per-sample smoothed gain, accumulating into accum[].
+// Fuses the synthesis filter pass with the gain-smoothing+accumulation pass
+// into a single N-sample loop, eliminating the intermediate synthesisBuf.
+// gainMix and gainMixComp (= 1 - gainMix) must be pre-computed for the block.
+inline void batchBiquadProcessAndAccum(BatchBiquadState &s,
+                                       const float *src, float *accum,
+                                       int blockSize, float &gainState,
+                                       float gainTarget, float gainMix,
+                                       float gainMixComp,
+                                       float bandGainScale) {
+  float d1  = s.state[0];
+  float d2  = s.state[1];
+  const float b0  = s.inst.pCoeffs[0];
+  const float b2  = s.inst.pCoeffs[2];
+  const float a1c = s.inst.pCoeffs[3]; // stored as -a1_df1 (CMSIS DF2T sign)
+  const float a2c = s.inst.pCoeffs[4]; // stored as -a2_df1
+  for (int i = 0; i < blockSize; ++i) {
+    const float x = src[i];
+    const float y = b0 * x + d1;
+    d1 = d2 + a1c * y;          // b1 = 0 for bandpass; CMSIS: d1 = b1*x + a1*y + d2
+    d2 = b2 * x + a2c * y;      // CMSIS: d2 = b2*x + a2*y
+    gainState = gainMix * gainState + gainMixComp * gainTarget;
+    accum[i] += y * gainState * bandGainScale;
+  }
+  s.state[0] = d1;
+  s.state[1] = d2;
+}
+
 #endif // VOCODER_BATCH_BIQUAD_H

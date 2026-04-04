@@ -266,7 +266,9 @@ static void testImpulseProducesResponse() {
   require(meanAbs > 1.0e-4f, "impulse response should produce non-zero output");
 }
 
-static void testEnhanceChangesOutput() {
+static void testEnhanceIsNoop() {
+  // Enhance computation was removed (task E); the parameter is kept for
+  // UI/serialisation compatibility but must have no effect on audio output.
   HostAlgorithm base = makeAlgorithm();
   HostAlgorithm enhanced = makeAlgorithm();
   enhanced.values[kEnhance] = 1;
@@ -283,8 +285,6 @@ static void testEnhanceChangesOutput() {
   }
 
   std::vector<float> outA, outB;
-  processAndMeasureAbs(base, carL, carR, modL, modR, nullptr);
-  processAndMeasureAbs(enhanced, carL, carR, modL, modR, nullptr);
   processAndMeasureAbs(base, carL, carR, modL, modR, &outA);
   processAndMeasureAbs(enhanced, carL, carR, modL, modR, &outB);
 
@@ -292,7 +292,7 @@ static void testEnhanceChangesOutput() {
   for (int i = 0; i < frames; ++i) {
     diff += fabsf(outA[i] - outB[i]);
   }
-  require(diff > 1.0e-4f, "enhance should change output");
+  require(diff < 1.0e-4f, "enhance should be a no-op after removal");
 }
 
 static void testFormantSmoothingMovesDescriptor() {
@@ -395,7 +395,7 @@ int main() {
   testMonoDefaultIgnoresNextCarrierBus();
   testStereoCarrierChangesOutput();
   testImpulseProducesResponse();
-  testEnhanceChangesOutput();
+  testEnhanceIsNoop();
   testFormantSmoothingMovesDescriptor();
   testMotionStaysFinite();
   testMetersRespondToModulator();
