@@ -57,10 +57,20 @@ struct VocoderDSPState {
   float dryAvg[2];
   float wetAvg[2];
   float wetMakeup[2];
+  float wetMakeupTarget[2];
+  float wetMakeupStep[2];
+  float inputPeakSmoothed[2];
   float inputGuard[2];
   float outputGuard[2];
+  float outputGuardTarget[2];
+  float outputGuardStep[2];
   float dryPeakHold[2];
   float wetPeakHold[2];
+  float synthesisBandGainCurrent[kVocoderMaxBands];
+  float bandwidthCompCurrent;
+  float analysisAccum[2];
+  float an_mod_x1[2];
+  float an_mod_x2[2];
   float mod_x1[2];
   float mod_x2[2];
   float car_x1[2];
@@ -73,7 +83,9 @@ struct VocoderDSPState {
   int synthesisXfadeRemaining;
   int synthesisXfadeTotal;
   int controlPhase;
+  int levelPhase;
   int bandControlPhase;
+  int analysisPhase;
 };
 
 struct VocoderControlState {
@@ -86,6 +98,7 @@ struct VocoderControlState {
   float currentOutputGainDb;
   float targetOutputGainDb;
   bool descriptorDirty;
+  bool synthesisDirty;
   bool synthesisCoeffSmoothing;
 };
 
@@ -103,6 +116,7 @@ struct _vocoderAlgorithm : public _NT_algorithm {
     controls.currentOutputGainDb = 0.0f;
     controls.targetOutputGainDb = 0.0f;
     controls.descriptorDirty = true;
+    controls.synthesisDirty = true;
     controls.synthesisCoeffSmoothing = true;
   }
 
