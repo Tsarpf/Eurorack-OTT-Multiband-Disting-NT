@@ -1,7 +1,6 @@
 #include "ott_structs.h"
 #include "ott_ui.h"
-#include "ott_parameters.h"   // enums & params[] (see next section)
-#include <string>
+#include "ott_parameters.h"
 
 static const int kLineStep = 2;   // spacing of ratio lines in pixels
 static const int kBandGap  = 5;   // spacing between bands in pixels
@@ -11,7 +10,6 @@ static const int kFreqWidth = 220;    // width of frequency display
 void setupUi(_NT_algorithm* self, _NT_float3& pots)
 {
     auto* a = (_ottAlgorithm*)self;
-    plugHeapUse(&a->heap);
     pots[0] = 0.5f; pots[1] = 0.5f; pots[2] = 0.5f;   // centre the knobs
     for (int i=0;i<3;++i) {
         a->potCaught[i] = false;
@@ -23,7 +21,6 @@ void setupUi(_NT_algorithm* self, _NT_float3& pots)
 bool draw(_NT_algorithm* self)
 {
     auto* a = (_ottAlgorithm*)self;
-    plugHeapUse(&a->heap);
     const UIState& ui = a->state;
 
     std::memset(NT_screen, 0, sizeof(NT_screen));
@@ -52,25 +49,26 @@ bool draw(_NT_algorithm* self)
 
     // Draw the values of the pots according to our state
 
-    int x1 = mapHzToX(a->ui.get("Xover/LowMidFreq"));
-    int x2 = mapHzToX(a->ui.get("Xover/MidHighFreq"));
+    int x1 = mapHzToX((float)a->v[kXoverLoMid]);
+    int x2 = mapHzToX((float)a->v[kXoverMidHi]);
     NT_drawShapeI(kNT_line, x1, 10, x1, 60, 8);
     NT_drawShapeI(kNT_line, x2, 10, x2, 60, 8);
 
-    auto drawBand = [&](int idx, int xStart, int xEnd, const char* name){
-        char key[32];
-        snprintf(key, sizeof(key), "%s/DownThr", name);
-        float dThr = a->ui.get(key);
-        snprintf(key, sizeof(key), "%s/UpThr", name);
-        float uThr = a->ui.get(key);
-        snprintf(key, sizeof(key), "%s/DownRat", name);
-        float dRat = a->ui.get(key);
-        snprintf(key, sizeof(key), "%s/UpRat", name);
-        float uRat = a->ui.get(key);
-        snprintf(key, sizeof(key), "%s/PreGain", name);
-        float pre = a->ui.get(key);
-        snprintf(key, sizeof(key), "%s/PostGain", name);
-        float post = a->ui.get(key);
+    // Parameter index tables: [0]=Low, [1]=Mid, [2]=High
+    static const int thrDownP[3] = { kLoDownThr,  kMidDownThr,  kHiDownThr  };
+    static const int thrUpP[3]   = { kLoUpThr,    kMidUpThr,    kHiUpThr    };
+    static const int ratDownP[3] = { kLoDownRat,  kMidDownRat,  kHiDownRat  };
+    static const int ratUpP[3]   = { kLoUpRat,    kMidUpRat,    kHiUpRat    };
+    static const int preP[3]     = { kLoPreGain,  kMidPreGain,  kHiPreGain  };
+    static const int postP[3]    = { kLoPostGain, kMidPostGain, kHiPostGain };
+
+    auto drawBand = [&](int idx, int xStart, int xEnd){
+        float dThr = a->v[thrDownP[idx]] * 0.1f;
+        float uThr = a->v[thrUpP[idx]]   * 0.1f;
+        float dRat = a->v[ratDownP[idx]] * 0.01f;
+        float uRat = a->v[ratUpP[idx]]   * 0.01f;
+        float pre  = a->v[preP[idx]]     * 0.1f;
+        float post = a->v[postP[idx]]    * 0.1f;
 
         int yDown = mapDownThrToY(dThr);
         int yUp   = mapUpThrToY(uThr);
@@ -128,12 +126,12 @@ bool draw(_NT_algorithm* self)
     int xMidEnd = x2 - (kBandGap + 1) / 2;
     int xHiSta  = x2 + kBandGap / 2;
 
-    drawBand(0,      0,      xLoEnd, "Low");
-    drawBand(1,      xMidSta, xMidEnd, "Mid");
-    drawBand(2,      xHiSta,  xMax,    "High");
+    drawBand(0,      0,       xLoEnd );
+    drawBand(1,      xMidSta, xMidEnd);
+    drawBand(2,      xHiSta,  xMax   );
 
-    int yWet = mapPercentToY(a->ui.get("Global/Wet"));
-    int yGain = mapGainToY(a->ui.get("Global/OutGain"));
+    int yWet  = mapPercentToY((float)a->v[kGlobalWet]);
+    int yGain = mapGainToY(a->v[kGlobalOut] * 0.1f);
     NT_drawShapeI(kNT_line, xGW, 60, xGW, yWet, 14);
     NT_drawShapeI(kNT_line, xGW+5, 60, xGW+5, yGain, 14);
     NT_drawText(xGW+1, 62, "W", 14, kNT_textLeft, kNT_textTiny);
@@ -162,7 +160,6 @@ uint32_t hasCustomUi(_NT_algorithm*)
 void customUi(_NT_algorithm* self, const _NT_uiData& data)
 {
     auto* a  = (_ottAlgorithm*)self;
-    plugHeapUse(&a->heap);
     UIState& ui = a->state;
 
     /* buttons */

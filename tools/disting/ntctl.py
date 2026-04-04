@@ -258,6 +258,9 @@ class DistingClient:
                 raise RuntimeError(f"Unexpected upload response: {resp}")
             pos += count
 
+    def delete_file(self, nt_path: str) -> None:
+        self._fs_request(K_OP_DELETE, [ord(ch) for ch in nt_path])
+
     def rescan_plugins(self) -> None:
         self._fs_request(K_OP_RESCAN, [])
 
@@ -309,6 +312,15 @@ def cmd_cpu(args: argparse.Namespace) -> int:
             print(f"{idx:02d} alg={alg:3d}% module={whole:3d}% slots=[{slot_text}]")
             if idx + 1 < args.samples:
                 time.sleep(args.interval)
+        return 0
+    return with_client(args, run)
+
+
+def cmd_delete(args: argparse.Namespace) -> int:
+    def run(client: DistingClient) -> int:
+        client.delete_file(args.nt_path)
+        client.rescan_plugins()
+        print(f"Deleted {args.nt_path}")
         return 0
     return with_client(args, run)
 
@@ -510,6 +522,10 @@ def build_parser() -> argparse.ArgumentParser:
     push.add_argument("local_plugin")
     push.add_argument("--save-as", default="codex-dev")
     push.set_defaults(func=cmd_push_plugin)
+
+    delete = sub.add_parser("delete")
+    delete.add_argument("nt_path")
+    delete.set_defaults(func=cmd_delete)
 
     bench = sub.add_parser("benchmark-vocoder")
     bench.add_argument("--slot", type=int)
