@@ -120,7 +120,10 @@ static void syncSynthesisCoefficients(_vocoderAlgorithm *a) {
     s.sy_a1_target[band] = d.sy_a1[band];
     s.sy_a2_target[band] = d.sy_a2[band];
     for (int ch = 0; ch < 2; ++ch) {
-      batchBiquadInit(s.syState[ch][band], s.syCoeffs[band]);
+      // Use batchBiquadReseat (not batchBiquadInit) — init zeros the synthesis
+      // filter state, causing a click/pop whenever smoothing converges or
+      // a band-count/freq change snaps to new coefficients instantly.
+      batchBiquadReseat(s.syState[ch][band], s.syCoeffs[band]);
     }
   }
 }

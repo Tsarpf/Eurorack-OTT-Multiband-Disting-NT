@@ -35,15 +35,6 @@ static void formatDecay(char *buf, size_t bufSize, int valueMs) {
   }
 }
 
-static int decayStepMs(int currentMs) {
-  if (currentMs < 1000) {
-    return 25;
-  }
-  if (currentMs < 5000) {
-    return 100;
-  }
-  return 500;
-}
 
 void setupUi(_NT_algorithm *self, _NT_float3 &pots) {
   auto *a = (_vocoderAlgorithm *)self;
@@ -159,9 +150,8 @@ void customUi(_NT_algorithm *self, const _NT_uiData &data) {
 
   if (data.encoders[0]) {
     if (a->leftEncoderControlsDecay) {
-      int decay = a->uiReleaseDisplay +
-                  data.encoders[0] * decayStepMs(a->uiReleaseDisplay);
-      decay = decay < 10 ? 10 : (decay > 20000 ? 20000 : decay);
+      int decay = a->uiReleaseDisplay + data.encoders[0];
+      decay = decay < 1 ? 1 : (decay > 1000 ? 1000 : decay);
       a->uiReleaseDisplay = decay;
       NT_setParameterFromUi(NT_algorithmIndex(self),
                             kRelease + NT_parameterOffset(), decay);
