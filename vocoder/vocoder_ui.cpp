@@ -70,7 +70,7 @@ bool draw(_NT_algorithm *self) {
   const int rightX = 213;
 
   char buf[32];
-  NT_drawText(leftX, labelY, "BW", 15, kNT_textCentre, kNT_textTiny);
+  NT_drawText(leftX, labelY, "BANDWIDTH", 15, kNT_textCentre, kNT_textTiny);
   snprintf(buf, sizeof(buf), "%d%%", (int)a->v[kBandWidth]);
   NT_drawText(leftX, valueY, buf, 15, kNT_textCentre, kNT_textTiny);
 

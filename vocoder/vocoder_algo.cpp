@@ -92,7 +92,12 @@ static void syncAnalysisCoefficients(_vocoderAlgorithm *a) {
     s.anCoeffs[band] = batchBiquadFromDF1(d.an_b0[band], d.an_b2[band],
                                           d.an_a1[band], d.an_a2[band]);
     for (int ch = 0; ch < 2; ++ch) {
-      batchBiquadUpdateCoeffs(s.anState[ch][band], s.anCoeffs[band]);
+      // Use batchBiquadInit (not just batchBiquadUpdateCoeffs) to refresh both
+      // pCoeffs and pState. If the NT reuses DTC RAM across a plugin reload
+      // without calling construct(), struct layout changes can leave pCoeffs
+      // pointing at stale/wrong addresses. Init fixes both pointers without
+      // zeroing the state array, so filter history is preserved.
+      batchBiquadInit(s.anState[ch][band], s.anCoeffs[band]);
     }
   }
 }
@@ -116,34 +121,9 @@ static void syncSynthesisCoefficients(_vocoderAlgorithm *a) {
     s.sy_a1_target[band] = d.sy_a1[band];
     s.sy_a2_target[band] = d.sy_a2[band];
     for (int ch = 0; ch < 2; ++ch) {
-      batchBiquadUpdateCoeffs(s.syState[ch][band], s.syCoeffs[band]);
+      batchBiquadInit(s.syState[ch][band], s.syCoeffs[band]);
     }
   }
-}
-
-static void beginSynthesisCrossfade(_vocoderAlgorithm *a) {
-  VocoderDSPState &s = *a->state;
-  s.prevActiveBands = a->activeBands;
-  for (int band = 0; band < s.prevActiveBands; ++band) {
-    s.prevSyCoeffs[band] = s.syCoeffs[band];
-  }
-  for (int ch = 0; ch < 2; ++ch) {
-    for (int band = 0; band < s.prevActiveBands; ++band) {
-      // Copy running filter state so the prev filter continues from where the
-      // current one is — no audible click at the crossfade start.
-      // batchBiquadInit is intentionally NOT used here: it calls memset on the
-      // state array, wiping out the running filter state and causing a click
-      // every block (~2 kHz artifact) while the formant is being moved.
-      s.prevSyState[ch][band] = s.syState[ch][band]; // copies inst + state[2]
-      s.prevSyState[ch][band].inst.pState = s.prevSyState[ch][band].state;
-      batchBiquadUpdateCoeffs(s.prevSyState[ch][band], s.prevSyCoeffs[band]);
-    }
-  }
-  s.synthesisXfadeTotal = NT_globals.sampleRate / 1000;
-  if (s.synthesisXfadeTotal < 1) {
-    s.synthesisXfadeTotal = 1;
-  }
-  s.synthesisXfadeRemaining = s.synthesisXfadeTotal;
 }
 
 static void rebuildSynthesisDescriptor(_vocoderAlgorithm *a) {
@@ -331,9 +311,6 @@ static void updateControlState(_vocoderAlgorithm *a) {
 
   if (a->controls.descriptorDirty || a->controls.synthesisDirty ||
       movingBandwidth || movingFormant) {
-    if (movingBandwidth || movingFormant) {
-      beginSynthesisCrossfade(a);
-    }
     if (a->controls.descriptorDirty || movingBandwidth) {
       rebuildDescriptor(a);
     } else {
@@ -588,14 +565,11 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
   // ── PHASE 3: Band-first batch processing ──
   // Accumulate wet output per channel
   float wetAccum[2][24];
-  float wetAccumPrev[2][24];
   memset(wetAccum, 0, sizeof(wetAccum));
-  memset(wetAccumPrev, 0, sizeof(wetAccumPrev));
 
   // Temporary buffers for per-band filter output
   float analysisBuf[24];
   float synthesisBuf[24];
-  float prevSynthBuf[24];
 
   for (int band = 0; band < a->activeBands; ++band) {
     float meterPeakBand = 0.0f;
@@ -608,12 +582,6 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
       // ── Synthesis: batch biquad on carrier → synthesisBuf ──
       batchBiquadProcess(s.syCoeffs[band], s.syState[ch][band], prepCarrier[ch],
                          synthesisBuf, N);
-
-      // Crossfade synthesis (previous coefficients) if active
-      if (s.synthesisXfadeRemaining > 0 && band < s.prevActiveBands) {
-        batchBiquadProcess(s.prevSyCoeffs[band], s.prevSyState[ch][band],
-                           prepCarrier[ch], prevSynthBuf, N);
-      }
 
       // ── Envelope follower: update once per block (was per 4 samples) ──
       // Use peak from analysis batch as envelope input
@@ -682,12 +650,6 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
         const float bandWet =
             synthesisBuf[i] * s.gainState[ch][band] * bandGainScale;
         wetAccum[ch][i] += bandWet;
-
-        if (s.synthesisXfadeRemaining > 0 && band < s.prevActiveBands) {
-          wetAccumPrev[ch][i] +=
-              prevSynthBuf[i] * s.gainState[ch][band] * bandGainScale;
-        }
-
       }
     }
 
@@ -697,21 +659,6 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
   }
 
   // ── PHASE 4: Crossfade, output mixing, metering ──
-  if (s.synthesisXfadeRemaining > 0) {
-    for (int i = 0; i < N; ++i) {
-      const float xfade = 1.0f - (float)s.synthesisXfadeRemaining /
-                                     (float)s.synthesisXfadeTotal;
-      const float mix = vocoderClamp(xfade, 0.0f, 1.0f);
-      for (int ch = 0; ch < channels; ++ch) {
-        wetAccum[ch][i] =
-            vocoderLerp(wetAccumPrev[ch][i], wetAccum[ch][i], mix);
-      }
-      if (s.synthesisXfadeRemaining > 0) {
-        --s.synthesisXfadeRemaining;
-      }
-    }
-  }
-
   for (int i = 0; i < N; ++i) {
     const float shapedL = wetAccum[0][i] * masterScale * s.bandwidthCompCurrent;
     const float dryLevelL = fabsf(carL[i]);

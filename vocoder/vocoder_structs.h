@@ -36,12 +36,10 @@ struct VocoderDSPState {
   // Batch biquad DF2T state (2 floats per filter vs 4 in old DF1)
   BatchBiquadState anState[2][kVocoderMaxBands];
   BatchBiquadState syState[2][kVocoderMaxBands];
-  BatchBiquadState prevSyState[2][kVocoderMaxBands];
 
   // Batch biquad coefficients (opaque — accessed via batchBiquad* API)
   BatchBiquadCoeffs anCoeffs[kVocoderMaxBands];
   BatchBiquadCoeffs syCoeffs[kVocoderMaxBands];
-  BatchBiquadCoeffs prevSyCoeffs[kVocoderMaxBands];
 
   // DF1-level synthesis coefficients for smoothing (plain floats)
   // Smoothed per-block, then converted to BatchBiquadCoeffs
@@ -91,11 +89,6 @@ struct VocoderDSPState {
   float carrierDcY1[2];
   float modDcX1[2];
   float modDcY1[2];
-
-  // Crossfade
-  int prevActiveBands;
-  int synthesisXfadeRemaining;
-  int synthesisXfadeTotal;
 
   // Phase counters
   int controlPhase;
