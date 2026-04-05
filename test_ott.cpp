@@ -85,13 +85,11 @@ static OttHost makeOtt() {
     memset(h.common, 0, sizeof(h.common));
     memset(h.v, 0, sizeof(h.v));
 
-    // Routing: in 1+2, out 3+4 (distinct channels, no alias)
-    h.v[kInL]     = 1;
-    h.v[kInR]     = 2;
-    h.v[kOutL]    = 3;
-    h.v[kOutLMode]= 1;   // replace
-    h.v[kOutR]    = 4;
-    h.v[kOutRMode]= 1;
+    // Routing: stereo, in 1 (R=2), out 3 (R=4), replace mode
+    h.v[kIn]      = 1;
+    h.v[kStereo]  = 1;   // stereo: R = L+1
+    h.v[kOut]     = 3;
+    h.v[kOutMode] = 1;   // replace
 
     // Default OTT parameters (raw integer values as stored in v[])
     h.v[kHiDownThr]  = -100;  h.v[kHiUpThr]   = -300;
@@ -109,9 +107,9 @@ static OttHost makeOtt() {
     h.v[kLoPreGain]  =    0;  h.v[kLoPostGain]=    0;
     h.v[kLoAttack]   =  478;  h.v[kLoRelease] = 2820;
 
-    h.v[kXoverLoMid] = 400;
+    h.v[kXoverLoMid] = 160;
     h.v[kXoverMidHi] = 2500;
-    h.v[kGlobalOut]  = 0;
+    h.v[kGlobalOut]  = 60;   // +6 dB makeup gain (default)
     h.v[kGlobalWet]  = 100;
 
     _NT_algorithmMemoryPtrs ptrs = { h.sram.data(), nullptr, nullptr, nullptr };
@@ -137,7 +135,9 @@ static void test_dry_passthrough() {
     // wet=0%: output must equal input exactly
     OttHost h = makeOtt();
     h.v[kGlobalWet] = 0;
+    h.v[kGlobalOut] = 0;   // isolate wet=0 path from outGain
     factory.parameterChanged(h.alg, kGlobalWet);
+    factory.parameterChanged(h.alg, kGlobalOut);
 
     const int N = 32;
     std::vector<float> bus(N * 4, 0.f);
@@ -183,6 +183,8 @@ static void test_crossover_reconstruction() {
     // Push up thresholds to -60 dBFS so upward never fires on a normal signal
     for (int p : {kHiDownThr, kMidDownThr, kLoDownThr})  { h.v[p] = 0;    factory.parameterChanged(h.alg, p); }
     for (int p : {kHiUpThr,   kMidUpThr,   kLoUpThr})    { h.v[p] = -600; factory.parameterChanged(h.alg, p); }
+    h.v[kGlobalOut] = 0;  // isolate crossover from outGain
+    factory.parameterChanged(h.alg, kGlobalOut);
     // Ratios don't matter since thresholds never fire, but keep default
 
     const int N = 32;

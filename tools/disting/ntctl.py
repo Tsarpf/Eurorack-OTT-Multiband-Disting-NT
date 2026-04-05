@@ -19,8 +19,29 @@ K_OP_REMOUNT = 6
 K_OP_NEW_FOLDER = 7
 
 VOCODER_GUID = b"VOC2"
+OTT_GUID     = b"OTT1"
 # SysEx parameter lists include the common bypass parameter at index 0.
 VOCODER_PARAM_BAND_COUNT = 7
+
+# OTT parameter indices (SysEx index = plugin index + 1, bypass is at 0)
+OTT_PARAM_NAMES = [
+    "In", "Stereo", "Out", "Out_mode",
+    "Hi/DownThr", "Hi/UpThr", "Hi/DownRat", "Hi/UpRat",
+    "Hi/PreGain", "Hi/PostGain", "Hi/Attack", "Hi/Release",
+    "Mid/DownThr", "Mid/UpThr", "Mid/DownRat", "Mid/UpRat",
+    "Mid/PreGain", "Mid/PostGain", "Mid/Attack", "Mid/Release",
+    "Lo/DownThr", "Lo/UpThr", "Lo/DownRat", "Lo/UpRat",
+    "Lo/PreGain", "Lo/PostGain", "Lo/Attack", "Lo/Release",
+    "Xover/LoMid", "Xover/MidHi", "Global/Out", "Global/Wet",
+]
+# Default raw values matching ott_parameters.h (+17 dB Global/Out makeup)
+OTT_PARAM_DEFAULTS = [
+    1, 0, 13, 1,                 # routing (mono, replace)
+    -100, -300, 400, 200, 0, 0, 135, 1320,   # Hi band
+    -100, -300, 400, 200, 0, 0, 224, 2820,   # Mid band
+    -100, -300, 400, 200, 0, 0, 478, 2820,   # Lo band
+    160, 2500, 170, 100,         # xover + global (+17 dB makeup)
+]
 VOCODER_PARAM_BAND_WIDTH = 8
 VOCODER_PARAM_FORMANT = 10
 
@@ -357,6 +378,63 @@ def find_vocoder_slot(client: DistingClient) -> int:
     raise RuntimeError("Could not find a VOC2 vocoder slot in the current preset")
 
 
+def find_ott_slot(client: DistingClient) -> int:
+    slot_count = client.slot_count()
+    for slot in range(slot_count):
+        guid, name = client.algorithm_guid(slot)
+        if guid == OTT_GUID:
+            return slot
+    raise RuntimeError("Could not find an OTT1 slot in the current preset")
+
+
+def to_signed16(v: int) -> int:
+    v &= 0xFFFF
+    return v - 0x10000 if v >= 0x8000 else v
+
+
+def cmd_dump_ott(args: argparse.Namespace) -> int:
+    def run(client: DistingClient) -> int:
+        slot = find_ott_slot(client)
+        vals = client.all_parameter_values(slot)  # vals[0]=bypass, vals[1]=plugin param 0
+        print(f"OTT slot={slot}  bypass={vals[0]}")
+        for i, name in enumerate(OTT_PARAM_NAMES):
+            raw = to_signed16(vals[i + 1]) if i + 1 < len(vals) else "?"
+            print(f"  [{i:2d}] {name:<20s}  raw={raw}")
+        return 0
+    return with_client(args, run)
+
+
+def cmd_init_ott(args: argparse.Namespace) -> int:
+    def run(client: DistingClient) -> int:
+        slot = find_ott_slot(client)
+        _, name = client.algorithm_guid(slot)
+        print(f"Resetting OTT slot={slot} ({name}) to defaults")
+        for i, (param_name, default) in enumerate(zip(OTT_PARAM_NAMES, OTT_PARAM_DEFAULTS)):
+            sysex_idx = i + 1  # +1 because bypass is at index 0
+            client.set_parameter_value(slot, sysex_idx, default)
+        print("Done — save the preset manually if you want to keep these values")
+        return 0
+    return with_client(args, run)
+
+
+def cmd_reset_bands_ott(args: argparse.Namespace) -> int:
+    """Reset only band params + xover; leave routing and Global/Out/Wet alone."""
+    # Indices of params to reset (0-based plugin param index, not SysEx index)
+    # kHiDownThr..kLoRelease = indices 4..29, kXoverLoMid..kXoverMidHi = 30..31
+    BAND_INDICES = list(range(4, 32))
+    def run(client: DistingClient) -> int:
+        slot = find_ott_slot(client)
+        _, name = client.algorithm_guid(slot)
+        print(f"Resetting band/xover params for OTT slot={slot} ({name})")
+        for i in BAND_INDICES:
+            sysex_idx = i + 1
+            client.set_parameter_value(slot, sysex_idx, OTT_PARAM_DEFAULTS[i])
+            print(f"  [{i:2d}] {OTT_PARAM_NAMES[i]:<20s} = {OTT_PARAM_DEFAULTS[i]}")
+        print("Done — routing and Global/Out/Wet unchanged. Save preset manually.")
+        return 0
+    return with_client(args, run)
+
+
 def cmd_benchmark_vocoder(args: argparse.Namespace) -> int:
     def run(client: DistingClient) -> int:
         preset_paths = client.get_paths()
@@ -526,6 +604,17 @@ def build_parser() -> argparse.ArgumentParser:
     delete = sub.add_parser("delete")
     delete.add_argument("nt_path")
     delete.set_defaults(func=cmd_delete)
+
+    dump_ott = sub.add_parser("dump-ott")
+    dump_ott.set_defaults(func=cmd_dump_ott)
+
+    init_ott = sub.add_parser("init-ott")
+    init_ott.set_defaults(func=cmd_init_ott)
+
+    reset_bands = sub.add_parser("reset-bands-ott",
+                                  description="Reset band/xover params to defaults; "
+                                              "leaves routing and Global/Out/Wet alone.")
+    reset_bands.set_defaults(func=cmd_reset_bands_ott)
 
     bench = sub.add_parser("benchmark-vocoder")
     bench.add_argument("--slot", type=int)

@@ -171,7 +171,7 @@ static void parameterChanged(_NT_algorithm* s, int p)
     default: break;
     }
 
-    // Skip recompute for pure routing params (indices 0–5)
+    // Skip recompute for pure routing params (indices 0–3)
     if (p >= kHiDownThr)
         recomputeAll(a);
 
@@ -187,17 +187,21 @@ static void step(_NT_algorithm* s, float* bus, int nfBy4)
     const int N  = nfBy4 * 4;
     const int Nc = N < kOttMaxBlock ? N : kOttMaxBlock;   // safety clamp
 
-    float* inL  = bus + (s->v[kInL]  - 1) * N;
-    float* inR  = bus + (s->v[kInR]  - 1) * N;
-    float* outL = bus + (s->v[kOutL] - 1) * N;
-    float* outR = bus + (s->v[kOutR] - 1) * N;
-    const bool replL = (bool)s->v[kOutLMode];
-    const bool replR = (bool)s->v[kOutRMode];
+    const bool stereo = s->v[kStereo] > 0;
+    const int inBusL  = s->v[kIn];
+    const int inBusR  = (stereo && inBusL < 28) ? inBusL + 1 : inBusL;
+    const int outBusL = s->v[kOut];
+    const int outBusR = (stereo && outBusL < 28) ? outBusL + 1 : outBusL;
+    float* inL  = bus + (inBusL  - 1) * N;
+    float* inR  = bus + (inBusR  - 1) * N;
+    float* outL = bus + (outBusL - 1) * N;
+    float* outR = bus + (outBusR - 1) * N;
+    const bool repl   = (bool)s->v[kOutMode];
+    const int numCh   = stereo ? 2 : 1;
 
-    const bool bypass = a->state.bypass || s->vIncludingCommon[0];
-    if (bypass) {
+    if (s->vIncludingCommon[0]) {
         for (int i = 0; i < N; ++i) outL[i] = inL[i];
-        for (int i = 0; i < N; ++i) outR[i] = inR[i];
+        if (stereo) for (int i = 0; i < N; ++i) outR[i] = inR[i];
         return;
     }
 
@@ -218,10 +222,10 @@ static void step(_NT_algorithm* s, float* bus, int nfBy4)
 
     // Preserve dry input before any writes (inL/outL may alias)
     memcpy(dry[0], inL, Nc * sizeof(float));
-    memcpy(dry[1], inR, Nc * sizeof(float));
+    if (stereo) memcpy(dry[1], inR, Nc * sizeof(float));
 
     // ── Crossover split ───────────────────────────────────────────────────────
-    for (int ch = 0; ch < 2; ++ch) {
+    for (int ch = 0; ch < numCh; ++ch) {
         const float* in = dry[ch];
         ottLR4Process(d.xover.lp1[ch], in,      band[0][ch], Nc);
         ottLR4Process(d.xover.hp1[ch], in,      rest[ch],    Nc);
@@ -237,7 +241,7 @@ static void step(_NT_algorithm* s, float* bus, int nfBy4)
         const float gm   = c.gainSmooth;
         const float gmc  = 1.0f - gm;
 
-        for (int ch = 0; ch < 2; ++ch) {
+        for (int ch = 0; ch < numCh; ++ch) {
             float* buf = band[b][ch];
 
             // Pre-gain
@@ -280,21 +284,20 @@ static void step(_NT_algorithm* s, float* bus, int nfBy4)
     const float og   = c.outGain;
 
     float* outs[2] = { outL, outR };
-    const bool repls[2] = { replL, replR };
 
-    for (int ch = 0; ch < 2; ++ch) {
+    for (int ch = 0; ch < numCh; ++ch) {
         float*       out = outs[ch];
         const float* d0  = dry[ch];
         const float* b0  = band[0][ch];
         const float* b1  = band[1][ch];
         const float* b2  = band[2][ch];
 
-        if (repls[ch]) {
+        if (repl) {
             for (int i = 0; i < Nc; ++i)
-                out[i] = (wet * (b0[i] + b1[i] + b2[i]) + dry1 * d0[i]) * og;
+                out[i] = wet * (b0[i] + b1[i] + b2[i]) * og + dry1 * d0[i];
         } else {
             for (int i = 0; i < Nc; ++i)
-                out[i] += (wet * (b0[i] + b1[i] + b2[i]) + dry1 * d0[i]) * og;
+                out[i] += wet * (b0[i] + b1[i] + b2[i]) * og + dry1 * d0[i];
         }
     }
 }

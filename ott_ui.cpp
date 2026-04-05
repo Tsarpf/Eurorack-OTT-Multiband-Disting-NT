@@ -26,7 +26,7 @@ bool draw(_NT_algorithm* self)
     std::memset(NT_screen, 0, sizeof(NT_screen));
 
     /* defer text drawing until the end so it appears on top */
-    bool bypass = a->state.bypass || self->vIncludingCommon[0];
+    bool bypass = self->vIncludingCommon && self->vIncludingCommon[0];
     const char* hdr = bypass ? "BYPASS" :
                       ui.potMode == UIState::THRESH ? "THRESH" :
                       ui.potMode == UIState::RATIO  ? "RATIO"  : "GAIN";
@@ -163,8 +163,15 @@ void customUi(_NT_algorithm* self, const _NT_uiData& data)
     UIState& ui = a->state;
 
     /* buttons */
-    if ((data.controls & kNT_button1) && !(data.lastButtons & kNT_button1))
-        ui.bypass = !ui.bypass;
+    if ((data.controls & kNT_button1) && !(data.lastButtons & kNT_button1)) {
+        // Toggle the disting's built-in bypass (common param at vIncludingCommon[0])
+        if (self->vIncludingCommon) {
+            int numCommon = (int)(self->v - self->vIncludingCommon);
+            int bypassGlobalIdx = (int)NT_parameterOffset() - numCommon;
+            NT_setParameterFromUi(NT_algorithmIndex(self), bypassGlobalIdx,
+                                  self->vIncludingCommon[0] ? 0 : 1);
+        }
+    }
     if ((data.controls & kNT_button3) && !(data.lastButtons & kNT_button3))
         ui.encMode = (ui.encMode == UIState::XOVER) ? UIState::GLOBAL : UIState::XOVER;
     if ((data.controls & kNT_button4) && !(data.lastButtons & kNT_button4))
