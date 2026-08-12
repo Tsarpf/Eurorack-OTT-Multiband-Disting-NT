@@ -53,11 +53,16 @@ CFLAGS := \
     -O2 -ffast-math -fdata-sections -ffunction-sections
 
 # ── build rules ────────────────────────────────────────────────────────────────
-.PHONY: all build test push clean
+.PHONY: all build test test-matrix matrix push push-matrix clean
 
 all: build
 
 build: $(PLUGIN).o
+
+matrix: matrix_mixer.o
+
+matrix_mixer.o: matrix_mixer.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(OBJDIR)
@@ -81,8 +86,14 @@ $(PLUGIN).o: $(OBJS)
 test: $(HOST_CMSIS_OBJS)
 	$(HOST_CXX) -O2 $(HOST_CXXFLAGS) test_ott.cpp $(HOST_CMSIS_OBJS) -o /tmp/test_$(PLUGIN) && /tmp/test_$(PLUGIN)
 
+test-matrix:
+	$(HOST_CXX) -O2 -std=c++17 -I$(SDK)/include test_matrix_mixer.cpp -o /tmp/test_matrix_mixer && /tmp/test_matrix_mixer
+
 push: build
 	$(VENV_ACTIVATE) && $(NTCTL) push-plugin $(PLUGIN).o --save-as $(PRESET)
 
+push-matrix: matrix
+	$(VENV_ACTIVATE) && $(NTCTL) push-plugin matrix_mixer.o --save-as $(PRESET)
+
 clean:
-	rm -rf $(OBJDIR) $(PLUGIN).o
+	rm -rf $(OBJDIR) $(PLUGIN).o matrix_mixer.o
