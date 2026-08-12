@@ -7,6 +7,9 @@ build/
 *.o
 *.wav
 *.pyc
+.venv-disting/
+/xfer_ott_reference.json
+/xfer_ott_reference.npz
 
 # CMSIS-DSP and CMSIS core libraries (large external deps, not committed)
 CMSIS-DSP/

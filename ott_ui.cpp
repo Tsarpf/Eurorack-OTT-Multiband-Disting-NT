@@ -6,15 +6,46 @@ static const int kLineStep = 2;   // spacing of ratio lines in pixels
 static const int kBandGap  = 5;   // spacing between bands in pixels
 static const int kFreqWidth = 220;    // width of frequency display
 
+// [view][band], where bands are Low, Mid, High.
+static const int kPotTargets[UIState::POT_MODE_COUNT][3] = {
+    { kLoDownThr,  kMidDownThr,  kHiDownThr  },
+    { kLoDownRat,  kMidDownRat,  kHiDownRat  },
+    { kLoPostGain, kMidPostGain, kHiPostGain }
+};
+static const int kPotTargetsSecondary[UIState::POT_MODE_COUNT][3] = {
+    { kLoUpThr,  kMidUpThr,  kHiUpThr  },
+    { kLoUpRat,  kMidUpRat,  kHiUpRat  },
+    { kLoPreGain, kMidPreGain, kHiPreGain }
+};
+static const uint16_t kPotControls[3] = {
+    kNT_potL, kNT_potC, kNT_potR
+};
+
+static int selectedPotTarget(const _ottAlgorithm* a, int band)
+{
+    const int mode = static_cast<int>(a->state.potMode);
+    return a->potUpper[mode][band]
+        ? kPotTargetsSecondary[mode][band]
+        : kPotTargets[mode][band];
+}
+
+static float normalisedParameterValue(const _NT_algorithm* self, int parameter)
+{
+    const _NT_parameter& def = params[parameter];
+    return (self->v[parameter] - def.min) / float(def.max - def.min);
+}
+
 /* sync soft-takeover when the algorithm page appears */
 void setupUi(_NT_algorithm* self, _NT_float3& pots)
 {
     auto* a = (_ottAlgorithm*)self;
-    pots[0] = 0.5f; pots[1] = 0.5f; pots[2] = 0.5f;   // centre the knobs
     for (int i=0;i<3;++i) {
+        const int target = selectedPotTarget(a, i);
+        pots[i] = normalisedParameterValue(self, target);
+        a->potTarget[i] = target;
         a->potCaught[i] = false;
-        a->potTarget[i] = -1;
         a->potCatch[i] = pots[i];
+        a->potHasPrevious[i] = false;
     }
 }
 
@@ -42,6 +73,8 @@ bool draw(_NT_algorithm* self)
                 NT_floatToString(lastVal, a->lastValue * 0.01f, 2);
         } else if (params[a->lastParam].scaling == kNT_scaling10) {
             NT_floatToString(lastVal, a->lastValue * 0.1f, 1);
+        } else if (params[a->lastParam].scaling == kNT_scaling100) {
+            NT_floatToString(lastVal, a->lastValue * 0.01f, 2);
         } else {
             NT_intToString(lastVal, a->lastValue);
         }
@@ -61,6 +94,7 @@ bool draw(_NT_algorithm* self)
     static const int ratUpP[3]   = { kLoUpRat,    kMidUpRat,    kHiUpRat    };
     static const int preP[3]     = { kLoPreGain,  kMidPreGain,  kHiPreGain  };
     static const int postP[3]    = { kLoPostGain, kMidPostGain, kHiPostGain };
+    const int potMode = static_cast<int>(ui.potMode);
 
     auto drawBand = [&](int idx, int xStart, int xEnd){
         float dThr = a->v[thrDownP[idx]] * 0.1f;
@@ -78,6 +112,7 @@ bool draw(_NT_algorithm* self)
             float rNorm = ratio <= 1.f ? 0.f : (log10f(ratio) / 3.f);
             if (rNorm > 1.f) rNorm = 1.f;
             int steps = (y1 - y0) / kLineStep;
+            if (steps < 1) steps = 1;
             float expn = 1.f + rNorm * 4.f;   // cluster lines for strong ratios
             for (int i = 0; i <= steps; ++i) {
                 float t = float(i) / float(steps);
@@ -95,7 +130,7 @@ bool draw(_NT_algorithm* self)
         drawBox(yUp, 60,   uRat, false);  // upward compression from bottom
 
         if (ui.potMode != UIState::GAIN) {
-            bool upperSel = a->potUpper[idx];
+            bool upperSel = a->potUpper[potMode][idx];
             int xMid = (xStart + xEnd) / 2;
             if (upperSel)
                 NT_drawText(xMid, yUp - 6, "Up", 15, kNT_textCentre, kNT_textTiny);
@@ -111,7 +146,7 @@ bool draw(_NT_algorithm* self)
         NT_drawShapeI(kNT_line, xPre, 60, xPre, yPre, 15);
         NT_drawShapeI(kNT_line, xPost,60, xPost,yPost,15);
         if (ui.potMode == UIState::GAIN) {
-            bool upperSel = a->potUpper[idx];
+            bool upperSel = a->potUpper[potMode][idx];
             int xText = upperSel ? xPre : xPost;
             NT_drawText(xText, 62, upperSel?"pre":"post", 15, kNT_textCentre, kNT_textTiny);
         }
@@ -130,11 +165,11 @@ bool draw(_NT_algorithm* self)
     drawBand(1,      xMidSta, xMidEnd);
     drawBand(2,      xHiSta,  xMax   );
 
-    int yWet  = mapPercentToY((float)a->v[kGlobalWet]);
+    int yDepth = mapPercentToY((float)a->v[kGlobalDepth]);
     int yGain = mapGainToY(a->v[kGlobalOut] * 0.1f);
-    NT_drawShapeI(kNT_line, xGW, 60, xGW, yWet, 14);
+    NT_drawShapeI(kNT_line, xGW, 60, xGW, yDepth, 14);
     NT_drawShapeI(kNT_line, xGW+5, 60, xGW+5, yGain, 14);
-    NT_drawText(xGW+1, 62, "W", 14, kNT_textLeft, kNT_textTiny);
+    NT_drawText(xGW+1, 62, "D", 14, kNT_textLeft, kNT_textTiny);
     NT_drawText(xGW+6, 62, "G", 14, kNT_textLeft, kNT_textTiny);
 
     /* draw text last so it's always visible */
@@ -175,43 +210,43 @@ void customUi(_NT_algorithm* self, const _NT_uiData& data)
     if ((data.controls & kNT_button3) && !(data.lastButtons & kNT_button3))
         ui.encMode = (ui.encMode == UIState::XOVER) ? UIState::GLOBAL : UIState::XOVER;
     if ((data.controls & kNT_button4) && !(data.lastButtons & kNT_button4))
-        ui.potMode = UIState::PotMode((ui.potMode + 1) % 3);
+        ui.potMode = UIState::PotMode((ui.potMode + 1) % UIState::POT_MODE_COUNT);
 
     /* pots → three bands */
-    const int potTargets[3][3] = {
-        { kLoDownThr, kLoDownRat, kLoPostGain },
-        { kMidDownThr,kMidDownRat,kMidPostGain },
-        { kHiDownThr, kHiDownRat, kHiPostGain }
-    };
-    const int potTargetsUp[3][3] = {
-        { kLoUpThr, kLoUpRat, kLoPreGain },
-        { kMidUpThr,kMidUpRat,kMidPreGain },
-        { kHiUpThr, kHiUpRat, kHiPreGain }
-    };
+    const int potMode = static_cast<int>(ui.potMode);
 
     for (int p = 0; p < 3; ++p) {
         int btn = (p==0? kNT_potButtonL : p==1? kNT_potButtonC : kNT_potButtonR);
         if ((data.controls & btn) && !(data.lastButtons & btn))
-            a->potUpper[p] = !a->potUpper[p];
-        bool upper = a->potUpper[p];
-        int  tgt =
-            (ui.potMode == UIState::THRESH) ? (upper? potTargetsUp[p][0] : potTargets[p][0]) :
-            (ui.potMode == UIState::RATIO ) ? (upper? potTargetsUp[p][1] : potTargets[p][1]) :
-                                             (upper? potTargetsUp[p][2] : potTargets[p][2]);
-        if (tgt >= 0) {
-            if (a->potTarget[p] != tgt) {
-                a->potTarget[p] = tgt;
-                a->potCaught[p] = false;
-                a->potCatch[p] = (self->v[tgt] - params[tgt].min) / float(params[tgt].max - params[tgt].min);
-            }
-            float pos = data.pots[p];
-            if (!a->potCaught[p]) {
-                if (fabsf(pos - a->potCatch[p]) < 0.05f)
-                    a->potCaught[p] = true;
-            }
-            if (a->potCaught[p])
-                pushParam(self, tgt, scalePot(tgt, pos));
+            a->potUpper[potMode][p] = !a->potUpper[potMode][p];
+
+        const int tgt = selectedPotTarget(a, p);
+        if (a->potTarget[p] != tgt) {
+            a->potTarget[p] = tgt;
+            a->potCaught[p] = false;
+            a->potCatch[p] = normalisedParameterValue(self, tgt);
+            a->potPrevious[p] = data.pots[p];
+            a->potHasPrevious[p] = true;
         }
+
+        // data.controls identifies pots that actually moved. Ignoring untouched
+        // pots prevents stale positions from rewriting parameters on view/button
+        // callbacks.
+        if (!(data.controls & kPotControls[p]))
+            continue;
+
+        const float pos = data.pots[p];
+        if (!a->potCaught[p]) {
+            const bool near = fabsf(pos - a->potCatch[p]) < 0.05f;
+            const bool crossed = a->potHasPrevious[p] &&
+                ((a->potPrevious[p] <= a->potCatch[p] && pos >= a->potCatch[p]) ||
+                 (a->potPrevious[p] >= a->potCatch[p] && pos <= a->potCatch[p]));
+            a->potCaught[p] = near || crossed;
+        }
+        if (a->potCaught[p])
+            pushParam(self, tgt, scalePot(tgt, pos));
+        a->potPrevious[p] = pos;
+        a->potHasPrevious[p] = true;
     }
 
     /* encoders */
@@ -220,7 +255,7 @@ void customUi(_NT_algorithm* self, const _NT_uiData& data)
 
     const int encParam[2] = {
         (ui.encMode == UIState::XOVER) ? kXoverLoMid : kGlobalOut,
-        (ui.encMode == UIState::XOVER) ? kXoverMidHi : kGlobalWet
+        (ui.encMode == UIState::XOVER) ? kXoverMidHi : kGlobalDepth
     };
     const float encStep[2] = {
         (ui.encMode == UIState::XOVER)
@@ -276,4 +311,3 @@ int16_t scalePot(int idx, float pot)
     const _NT_parameter& p = params[idx];
     return fast_lrintf(p.min + pot * (p.max - p.min));
 }
-

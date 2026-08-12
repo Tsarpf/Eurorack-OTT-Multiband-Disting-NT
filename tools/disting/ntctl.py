@@ -32,15 +32,15 @@ OTT_PARAM_NAMES = [
     "Mid/PreGain", "Mid/PostGain", "Mid/Attack", "Mid/Release",
     "Lo/DownThr", "Lo/UpThr", "Lo/DownRat", "Lo/UpRat",
     "Lo/PreGain", "Lo/PostGain", "Lo/Attack", "Lo/Release",
-    "Xover/LoMid", "Xover/MidHi", "Global/Out", "Global/Wet",
+    "Xover/LoMid", "Xover/MidHi", "Global/Out", "Global/Depth",
 ]
-# Default raw values matching ott_parameters.h (+17 dB Global/Out makeup)
+# Default raw values matching the OTT reference preset in ott_parameters.h.
 OTT_PARAM_DEFAULTS = [
     1, 0, 13, 1,                 # routing (mono, replace)
-    -100, -300, 400, 200, 0, 0, 135, 1320,   # Hi band
-    -100, -300, 400, 200, 0, 0, 224, 2820,   # Mid band
-    -100, -300, 400, 200, 0, 0, 478, 2820,   # Lo band
-    160, 2500, 170, 100,         # xover + global (+17 dB makeup)
+    -369, -422, 10000, 400, 0, 0, 135, 1320,    # Hi band
+    -317, -433, 10000, 400, 0, 0, 224, 2820,    # Mid band
+    -355, -425, 32767, 400, 0, 0, 478, 2820,    # Lo band
+    88, 2500, 0, 100,             # xover + global
 ]
 VOCODER_PARAM_BAND_WIDTH = 8
 VOCODER_PARAM_FORMANT = 10

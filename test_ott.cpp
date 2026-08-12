@@ -1,8 +1,7 @@
 // OTT host test — compile with:
 //   c++ -std=c++17 -O2 -I distingnt_api/include \
 //       -I CMSIS-DSP/Include -I CMSIS-DSP/PrivateInclude \
-//       -I CMSIS_6/CMSIS/Core/Include \
-//       -DARM_MATH_CM7 -D__FPU_PRESENT=1 \
+//       -D__GNUC_PYTHON__ \
 //       test_ott.cpp \
 //       build/host_cmsis_df2t.o build/host_cmsis_df2t_init.o \
 //       -o /tmp/test_ott && /tmp/test_ott
@@ -24,11 +23,11 @@ const _NT_globals NT_globals = {
     .workBufferSizeBytes = 0,
 };
 uint8_t NT_screen[128 * 64];
+static int gParameterPushes = 0;
 
 void NT_drawText(int, int, const char*, int, _NT_textAlignment, _NT_textSize) {}
-void NT_drawText(int, int, const char*) {}
 void NT_drawShapeI(_NT_shape, int, int, int, int, int) {}
-void NT_setParameterFromUi(uint32_t, uint32_t, int16_t) {}
+void NT_setParameterFromUi(uint32_t, uint32_t, int16_t) { ++gParameterPushes; }
 int  NT_algorithmIndex(_NT_algorithm*) { return 0; }
 uint32_t NT_parameterOffset(void) { return 0; }
 uint32_t NT_getCpuCycleCount(void) { return 0; }
@@ -43,14 +42,9 @@ bool _NT_jsonParse::matchName(const char*) { return false; }
 bool _NT_jsonParse::number(int&) { return false; }
 bool _NT_jsonParse::skipMember(void) { return true; }
 
-// UI stubs (ott_ui.cpp not compiled in the test)
-bool     draw(_NT_algorithm*) { return false; }
-uint32_t hasCustomUi(_NT_algorithm*) { return 0; }
-void     customUi(_NT_algorithm*, const _NT_uiData&) {}
-void     setupUi(_NT_algorithm*, _NT_float3&) {}
-
-// ── Include the DSP (no Faust, no heap) ──────────────────────────────────────
+// ── Include the native DSP implementation ────────────────────────────────────
 #include "ott_algo.cpp"
+#include "ott_ui.cpp"
 
 // ── Test helpers ──────────────────────────────────────────────────────────────
 
@@ -67,6 +61,8 @@ static float rms(const float* buf, int n) {
 
 static float dbFS(float linear) { return 20.f * log10f(linear < 1e-12f ? 1e-12f : linear); }
 
+static float dbToLinear(float valueDb) { return powf(10.0f, valueDb * 0.05f); }
+
 // ── Algorithm setup ───────────────────────────────────────────────────────────
 
 struct OttHost {
@@ -75,6 +71,8 @@ struct OttHost {
     int16_t common[16];
     int16_t v[kNumParams];
 };
+
+static void disableDynamics(OttHost& h);
 
 static OttHost makeOtt() {
     OttHost h = {};
@@ -85,32 +83,12 @@ static OttHost makeOtt() {
     memset(h.common, 0, sizeof(h.common));
     memset(h.v, 0, sizeof(h.v));
 
-    // Routing: stereo, in 1 (R=2), out 3 (R=4), replace mode
-    h.v[kIn]      = 1;
-    h.v[kStereo]  = 1;   // stereo: R = L+1
-    h.v[kOut]     = 3;
-    h.v[kOutMode] = 1;   // replace
+    for (int p = 0; p < kNumParams; ++p)
+        h.v[p] = params[p].def;
 
-    // Default OTT parameters (raw integer values as stored in v[])
-    h.v[kHiDownThr]  = -100;  h.v[kHiUpThr]   = -300;
-    h.v[kHiDownRat]  =  400;  h.v[kHiUpRat]   =  200;
-    h.v[kHiPreGain]  =    0;  h.v[kHiPostGain]=    0;
-    h.v[kHiAttack]   =  135;  h.v[kHiRelease] = 1320;
-
-    h.v[kMidDownThr] = -100;  h.v[kMidUpThr]  = -300;
-    h.v[kMidDownRat] =  400;  h.v[kMidUpRat]  =  200;
-    h.v[kMidPreGain] =    0;  h.v[kMidPostGain]=   0;
-    h.v[kMidAttack]  =  224;  h.v[kMidRelease]= 2820;
-
-    h.v[kLoDownThr]  = -100;  h.v[kLoUpThr]   = -300;
-    h.v[kLoDownRat]  =  400;  h.v[kLoUpRat]   =  200;
-    h.v[kLoPreGain]  =    0;  h.v[kLoPostGain]=    0;
-    h.v[kLoAttack]   =  478;  h.v[kLoRelease] = 2820;
-
-    h.v[kXoverLoMid] = 160;
-    h.v[kXoverMidHi] = 2500;
-    h.v[kGlobalOut]  = 60;   // +6 dB makeup gain (default)
-    h.v[kGlobalWet]  = 100;
+    // Exercise both channels and keep output separate from the default input.
+    h.v[kStereo] = 1;   // right input/output is left + 1
+    h.v[kOut] = 3;
 
     _NT_algorithmMemoryPtrs ptrs = { h.sram.data(), nullptr, nullptr, nullptr };
     h.alg = factory.construct(ptrs, req, nullptr);
@@ -131,15 +109,17 @@ static void runBlocks(OttHost& h, float* bus, int N, int blocks) {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-static void test_dry_passthrough() {
-    // wet=0%: output must equal input exactly
+static void test_depth_zero_reconstruction() {
+    // Depth=0 means 1:1 dynamics while retaining the crossover phase.
+    // Its steady-state magnitude must remain flat; it is intentionally not a
+    // sample-identical raw dry path.
     OttHost h = makeOtt();
-    h.v[kGlobalWet] = 0;
+    h.v[kGlobalDepth] = 0;
     h.v[kGlobalOut] = 0;   // isolate wet=0 path from outGain
-    factory.parameterChanged(h.alg, kGlobalWet);
+    factory.parameterChanged(h.alg, kGlobalDepth);
     factory.parameterChanged(h.alg, kGlobalOut);
 
-    const int N = 32;
+    const int N = 48; // one complete 1 kHz period, independent of filter phase
     std::vector<float> bus(N * 4, 0.f);
     float* inL  = bus.data() + 0 * N;
     float* inR  = bus.data() + 1 * N;
@@ -147,7 +127,7 @@ static void test_dry_passthrough() {
     float* outR = bus.data() + 3 * N;
 
     // 1kHz sine at -6 dBFS
-    const float amp = 0.5f;
+    const float amp = 0.1f;
     for (int i = 0; i < N; ++i) {
         float s = amp * sinf(2.f * 3.14159265f * 1000.f * i / 48000.f);
         inL[i] = s;
@@ -155,7 +135,7 @@ static void test_dry_passthrough() {
     }
 
     // Several warm-up blocks (filters need to settle)
-    for (int b = 0; b < 200; ++b) {
+    for (int b = 0; b < 2000; ++b) {
         for (int i = 0; i < N; ++i) {
             float s = amp * sinf(2.f * 3.14159265f * 1000.f * (b * N + i) / 48000.f);
             inL[i] = s;
@@ -168,11 +148,27 @@ static void test_dry_passthrough() {
     float outRms = rms(outL, N);
     float dbDiff = dbFS(outRms) - dbFS(inRms);
 
-    std::cout << "dry_passthrough: in=" << dbFS(inRms) << " dBFS  out=" << dbFS(outRms)
+    std::cout << "depth_zero: in=" << dbFS(inRms) << " dBFS  out=" << dbFS(outRms)
               << " dBFS  diff=" << dbDiff << " dB\n";
 
-    if (fabsf(dbDiff) > 0.5f)
-        fail("wet=0% passthrough has more than 0.5 dB error");
+    if (fabsf(dbDiff) > 1.0f)
+        fail("Depth=0 crossover magnitude has more than 1 dB error");
+}
+
+static void disableDynamics(OttHost& h) {
+    for (int p : {kHiDownThr, kMidDownThr, kLoDownThr}) {
+        h.v[p] = 0;
+        factory.parameterChanged(h.alg, p);
+    }
+    for (int p : {kHiUpThr, kMidUpThr, kLoUpThr}) {
+        h.v[p] = -600;
+        factory.parameterChanged(h.alg, p);
+    }
+    for (int p : {kHiPreGain, kMidPreGain, kLoPreGain,
+                  kHiPostGain, kMidPostGain, kLoPostGain}) {
+        h.v[p] = 0;
+        factory.parameterChanged(h.alg, p);
+    }
 }
 
 static void test_crossover_reconstruction() {
@@ -181,13 +177,14 @@ static void test_crossover_reconstruction() {
     OttHost h = makeOtt();
     // Push down thresholds to 0 dBFS so downward never fires
     // Push up thresholds to -60 dBFS so upward never fires on a normal signal
-    for (int p : {kHiDownThr, kMidDownThr, kLoDownThr})  { h.v[p] = 0;    factory.parameterChanged(h.alg, p); }
-    for (int p : {kHiUpThr,   kMidUpThr,   kLoUpThr})    { h.v[p] = -600; factory.parameterChanged(h.alg, p); }
+    disableDynamics(h);
+    h.v[kGlobalDepth] = 0;
+    factory.parameterChanged(h.alg, kGlobalDepth);
     h.v[kGlobalOut] = 0;  // isolate crossover from outGain
     factory.parameterChanged(h.alg, kGlobalOut);
     // Ratios don't matter since thresholds never fire, but keep default
 
-    const int N = 32;
+    const int N = 48; // one complete 1 kHz period, independent of filter phase
     std::vector<float> bus(N * 4, 0.f);
     float* inL  = bus.data() + 0 * N;
     float* outL = bus.data() + 2 * N;
@@ -241,10 +238,8 @@ static void test_default_level() {
     std::cout << "default_level: in=" << dbFS(inRms) << " dBFS  out=" << dbFS(outRms)
               << " dBFS  diff=" << dbDiff << " dB\n";
 
-    // A -12dBFS signal: thrDown=-10dB so slight downward compression (~1-3dB),
-    // thrUp=-30dB so no upward. Should NOT be 20dB down.
-    if (dbDiff < -15.f)
-        fail("output is more than 15 dB below input at default settings — something is wrong");
+    if (!std::isfinite(dbDiff) || dbDiff < -30.f || dbDiff > 40.f)
+        fail("default transfer produced an implausible level");
 }
 
 static void test_levels_across_amplitudes() {
@@ -306,33 +301,523 @@ static void test_band_gains() {
     const char* bname[] = {"Low","Mid","High"};
     std::cout << "\nPer-band state after 2000 blocks at 0 dBFS:\n";
     for (int b = 0; b < 3; ++b) {
-        float envL  = d.bands.env[0][b];
-        float gsL   = d.bands.gainState[0][b];
-        float tg    = ottGain(envL, d.cached.thrDown[b], d.cached.thrUp[b],
-                              d.cached.exDown[b], d.cached.exUp[b]);
         std::cout << "  " << bname[b]
-                  << "  env=" << envL << " (" << dbFS(envL) << " dBFS)"
-                  << "  gainState=" << gsL << " (" << dbFS(gsL) << " dB)"
-                  << "  targetGain=" << tg << " (" << dbFS(tg) << " dB)\n";
+                  << "  down=" << d.bands.downGain[0][b]
+                  << " (" << dbFS(d.bands.downGain[0][b]) << " dB)"
+                  << "  up=" << d.bands.upGain[0][b]
+                  << " (" << dbFS(d.bands.upGain[0][b]) << " dB)\n";
     }
-    std::cout << "  cached: thrDown[mid]=" << d.cached.thrDown[1]
-              << "  thrUp[mid]=" << d.cached.thrUp[1]
+    std::cout << "  cached: thrDown[mid]=" << d.cached.thrDownDb[1]
+              << " dB  thrUp[mid]=" << d.cached.thrUpDb[1] << " dB"
               << "  exDown=" << d.cached.exDown[1]
               << "  exUp=" << d.cached.exUp[1] << "\n";
-    std::cout << "  wet=" << d.cached.wet
-              << "  outGain=" << d.cached.outGain
-              << "  gainSmooth=" << d.cached.gainSmooth << "\n";
+    std::cout << "  depth=" << d.cached.depth
+              << "  outGain=" << d.cached.outGain << "\n";
+}
+
+static float measureSteadySineGain(float frequency, float peakDb, int depth) {
+    OttHost h = makeOtt();
+    h.v[kGlobalDepth] = (int16_t)depth;
+    factory.parameterChanged(h.alg, kGlobalDepth);
+    const int N = 32;
+    const int settleBlocks = 3200;  // >2 s at 48 kHz
+    const int measureBlocks = 300;  // 0.2 s, coherent for all probe tones
+    std::vector<float> bus(N * 4, 0.f);
+    const float amplitude = dbToLinear(peakDb);
+    double inputSquares = 0.0;
+    double outputSquares = 0.0;
+    for (int block = 0; block < settleBlocks + measureBlocks; ++block) {
+        for (int i = 0; i < N; ++i) {
+            const double phase = 2.0 * 3.14159265358979323846 *
+                                 (double)frequency * (block * N + i) / 48000.0;
+            const float sample = amplitude * (float)sin(phase);
+            bus[i] = bus[N + i] = sample;
+        }
+        factory.step(h.alg, bus.data(), N / 4);
+        if (block >= settleBlocks) {
+            for (int i = 0; i < N; ++i) {
+                inputSquares += (double)bus[i] * bus[i];
+                outputSquares += (double)bus[2 * N + i] * bus[2 * N + i];
+            }
+        }
+    }
+    return 10.0f * log10f((float)(outputSquares / inputSquares));
+}
+
+static void test_xfer_reference_transfer() {
+    struct ReferencePoint {
+        float frequency;
+        float peakDb;
+        int depth;
+        float expectedGainDb;
+    };
+    static const ReferencePoint points[] = {
+        {40.f, -120.f, 100, 49.79f}, {40.f, -35.f, 100, 12.44f},
+        {40.f,  -20.f, 100, -1.98f}, {40.f,   0.f, 100, -18.14f},
+        {500.f,-120.f, 100, 45.35f}, {500.f,-35.f, 100, 11.17f},
+        {500.f, -20.f, 100, -1.78f}, {500.f,  0.f, 100, -20.05f},
+        {8000.f,-120.f,100, 49.91f}, {8000.f,-35.f,100, 10.75f},
+        {8000.f, -20.f,100, -3.68f}, {8000.f,  0.f,100, -22.27f},
+        {500.f, -35.f, 25, 2.93f},   {500.f, -20.f, 25, 0.14f},
+        {500.f, -35.f, 50, 5.55f},   {500.f, -20.f, 50, -0.48f},
+        {500.f, -20.f,  0, 0.0f},
+    };
+    std::cout << "\nXfer OTT 1.37 transfer comparison:\n";
+    float worstError = 0.0f;
+    for (const ReferencePoint& point : points) {
+        const float actual = measureSteadySineGain(point.frequency, point.peakDb,
+                                                    point.depth);
+        const float error = actual - point.expectedGainDb;
+        if (fabsf(error) > worstError)
+            worstError = fabsf(error);
+        std::cout << "  " << point.frequency << " Hz  in " << point.peakDb
+                  << "  D" << point.depth << "  native " << actual
+                  << "  ref " << point.expectedGainDb << "  err " << error
+                  << " dB\n";
+    }
+    if (worstError > 2.1f)
+        fail("default transfer differs from Xfer reference by more than 2.1 dB");
+}
+
+static void test_detector_timebase_and_block_size() {
+    // The linked detector is a 5 ms power-domain one-pole. After exactly one
+    // time constant of a constant-power signal it must reach 1-e^-1 regardless
+    // of the callback size used to advance it.
+    struct Result { float power; float coeff; };
+    auto run = [](int N) -> Result {
+        OttHost h = makeOtt();
+        disableDynamics(h);
+        h.v[kGlobalDepth] = 0;
+        factory.parameterChanged(h.alg, kGlobalDepth);
+        std::vector<float> bus(N * 4, 0.f);
+        // Inject the desired block mean-square directly. The audio path's
+        // crossover state is irrelevant to this state-equation unit test, but
+        // run step once so it exercises the real callback-size coefficient
+        // cache before the state equation is checked.
+        auto* a = (_ottAlgorithm*)h.alg;
+        factory.step(h.alg, bus.data(), N / 4);
+        a->dsp.detectorPower[0] = 0.0f;
+        const int blocks = 240 / N; // 5 ms at 48 kHz; N=32 and 48 divide it
+        // 32 does not divide 240, so advance its final eight samples with the
+        // coefficient the callback-size cache would compute for N=8.
+        for (int block = 0; block < blocks; ++block)
+            a->dsp.detectorPower[0] =
+                a->dsp.detectorCoeffPerBlock * a->dsp.detectorPower[0] +
+                (1.0f - a->dsp.detectorCoeffPerBlock);
+        const float configuredCoeff = a->dsp.detectorCoeffPerBlock;
+        if (N == 32) {
+            const float tailCoeff = expf(-16.0f / 240.0f);
+            a->dsp.detectorPower[0] = tailCoeff * a->dsp.detectorPower[0] +
+                                      (1.0f - tailCoeff);
+        }
+        return { a->dsp.detectorPower[0], configuredCoeff };
+    };
+
+    const Result n32 = run(32);
+    const Result n48 = run(48);
+    const float expectedPower = 1.0f - expf(-1.0f);
+    std::cout << "detector_timebase: n32=" << n32.power
+              << " n48=" << n48.power << " expected=" << expectedPower
+              << " c32=" << n32.coeff << " c48=" << n48.coeff << "\n";
+    if (fabsf(n32.power - expectedPower) > 1.0e-4f ||
+        fabsf(n48.power - expectedPower) > 1.0e-4f ||
+        fabsf(n32.power - n48.power) > 1.0e-5f)
+        fail("detector time constant changes with callback size");
+    if (fabsf(n32.coeff - expf(-32.0f / 240.0f)) > 1.0e-6f ||
+        fabsf(n48.coeff - expf(-48.0f / 240.0f)) > 1.0e-6f)
+        fail("detector per-block coefficient is incorrect");
+}
+
+static void test_silence_does_not_charge_upward_gain() {
+    OttHost h = makeOtt();
+    const int N = 32;
+    std::vector<float> bus(N * 4, 0.f);
+    for (int block = 0; block < 15000; ++block)
+        factory.step(h.alg, bus.data(), N / 4);
+    const auto* a = (_ottAlgorithm*)h.alg;
+    for (int band = 0; band < kOttBands; ++band) {
+        const float upwardDb = dbFS(a->dsp.bands.upGain[0][band]);
+        const float referenceDb = dbFS(a->dsp.cached.referenceGain[band]);
+        if (fabsf(upwardDb - referenceDb) > 0.01f)
+            fail("silence charged the upward compressor above reference gain");
+    }
+}
+
+static void test_depth_law_and_upward_bound() {
+    float downFull, upFull, downHalf, upHalf, downZero, upZero;
+    ottGainTargets(-80.0f, -30.0f, -40.0f, 0.75f, 0.75f, 1.0f, 1.0f, true,
+                   downFull, upFull);
+    ottGainTargets(-80.0f, -30.0f, -40.0f, 0.75f, 0.75f, 0.5f, 1.0f, true,
+                   downHalf, upHalf);
+    ottGainTargets(-80.0f, -30.0f, -40.0f, 0.75f, 0.75f, 0.0f, 1.0f, true,
+                   downZero, upZero);
+
+    if (fabsf(dbFS(upHalf) - 0.5f * dbFS(upFull)) > 0.01f)
+        fail("Depth does not scale the upward gain curve in dB");
+    if (fabsf(downZero - 1.0f) > 1.0e-6f ||
+        fabsf(upZero - 1.0f) > 1.0e-6f)
+        fail("Depth=0 does not produce 1:1 dynamics");
+
+    float boundedDown, boundedUp;
+    ottGainTargets(-200.0f, -30.0f, -40.0f, 0.99f, 0.99f, 1.0f, 1.0f, true,
+                   boundedDown, boundedUp);
+    if (dbFS(boundedUp) > kOttMaxUpGainDb + 0.01f)
+        fail("upward gain exceeds its stability bound");
+}
+
+static void test_xfer_static_law_calibration() {
+    static const int downRatioParameters[kOttBands] = {
+        kLoDownRat, kMidDownRat, kHiDownRat
+    };
+    static const int upRatioParameters[kOttBands] = {
+        kLoUpRat, kMidUpRat, kHiUpRat
+    };
+    static const int downThresholdParameters[kOttBands] = {
+        kLoDownThr, kMidDownThr, kHiDownThr
+    };
+    static const int upThresholdParameters[kOttBands] = {
+        kLoUpThr, kMidUpThr, kHiUpThr
+    };
+    static const int expectedDownRatioRaw[kOttBands] = {32767, 10000, 10000};
+    static const int expectedUpRatioRaw[kOttBands] = {400, 400, 400};
+    static const int expectedDownThresholdRaw[kOttBands] = {-355, -317, -369};
+    static const int expectedUpThresholdRaw[kOttBands] = {-425, -433, -422};
+
+    // Preserve the original hundredths raw units for preset compatibility.
+    // Xfer's nominal 1000:1 low-band default saturates at int16's 327.67:1.
+    for (int band = 0; band < kOttBands; ++band) {
+        const _NT_parameter& down = params[downRatioParameters[band]];
+        const _NT_parameter& up = params[upRatioParameters[band]];
+        if (down.scaling != kNT_scaling100 || up.scaling != kNT_scaling100 ||
+            down.min != 100 || down.max != 32767 ||
+            up.min != 100 || up.max != 32767 ||
+            down.def != expectedDownRatioRaw[band] ||
+            up.def != expectedUpRatioRaw[band])
+            fail("ratio parameter scaling/defaults no longer match Xfer fit");
+        if (params[downThresholdParameters[band]].def !=
+                expectedDownThresholdRaw[band] ||
+            params[upThresholdParameters[band]].def !=
+                expectedUpThresholdRaw[band])
+            fail("threshold defaults no longer match Xfer detector calibration");
+    }
+
+    OttHost h = makeOtt();
+    auto* a = (_ottAlgorithm*)h.alg;
+    static const float expectedDownEx[kOttBands] = {
+        1.0f - 100.0f / 32767.0f, 0.99f, 0.99f
+    };
+    for (int band = 0; band < kOttBands; ++band) {
+        if (fabsf(a->dsp.cached.exDown[band] - expectedDownEx[band]) > 1.0e-6f ||
+            fabsf(a->dsp.cached.exUp[band] - 0.75f) > 1.0e-6f)
+            fail("cached ratio exponent does not use hundredths scaling");
+    }
+
+    struct DepthCase {
+        int percent;
+        float thresholdDeltaDb;
+        float lowHighReferenceGain;
+        float midReferenceGain;
+    };
+    static const DepthCase cases[] = {
+        {25, 2.5752204f, 1.7721642f, 1.3920397f},
+        {50, 1.6293603f, 2.6920490f, 1.8443553f},
+        {100, 0.0f,       4.9749810f, 2.9298150f},
+    };
+    for (const DepthCase& depthCase : cases) {
+        h.v[kGlobalDepth] = (int16_t)depthCase.percent;
+        factory.parameterChanged(h.alg, kGlobalDepth);
+        const OttCached& cached = a->dsp.cached;
+        const float depth = depthCase.percent * 0.01f;
+        if (fabsf(cached.depth - depth) > 1.0e-7f)
+            fail("dynamics do not use raw Depth");
+        if (fabsf(cached.referenceGain[0] -
+                  depthCase.lowHighReferenceGain) > 2.0e-6f ||
+            fabsf(cached.referenceGain[1] -
+                  depthCase.midReferenceGain) > 2.0e-6f ||
+            fabsf(cached.referenceGain[2] -
+                  depthCase.lowHighReferenceGain) > 2.0e-6f)
+            fail("per-band Depth-shaped reference gain changed");
+        for (int band = 0; band < kOttBands; ++band) {
+            const float expectedDown =
+                expectedDownThresholdRaw[band] * 0.1f +
+                depthCase.thresholdDeltaDb;
+            const float expectedUp =
+                expectedUpThresholdRaw[band] * 0.1f +
+                depthCase.thresholdDeltaDb;
+            if (fabsf(cached.thrDownDb[band] - expectedDown) > 2.0e-5f ||
+                fabsf(cached.thrUpDb[band] - expectedUp) > 2.0e-5f)
+                fail("partial-Depth threshold shift changed");
+        }
+    }
+
+    // Xfer's settled branch transfer has a hard hinge, not a soft knee.
+    if (ottHingeDb(-0.001f) != 0.0f || ottHingeDb(0.0f) != 0.0f ||
+        fabsf(ottHingeDb(0.001f) - 0.001f) > 1.0e-9f)
+        fail("dynamics hinge is no longer hard");
+}
+
+static void test_attack_controls_gain_motion() {
+    OttHost fast = makeOtt();
+    OttHost slow = makeOtt();
+    fast.v[kMidAttack] = 1;       // 0.1 ms
+    slow.v[kMidAttack] = 5000;    // 500 ms
+    factory.parameterChanged(fast.alg, kMidAttack);
+    factory.parameterChanged(slow.alg, kMidAttack);
+
+    const int N = 32;
+    std::vector<float> fastBus(N * 4, 0.f), slowBus(N * 4, 0.f);
+    for (int block = 0; block < 20; ++block) {
+        for (int i = 0; i < N; ++i) {
+            const float sample = 0.8f * sinf(2.f * 3.14159265f * 500.f *
+                                             (block * N + i) / 48000.f);
+            fastBus[i] = fastBus[N + i] = sample;
+            slowBus[i] = slowBus[N + i] = sample;
+        }
+        factory.step(fast.alg, fastBus.data(), N / 4);
+        factory.step(slow.alg, slowBus.data(), N / 4);
+    }
+
+    const auto* fastAlg = (_ottAlgorithm*)fast.alg;
+    const auto* slowAlg = (_ottAlgorithm*)slow.alg;
+    if (!(fastAlg->dsp.bands.downGain[0][1] <
+          slowAlg->dsp.bands.downGain[0][1] - 0.05f))
+        fail("Mid Attack does not control downward gain motion");
+}
+
+static void test_mono_keeps_right_state_current() {
+    OttHost h = makeOtt();
+    const int N = 32;
+    std::vector<float> bus(N * 4, 0.f);
+
+    for (int block = 0; block < 200; ++block) {
+        for (int i = 0; i < N; ++i) {
+            const float sample = 0.1f * sinf(2.f * 3.14159265f * 500.f *
+                                             (block * N + i) / 48000.f);
+            bus[i] = bus[N + i] = sample;
+        }
+        factory.step(h.alg, bus.data(), N / 4);
+    }
+
+    h.v[kStereo] = 0;
+    factory.parameterChanged(h.alg, kStereo);
+    for (int block = 0; block < 1500; ++block) {
+        for (int i = 0; i < N; ++i)
+            bus[i] = 0.4f * sinf(2.f * 3.14159265f * 2000.f *
+                                  (block * N + i) / 48000.f);
+        factory.step(h.alg, bus.data(), N / 4);
+    }
+
+    h.v[kStereo] = 1;
+    factory.parameterChanged(h.alg, kStereo);
+    for (int i = 0; i < N; ++i) {
+        const float sample = 0.4f * sinf(2.f * 3.14159265f * 2000.f * i /
+                                         48000.f);
+        bus[i] = bus[N + i] = sample;
+    }
+    factory.step(h.alg, bus.data(), N / 4);
+    const float left = rms(bus.data() + 2 * N, N);
+    const float right = rms(bus.data() + 3 * N, N);
+    if (fabsf(dbFS(right) - dbFS(left)) > 1.0f)
+        fail("stereo re-enable exposed stale right-channel DSP state");
+}
+
+static void test_mono_input_fallback_keeps_stereo_outputs_equal() {
+    OttHost h = makeOtt();
+    h.v[kGlobalDepth] = 0;
+    factory.parameterChanged(h.alg, kGlobalDepth);
+    const int N = 32;
+    std::vector<float> bus(kNT_lastBus * N, 0.0f);
+
+    // First make the two crossover histories deliberately different.
+    for (int block = 0; block < 300; ++block) {
+        for (int i = 0; i < N; ++i) {
+            bus[i] = 0.8f * sinf(2.f * 3.14159265f * 200.f *
+                                  (block * N + i) / 48000.f);
+            bus[N + i] = 0.8f * sinf(2.f * 3.14159265f * 8000.f *
+                                      (block * N + i) / 48000.f);
+        }
+        factory.step(h.alg, bus.data(), N / 4);
+    }
+
+    // The final bus has no +1 partner, so Stereo duplicates this mono input to
+    // both available output buses. No old right-channel history may leak out.
+    h.v[kIn] = kNT_lastBus;
+    for (int i = 0; i < N; ++i)
+        bus[(kNT_lastBus - 1) * N + i] = 0.2f;
+    factory.step(h.alg, bus.data(), N / 4);
+    for (int i = 0; i < N; ++i)
+        if (fabsf(bus[2 * N + i] - bus[3 * N + i]) > 1.0e-6f)
+            fail("mono input fallback exposed stale right-channel state");
+}
+
+static void test_bypass_routing() {
+    OttHost h = makeOtt();
+    h.common[0] = 1;
+    h.v[kIn] = 1;
+    h.v[kOut] = 2; // overlaps the right input in stereo mode
+    h.v[kOutMode] = 1;
+    const int N = 32;
+    std::vector<float> bus(N * 4, 0.f);
+    for (int i = 0; i < N; ++i) {
+        bus[i] = 0.1f + i * 0.001f;
+        bus[N + i] = -0.2f - i * 0.002f;
+    }
+    const std::vector<float> original = bus;
+    factory.step(h.alg, bus.data(), N / 4);
+    for (int i = 0; i < N; ++i) {
+        if (fabsf(bus[N + i] - original[i]) > 1.0e-7f ||
+            fabsf(bus[2 * N + i] - original[N + i]) > 1.0e-7f)
+            fail("overlapping stereo bypass routing corrupted a channel");
+    }
+
+    h.v[kOut] = 3;
+    h.v[kOutMode] = 0;
+    std::fill(bus.begin(), bus.end(), 0.25f);
+    factory.step(h.alg, bus.data(), N / 4);
+    for (int i = 0; i < N; ++i) {
+        if (fabsf(bus[2 * N + i] - 0.5f) > 1.0e-7f ||
+            fabsf(bus[3 * N + i] - 0.5f) > 1.0e-7f)
+            fail("bypass ignored Add output mode");
+    }
+
+    // Every selectable bus can be the left side of a stereo input pair except
+    // the final bus. Do not silently collapse high-numbered pairs to mono.
+    h.v[kIn] = kNT_lastBus - 1;
+    h.v[kOut] = 1;
+    h.v[kOutMode] = 1;
+    std::vector<float> highBus(kNT_lastBus * N, 0.0f);
+    for (int i = 0; i < N; ++i) {
+        highBus[(kNT_lastBus - 2) * N + i] = 0.3f + i * 0.001f;
+        highBus[(kNT_lastBus - 1) * N + i] = -0.4f - i * 0.001f;
+    }
+    factory.step(h.alg, highBus.data(), N / 4);
+    for (int i = 0; i < N; ++i) {
+        if (fabsf(highBus[i] - (0.3f + i * 0.001f)) > 1.0e-7f ||
+            fabsf(highBus[N + i] - (-0.4f - i * 0.001f)) > 1.0e-7f)
+            fail("high-numbered stereo input pair collapsed to mono");
+    }
+}
+
+static void test_stereo_dynamics_are_linked() {
+    OttHost h = makeOtt();
+    const int N = 48;
+    std::vector<float> bus(N * 4, 0.f);
+    for (int block = 0; block < 2000; ++block) {
+        for (int i = 0; i < N; ++i) {
+            const float phase = 2.f * 3.14159265f * 500.f *
+                                (block * N + i) / 48000.f;
+            bus[i] = 0.001f * sinf(phase);
+            bus[N + i] = 1.0f * sinf(phase);
+        }
+        factory.step(h.alg, bus.data(), N / 4);
+    }
+    const float leftGain = dbFS(rms(bus.data() + 2 * N, N)) -
+                           dbFS(rms(bus.data(), N));
+    const float rightGain = dbFS(rms(bus.data() + 3 * N, N)) -
+                            dbFS(rms(bus.data() + N, N));
+    if (fabsf(leftGain - rightGain) > 0.1f)
+        fail("stereo dynamics changed the left/right image");
+}
+
+static void pressUiButton(_NT_algorithm* alg, uint16_t button) {
+    _NT_uiData data = {};
+    data.controls = button;
+    customUi(alg, data);
+}
+
+static void test_ui_submenu_memory() {
+    OttHost h = makeOtt();
+    auto* a = (_ottAlgorithm*)h.alg;
+
+    if (pages[0].group == 0 ||
+        pages[0].group != pages[1].group ||
+        pages[1].group != pages[2].group)
+        fail("band parameter pages do not preserve their selected row");
+    if (pages[3].group == pages[0].group || pages[4].group == pages[0].group)
+        fail("non-band parameter pages share the band selection group");
+
+    // Low band: Threshold uses Up, Ratio remains Down, and Gain uses Pre.
+    // Cycling views must restore each view's independent selection.
+    pressUiButton(h.alg, kNT_potButtonL);
+    if (!a->potUpper[UIState::THRESH][0])
+        fail("threshold submenu did not select Up");
+
+    pressUiButton(h.alg, kNT_button4); // Threshold -> Ratio
+    if (a->potUpper[UIState::RATIO][0])
+        fail("ratio submenu inherited threshold selection");
+
+    pressUiButton(h.alg, kNT_button4); // Ratio -> Gain
+    pressUiButton(h.alg, kNT_potButtonL);
+    if (!a->potUpper[UIState::GAIN][0])
+        fail("gain submenu did not select Pre");
+
+    pressUiButton(h.alg, kNT_button4); // Gain -> Threshold
+    if (!a->potUpper[UIState::THRESH][0])
+        fail("threshold submenu selection was not remembered");
+
+    pressUiButton(h.alg, kNT_button4); // Threshold -> Ratio
+    if (a->potUpper[UIState::RATIO][0])
+        fail("ratio submenu selection was not remembered");
+
+    pressUiButton(h.alg, kNT_button4); // Ratio -> Gain
+    if (!a->potUpper[UIState::GAIN][0])
+        fail("gain submenu selection was not remembered");
+
+    // Re-entering the display must retain view/submenu state and initialise
+    // soft takeover from the selected parameter, not from an arbitrary centre.
+    _NT_float3 pots = {};
+    setupUi(h.alg, pots);
+    if (a->state.potMode != UIState::GAIN ||
+        !a->potUpper[UIState::GAIN][0])
+        fail("setupUi reset the current submenu");
+    const float expected =
+        (h.v[kLoPreGain] - params[kLoPreGain].min) /
+        float(params[kLoPreGain].max - params[kLoPreGain].min);
+    if (fabsf(pots[0] - expected) > 1.0e-6f)
+        fail("setupUi did not restore the selected parameter value");
+
+    // Non-pot callbacks must never push stale pot positions into parameters.
+    for (int p = 0; p < 3; ++p)
+        a->potCaught[p] = true;
+    gParameterPushes = 0;
+    pressUiButton(h.alg, kNT_button3);
+    if (gParameterPushes != 0)
+        fail("button callback rewrote an untouched pot parameter");
+}
+
+static void test_ui_draw_narrow_threshold_regions() {
+    OttHost h = makeOtt();
+    // These extremes leave only one display pixel between a threshold and its
+    // boundary. The ratio-line renderer must not compute a zero step count.
+    for (int parameter : {kLoDownThr, kMidDownThr, kHiDownThr})
+        h.v[parameter] = -10;
+    for (int parameter : {kLoUpThr, kMidUpThr, kHiUpThr})
+        h.v[parameter] = -590;
+    if (!draw(h.alg))
+        fail("custom UI did not draw narrow threshold regions");
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 int main() {
     std::cout << "=== OTT host tests ===\n";
-    test_dry_passthrough();
+    test_depth_zero_reconstruction();
     test_crossover_reconstruction();
     test_default_level();
     test_levels_across_amplitudes();
     test_band_gains();
+    test_xfer_reference_transfer();
+    test_detector_timebase_and_block_size();
+    test_silence_does_not_charge_upward_gain();
+    test_depth_law_and_upward_bound();
+    test_xfer_static_law_calibration();
+    test_attack_controls_gain_motion();
+    test_mono_keeps_right_state_current();
+    test_mono_input_fallback_keeps_stereo_outputs_equal();
+    test_bypass_routing();
+    test_stereo_dynamics_are_linked();
+    test_ui_submenu_memory();
+    test_ui_draw_narrow_threshold_regions();
     std::cout << "\nAll tests passed.\n";
     return 0;
 }

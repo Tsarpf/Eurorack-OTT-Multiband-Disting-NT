@@ -5,6 +5,8 @@
 
 static const int kOttBands    = 3;
 static const int kOttMaxBlock = 64;    // hard ceiling on N passed to step()
+static const float kOttMaxUpGainDb = 36.0f;
+static const float kOttDetectorSeconds = 0.005f;
 
 // ── Scalar math ───────────────────────────────────────────────────────────────
 
@@ -52,28 +54,51 @@ inline void ottComputeLR4(float fc, float sr, bool hp, float* c10)
     }
 }
 
+// LP4 + HP4 at one LR4 crossover reduces to a 2nd-order all-pass.  In a
+// three-way tree the low path must receive the upper crossover's all-pass
+// phase, otherwise low + (mid + high) is not magnitude-flat between the two
+// crossover frequencies.
+inline void ottComputeLR4Allpass(float fc, float sr, float* c5)
+{
+    const float w   = tanf(3.14159265f * fc / sr);
+    const float w2  = w * w;
+    const float D   = 1.0f + 1.41421356f * w + w2;
+    const float iD  = 1.0f / D;
+    const float a1c =  2.0f * (1.0f - w2) * iD;
+    const float a2c = -(1.0f - 1.41421356f * w + w2) * iD;
+    // Standard denominator is {1, -a1c, -a2c}; reverse it for the
+    // all-pass numerator, while retaining CMSIS's opposite feedback signs.
+    c5[0] = -a2c;
+    c5[1] = -a1c;
+    c5[2] = 1.0f;
+    c5[3] = a1c;
+    c5[4] = a2c;
+}
+
 // ── Bidirectional gain computer ───────────────────────────────────────────────
 //
-// Called at block rate — powf is fine here.
-//
-//  env:     smoothed block-peak envelope (linear amplitude)
-//  thrDown: downward threshold (linear) — compress above this
-//  thrUp:   upward threshold   (linear) — compress below this
-//  exDown:  1 − 1/ratioDown    (0 = no compression, 1 = limiting)
-//  exUp:    1 − 1/ratioUp
-//
-// Downward: when env > thrDown, attenuate toward thrDown.
-// Upward:   when env < thrUp,   boost toward thrUp.
-// Both can be active simultaneously — that's the OTT character.
+// Called once per band/channel/block. Xfer's settled transfer has a hard hinge,
+// and Depth scales both compression slopes directly toward 1:1. Upward gain is
+// bounded before post/output gain so a vanishing detector level cannot turn
+// crossover noise into an arbitrarily large burst.
 
-inline float ottGain(float env, float thrDown, float thrUp,
-                     float exDown, float exUp)
+inline float ottHingeDb(float beyondThresholdDb)
 {
-    if (env < 1.0e-10f) return 1.0f;
-    float g = 1.0f;
-    if (env > thrDown && thrDown > 1.0e-10f)
-        g *= powf(thrDown / env, exDown);
-    if (env < thrUp   && thrUp   > 1.0e-10f)
-        g *= powf(thrUp   / env, exUp);
-    return g;
+    return beyondThresholdDb > 0.0f ? beyondThresholdDb : 0.0f;
+}
+
+inline void ottGainTargets(float levelDb, float thrDownDb, float thrUpDb,
+                           float exDown, float exUp, float depth,
+                           float referenceGain, bool activeSignal,
+                           float& downGain, float& upGain)
+{
+    const float downDb = -depth * exDown *
+                         ottHingeDb(levelDb - thrDownDb);
+    float upCompressionDb = activeSignal
+        ? depth * exUp * ottHingeDb(thrUpDb - levelDb)
+        : 0.0f;
+    if (upCompressionDb > kOttMaxUpGainDb)
+        upCompressionDb = kOttMaxUpGainDb;
+    downGain = ottDbToLinear(downDb);
+    upGain   = referenceGain * ottDbToLinear(upCompressionDb);
 }

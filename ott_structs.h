@@ -15,6 +15,12 @@ struct OttLR4 {
     float coeffs[10];  // 2 stages × 5 CMSIS coefficients
 };
 
+struct OttAllpass {
+    arm_biquad_cascade_df2T_instance_f32 inst;
+    float state[2];
+    float coeffs[5];
+};
+
 // First call after coeffs[] are populated — zeros state (correct at startup).
 inline void ottLR4Init(OttLR4& f)
 {
@@ -34,6 +40,23 @@ inline void ottLR4Process(OttLR4& f, const float* src, float* dst, int n)
     arm_biquad_cascade_df2T_f32(&f.inst, src, dst, (uint32_t)n);
 }
 
+inline void ottAllpassInit(OttAllpass& f)
+{
+    arm_biquad_cascade_df2T_init_f32(&f.inst, 1, f.coeffs, f.state);
+}
+
+inline void ottAllpassReseat(OttAllpass& f)
+{
+    f.inst.numStages = 1;
+    f.inst.pCoeffs = f.coeffs;
+    f.inst.pState = f.state;
+}
+
+inline void ottAllpassProcess(OttAllpass& f, const float* src, float* dst, int n)
+{
+    arm_biquad_cascade_df2T_f32(&f.inst, src, dst, (uint32_t)n);
+}
+
 // ── Crossover bank ────────────────────────────────────────────────────────────
 //
 // Signal routing (per channel):
@@ -46,29 +69,32 @@ struct OttXover {
     OttLR4 hp1[2];   // low-mid HP,   per channel
     OttLR4 lp2[2];   // mid-high LP,  per channel (input = hp1 output)
     OttLR4 hp2[2];   // mid-high HP,  per channel (input = hp1 output)
+    OttAllpass lowPhase2[2]; // align low with the mid-high LR4 phase
 };
 
 // ── Cached / derived values ───────────────────────────────────────────────────
 // Recomputed in parameterChanged() — never in step().
 
 struct OttCached {
-    float relCoeff[kOttBands];    // per-sample release decay coefficient
-    float gainSmooth;             // per-sample gain ramp smoother (~5 ms)
-    float thrDown[kOttBands];     // downward threshold, linear amplitude
-    float thrUp[kOttBands];       // upward threshold,   linear amplitude
+    float attackCoeff[kOttBands]; // per-sample gain attack coefficient
+    float releaseCoeff[kOttBands];// per-sample gain release coefficient
+    float thrDownDb[kOttBands];   // downward threshold in dB
+    float thrUpDb[kOttBands];     // upward threshold in dB
     float exDown[kOttBands];      // 1 − 1/ratioDown
     float exUp[kOttBands];        // 1 − 1/ratioUp
     float preGain[kOttBands];     // linear pre-gain
+    float preGainDb[kOttBands];   // detector offset, avoids scaling a buffer pass
     float postGain[kOttBands];    // linear post-gain
     float outGain;
-    float wet;                    // 0..1
+    float depth;                  // 0..1 raw Depth, scales dynamics slopes
+    float referenceGain[kOttBands]; // Depth-shaped fixed band balance
 };
 
 // ── Runtime state ─────────────────────────────────────────────────────────────
 
 struct OttBands {
-    float env[2][kOttBands];        // smoothed block-peak envelope per ch/band
-    float gainState[2][kOttBands];  // per-sample gain smoother state
+    float downGain[2][kOttBands]; // downward gain state, 0..1
+    float upGain[2][kOttBands];   // upward/reference gain state, bounded
 };
 
 struct OttDSPState {
@@ -76,8 +102,11 @@ struct OttDSPState {
     OttCached cached;
     OttBands  bands;
     float     sr;
-    // Per-block release cache: relCoeff[b]^N, recomputed when N changes
-    float     relCoeffPerBlock[kOttBands];
+    // Per-block timing cache, recomputed only when N or a time parameter changes.
+    float     attackCoeffPerBlock[kOttBands];
+    float     releaseCoeffPerBlock[kOttBands];
+    float     detectorCoeffPerBlock;
+    float     detectorPower[kOttBands]; // linked 5 ms power envelope per band
     int       lastBlockN;
 };
 
@@ -89,7 +118,11 @@ struct _ottAlgorithm : public _NT_algorithm {
     int         lastParam      = -1;
     int16_t     lastValue      = 0;
     float       potCatch[3]    = {0.f, 0.f, 0.f};
+    float       potPrevious[3] = {0.f, 0.f, 0.f};
     bool        potCaught[3]   = {false, false, false};
+    bool        potHasPrevious[3] = {false, false, false};
     int         potTarget[3]   = {-1, -1, -1};
-    bool        potUpper[3]    = {false, false, false};
+    // Each control view remembers its own per-band secondary selection:
+    // Threshold/Ratio use Down vs Up, Gain uses Post vs Pre.
+    bool        potUpper[UIState::POT_MODE_COUNT][3] = {};
 };

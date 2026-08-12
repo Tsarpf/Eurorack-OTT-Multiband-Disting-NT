@@ -1,3 +1,5 @@
+#pragma once
+
 /*  Stable indices: routing first, then every OTT control.  */
 enum {
     /* routing */
@@ -24,7 +26,7 @@ enum {
 
     /* X-over  + global */
     kXoverLoMid, kXoverMidHi,
-    kGlobalOut, kGlobalWet,
+    kGlobalOut, kGlobalDepth,
 
     kNumParams
 };
@@ -33,15 +35,16 @@ enum {
 static const uint8_t pageHi[]     = { kHiDownThr,kHiUpThr,kHiDownRat,kHiUpRat,kHiPreGain,kHiPostGain,kHiAttack,kHiRelease };
 static const uint8_t pageMid[]    = { kMidDownThr,kMidUpThr,kMidDownRat,kMidUpRat,kMidPreGain,kMidPostGain,kMidAttack,kMidRelease };
 static const uint8_t pageLow[]    = { kLoDownThr,kLoUpThr,kLoDownRat,kLoUpRat,kLoPreGain,kLoPostGain,kLoAttack,kLoRelease };
-static const uint8_t pageGlobal[] = { kXoverLoMid,kXoverMidHi,kGlobalOut,kGlobalWet };
+static const uint8_t pageGlobal[] = { kXoverLoMid,kXoverMidHi,kGlobalOut,kGlobalDepth };
 static const uint8_t pageRouting[] = { kIn, kStereo, kOut, kOutMode };
 
 static const _NT_parameterPage pages[] = {
-    { "High",    ARRAY_SIZE(pageHi),     pageHi     },
-    { "Mid",     ARRAY_SIZE(pageMid),    pageMid    },
-    { "Low",     ARRAY_SIZE(pageLow),    pageLow    },
-    { "Global",  ARRAY_SIZE(pageGlobal), pageGlobal },
-    { "Routing", ARRAY_SIZE(pageRouting), pageRouting }
+    // Band pages share a group so changing bands preserves the selected row.
+    { "High",    ARRAY_SIZE(pageHi),      1, { 0, 0 }, pageHi      },
+    { "Mid",     ARRAY_SIZE(pageMid),     1, { 0, 0 }, pageMid     },
+    { "Low",     ARRAY_SIZE(pageLow),     1, { 0, 0 }, pageLow     },
+    { "Global",  ARRAY_SIZE(pageGlobal),  2, { 0, 0 }, pageGlobal  },
+    { "Routing", ARRAY_SIZE(pageRouting), 3, { 0, 0 }, pageRouting }
 };
 
 static const _NT_parameterPages paramPages = {
@@ -60,40 +63,39 @@ static const _NT_parameter params[kNumParams] = {
     { "Out mode", 0, 1, 1, kNT_unitOutputMode, 0, nullptr },
 
     /*  High band  (dB, %, dB) */
-    P("Hi/DownThr", -600,   0, -100, kNT_unitDb,       kNT_scaling10),
-    P("Hi/UpThr",  -600,   0, -300, kNT_unitDb,       kNT_scaling10),
-    P("Hi/DownRat", 100, 10000, 400, kNT_unitNone,     kNT_scaling100),
-    P("Hi/UpRat",   100, 10000, 200, kNT_unitNone,     kNT_scaling100),
+    P("Hi/DownThr", -600,   0, -369, kNT_unitDb,       kNT_scaling10),
+    P("Hi/UpThr",  -600,   0, -422, kNT_unitDb,       kNT_scaling10),
+    P("Hi/DownRat", 100, 32767,10000,kNT_unitNone,     kNT_scaling100),
+    P("Hi/UpRat",   100, 32767,  400,kNT_unitNone,     kNT_scaling100),
     P("Hi/PreGain", -240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Hi/PostGain",-240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Hi/Attack",     1,  5000, 135, kNT_unitMs,      kNT_scaling10),
     P("Hi/Release",   10, 20000,1320, kNT_unitMs,      kNT_scaling10),
 
     /*  Mid band  */
-    P("Mid/DownThr", -600,   0, -100, kNT_unitDb,       kNT_scaling10),
-    P("Mid/UpThr",  -600,   0, -300, kNT_unitDb,       kNT_scaling10),
-    P("Mid/DownRat", 100, 10000, 400, kNT_unitNone,     kNT_scaling100),
-    P("Mid/UpRat",   100, 10000, 200, kNT_unitNone,     kNT_scaling100),
+    P("Mid/DownThr", -600,   0, -317, kNT_unitDb,       kNT_scaling10),
+    P("Mid/UpThr",  -600,   0, -433, kNT_unitDb,       kNT_scaling10),
+    P("Mid/DownRat", 100, 32767,10000, kNT_unitNone,     kNT_scaling100),
+    P("Mid/UpRat",   100, 32767,  400, kNT_unitNone,     kNT_scaling100),
     P("Mid/PreGain", -240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Mid/PostGain",-240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Mid/Attack",     1,  5000, 224, kNT_unitMs,      kNT_scaling10),
     P("Mid/Release",   10, 20000,2820, kNT_unitMs,      kNT_scaling10),
 
     /*  Low band  */
-    P("Low/DownThr", -600,   0, -100, kNT_unitDb,       kNT_scaling10),
-    P("Low/UpThr",  -600,   0, -300, kNT_unitDb,       kNT_scaling10),
-    P("Low/DownRat", 100, 10000, 400, kNT_unitNone,     kNT_scaling100),
-    P("Low/UpRat",   100, 10000, 200, kNT_unitNone,     kNT_scaling100),
+    P("Low/DownThr", -600,   0, -355, kNT_unitDb,       kNT_scaling10),
+    P("Low/UpThr",  -600,   0, -425, kNT_unitDb,       kNT_scaling10),
+    P("Low/DownRat", 100, 32767,32767,kNT_unitNone,      kNT_scaling100),
+    P("Low/UpRat",   100, 32767,  400,kNT_unitNone,      kNT_scaling100),
     P("Low/PreGain", -240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Low/PostGain",-240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Low/Attack",     1,  5000, 478, kNT_unitMs,      kNT_scaling10),
     P("Low/Release",   10, 20000,2820, kNT_unitMs,      kNT_scaling10),
 
     /*  X-over & global  */
-    P("Xover/LoMid",   40, 18000, 160,  kNT_unitHz,      0),
+    P("Xover/LoMid",   40, 18000,  88,  kNT_unitHz,      0),
     P("Xover/MidHi",  100, 20000,2500,  kNT_unitHz,      0),
-    P("Global/Out",  -240,  240,  170,  kNT_unitDb,      kNT_scaling10),
-    P("Global/Wet",     0,  100,  100,  kNT_unitPercent, 0),
+    P("Global/Out",  -240,  240,    0,  kNT_unitDb,      kNT_scaling10),
+    P("Global/Depth",   0,  100,  100,  kNT_unitPercent, 0),
 };
 #undef P
-

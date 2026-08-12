@@ -11,6 +11,14 @@ PYTHON        ?= python
 NTCTL          = $(PYTHON) $(abspath tools/disting/ntctl.py)
 PRESET        ?= codex-dev
 
+HOST_CXX      ?= c++
+HOST_CC       ?= cc
+HOST_CXXFLAGS ?= -std=c++17 -I$(SDK)/include \
+	-I$(CMSIS_DSP)/Include -I$(CMSIS_DSP)/PrivateInclude \
+	-D__GNUC_PYTHON__
+HOST_CFLAGS   ?= -I$(CMSIS_DSP)/Include -I$(CMSIS_DSP)/PrivateInclude \
+	-D__GNUC_PYTHON__
+
 # ── sources ────────────────────────────────────────────────────────────────────
 CXX_SRCS := ott_algo.cpp ott_ui.cpp
 
@@ -21,6 +29,7 @@ C_SRCS := \
 CXX_OBJS := $(patsubst %.cpp,$(OBJDIR)/%.o,$(CXX_SRCS))
 C_OBJS   := $(patsubst $(CMSIS_DSP)/Source/FilteringFunctions/%.c,$(OBJDIR)/cmsis_%.o,$(C_SRCS))
 OBJS     := $(CXX_OBJS) $(C_OBJS)
+HOST_CMSIS_OBJS := $(OBJDIR)/host_cmsis_df2t.o $(OBJDIR)/host_cmsis_df2t_init.o
 
 # ── ARM cross-compiler ─────────────────────────────────────────────────────────
 CXX := arm-none-eabi-g++
@@ -44,7 +53,7 @@ CFLAGS := \
     -O2 -ffast-math -fdata-sections -ffunction-sections
 
 # ── build rules ────────────────────────────────────────────────────────────────
-.PHONY: all build push clean
+.PHONY: all build test push clean
 
 all: build
 
@@ -58,8 +67,19 @@ $(OBJDIR)/cmsis_%.o: $(CMSIS_DSP)/Source/FilteringFunctions/%.c
 	@mkdir -p $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(OBJDIR)/host_cmsis_df2t.o: $(CMSIS_DSP)/Source/FilteringFunctions/arm_biquad_cascade_df2T_f32.c
+	@mkdir -p $(OBJDIR)
+	$(HOST_CC) $(HOST_CFLAGS) -c $< -o $@
+
+$(OBJDIR)/host_cmsis_df2t_init.o: $(CMSIS_DSP)/Source/FilteringFunctions/arm_biquad_cascade_df2T_init_f32.c
+	@mkdir -p $(OBJDIR)
+	$(HOST_CC) $(HOST_CFLAGS) -c $< -o $@
+
 $(PLUGIN).o: $(OBJS)
 	$(CXX) -r $^ -o $@
+
+test: $(HOST_CMSIS_OBJS)
+	$(HOST_CXX) -O2 $(HOST_CXXFLAGS) test_ott.cpp $(HOST_CMSIS_OBJS) -o /tmp/test_$(PLUGIN) && /tmp/test_$(PLUGIN)
 
 push: build
 	$(VENV_ACTIVATE) && $(NTCTL) push-plugin $(PLUGIN).o --save-as $(PRESET)
