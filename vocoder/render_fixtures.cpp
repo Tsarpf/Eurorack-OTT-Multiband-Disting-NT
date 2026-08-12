@@ -18,7 +18,6 @@ struct FixtureSpec {
   int maxFreq;
   int attack;
   int release;
-  int enhance;
   int wet;
   bool movingControls;
 };
@@ -56,7 +55,6 @@ static void applySpec(HostAlgorithm &host, const FixtureSpec &spec) {
   hostSetParameter(host, kMaxFreq, (int16_t)spec.maxFreq);
   hostSetParameter(host, kAttack, (int16_t)spec.attack);
   hostSetParameter(host, kRelease, (int16_t)spec.release);
-  hostSetParameter(host, kEnhance, (int16_t)spec.enhance);
   hostSetParameter(host, kWet, (int16_t)spec.wet);
 }
 
@@ -76,8 +74,8 @@ static void appendStats(std::ostream &stream, const FixtureSpec &spec,
 
   stream << spec.name << ",bands=" << spec.bandCount << ",width=" << spec.width
          << ",depth=" << spec.depth << ",formant=" << spec.formant
-         << ",enhance=" << spec.enhance << ",raw_peak=" << std::fixed
-         << std::setprecision(6) << rawPeak << ",gain=" << appliedGain
+         << ",raw_peak=" << std::fixed << std::setprecision(6) << rawPeak
+         << ",gain=" << appliedGain
          << ",peak=" << peak << ",rms=" << rms << "\n";
 }
 
@@ -89,11 +87,11 @@ int main() {
   fs::create_directories(analysisDir);
 
   const FixtureSpec specs[] = {
-      {"01_impulse", 8, 35, 75, 0, 100, 10000, 5, 80, 1, 100, false},
-      {"02_noise", 16, 50, 70, 0, 100, 10000, 10, 120, 1, 100, false},
-      {"03_sine", 16, 40, 60, 12, 100, 10000, 12, 150, 0, 100, false},
-      {"04_motion_sweep", 16, 50, 75, 0, 100, 10000, 8, 140, 1, 100, true},
-      {"05_neuro_bass", 24, 45, 85, -24, 60, 8000, 7, 120, 1, 100, true},
+      {"01_impulse", 8, 35, 75, 0, 100, 10000, 5, 80, 100, false},
+      {"02_noise", 16, 50, 70, 0, 100, 10000, 10, 120, 100, false},
+      {"03_sine", 16, 40, 60, 12, 100, 10000, 12, 150, 100, false},
+      {"04_motion_sweep", 16, 50, 75, 0, 100, 10000, 8, 140, 100, true},
+      {"05_neuro_bass", 24, 45, 85, -24, 60, 8000, 7, 120, 100, true},
   };
 
   std::ofstream report(analysisDir / "render_report.txt");

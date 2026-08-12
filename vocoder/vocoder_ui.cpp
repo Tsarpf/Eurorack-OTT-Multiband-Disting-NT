@@ -26,6 +26,16 @@ static void formatOutputGain(char *buf, size_t bufSize, int valueTenthsDb) {
   }
 }
 
+static void formatSignedTenths(char *buf, size_t bufSize, int valueTenths) {
+  if ((valueTenths % 10) == 0) {
+    snprintf(buf, bufSize, "%+d", valueTenths / 10);
+  } else {
+    const char sign = valueTenths < 0 ? '-' : '+';
+    const int magnitude = valueTenths < 0 ? -valueTenths : valueTenths;
+    snprintf(buf, bufSize, "%c%d.%1d", sign, magnitude / 10, magnitude % 10);
+  }
+}
+
 static void formatDecay(char *buf, size_t bufSize, int valueMs) {
   if (valueMs < 1000) {
     snprintf(buf, bufSize, "%dms", valueMs);
@@ -70,7 +80,7 @@ bool draw(_NT_algorithm *self) {
   NT_drawText(centreX, valueY, buf, 15, kNT_textCentre, kNT_textTiny);
 
   NT_drawText(rightX, labelY, "FORMANT", 15, kNT_textCentre, kNT_textTiny);
-  snprintf(buf, sizeof(buf), "%d", (int)a->v[kFormant]);
+  formatSignedTenths(buf, sizeof(buf), (int)a->v[kFormant]);
   NT_drawText(rightX, valueY, buf, 15, kNT_textCentre, kNT_textTiny);
 
   const int bands = a->activeBands > 0 ? a->activeBands : 1;
@@ -101,7 +111,9 @@ bool draw(_NT_algorithm *self) {
   snprintf(buf, sizeof(buf), "WET %d%%", a->uiWetDisplay);
   NT_drawText(160, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
 
-  snprintf(buf, sizeof(buf), "GAIN %d", a->uiOutputGainDisplay);
+  char gainBuf[16];
+  formatOutputGain(gainBuf, sizeof(gainBuf), a->uiOutputGainDisplay);
+  snprintf(buf, sizeof(buf), "GAIN %s", gainBuf);
   NT_drawText(224, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
 
   if (a->leftEncoderControlsDecay) {

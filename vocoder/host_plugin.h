@@ -2,6 +2,7 @@
 #define VOCODER_HOST_PLUGIN_H
 
 #include "../distingnt_api/include/distingnt/api.h"
+#include "../distingnt_api/include/distingnt/serialisation.h"
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -27,6 +28,17 @@ inline bool draw(_NT_algorithm *) { return false; }
 inline uint32_t hasCustomUi(_NT_algorithm *) { return 0; }
 inline void customUi(_NT_algorithm *, const _NT_uiData &) {}
 inline void setupUi(_NT_algorithm *, _NT_float3 &) {}
+
+inline void _NT_jsonStream::addMemberName(const char *) {}
+inline void _NT_jsonStream::addNumber(int) {}
+inline void _NT_jsonStream::addNumber(float) {}
+inline bool _NT_jsonParse::numberOfObjectMembers(int &num) {
+  num = 0;
+  return true;
+}
+inline bool _NT_jsonParse::matchName(const char *) { return false; }
+inline bool _NT_jsonParse::number(int &) { return false; }
+inline bool _NT_jsonParse::skipMember(void) { return true; }
 
 #include "vocoder_algo.cpp"
 
@@ -61,7 +73,7 @@ inline HostAlgorithm makeHostAlgorithm() {
   host.values[kMaxFreq] = 18000;
   host.values[kAttack] = 10;
   host.values[kRelease] = 120;
-  host.values[kEnhance] = 1;
+  host.values[kEnhance] = 0;
   host.values[kWet] = 100;
   host.values[kPreGain] = 0;
 
@@ -93,19 +105,37 @@ inline void renderHostAlgorithm(HostAlgorithm &host, const float *carrierL,
   outR.clear();
   outL.reserve(frames);
   outR.reserve(frames);
-  const int numBuses = 28;
+  const int numBuses = kNT_lastBus;
+  const int carrierBusL = host.values[kInCarrier] - 1;
+  const bool carrierStereo = host.values[kCarrierStereo] > 0 &&
+                             host.values[kInCarrier] < kNT_lastBus;
+  const int carrierBusR = carrierStereo
+                              ? carrierBusL + 1
+                              : carrierBusL;
+  const int modulatorBusL = host.values[kInModulator] - 1;
+  const bool modulatorStereo = host.values[kModulatorStereo] > 0 &&
+                               host.values[kInModulator] < kNT_lastBus;
+  const int modulatorBusR = modulatorStereo
+                                ? modulatorBusL + 1
+                                : modulatorBusL;
   const int outBusL = host.values[kOut] - 1;
-  const int outBusR = outBusL + 1;
+  const bool stereoOutput = (carrierStereo || modulatorStereo) &&
+                            host.values[kOut] < kNT_lastBus;
+  const int outBusR = stereoOutput ? outBusL + 1 : outBusL;
 
   for (int offset = 0; offset < frames; offset += block) {
     automation(host, offset, block);
     float bus[block * numBuses];
     memset(bus, 0, sizeof(bus));
     for (int i = 0; i < block; ++i) {
-      bus[0 * block + i] = carrierL[offset + i];
-      bus[1 * block + i] = carrierR[offset + i];
-      bus[2 * block + i] = modL[offset + i];
-      bus[3 * block + i] = modR[offset + i];
+      bus[carrierBusL * block + i] = carrierL[offset + i];
+      if (carrierBusR != carrierBusL) {
+        bus[carrierBusR * block + i] = carrierR[offset + i];
+      }
+      bus[modulatorBusL * block + i] = modL[offset + i];
+      if (modulatorBusR != modulatorBusL) {
+        bus[modulatorBusR * block + i] = modR[offset + i];
+      }
     }
     factory.step(host.algorithm, bus, block / 4);
     for (int i = 0; i < block; ++i) {

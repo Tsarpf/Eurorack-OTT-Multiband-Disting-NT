@@ -10,7 +10,6 @@ struct VocoderDescriptor {
   float analysisFreq[kVocoderMaxBands];
   float synthesisFreq[kVocoderMaxBands];
   float synthesisBandGain[kVocoderMaxBands];
-  float enhanceTarget[kVocoderMaxBands];
   // DF1 coefficients computed by vocoderCalculateBandpass
   float an_b0[kVocoderMaxBands];
   float an_b2[kVocoderMaxBands];
@@ -56,10 +55,6 @@ struct VocoderDSPState {
   // Envelope follower state
   float env[2][kVocoderMaxBands];
   float eAvg[2][kVocoderMaxBands];
-  float cAvg[2][kVocoderMaxBands];
-  float envPeakHold[2][kVocoderMaxBands];
-  float carrierPeakHold[2][kVocoderMaxBands];
-  float gainTarget[2][kVocoderMaxBands];
   float gainState[2][kVocoderMaxBands];
 
   // Metering
@@ -92,7 +87,12 @@ struct VocoderDSPState {
 
   // Phase counters
   int controlPhase;
-  int levelPhase;
+
+  // Tracks whether the preceding callback actually had a distinct right
+  // output, rather than merely having a stereo toggle enabled.
+  bool stereoOutputWasActive;
+  bool carrierStereoWasActive;
+  bool modulatorStereoWasActive;
 };
 
 struct VocoderCachedCoeffs {

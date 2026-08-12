@@ -72,7 +72,7 @@ static HostAlgorithm makeAlgorithm() {
   host.values[kMaxFreq] = 18000;
   host.values[kAttack] = 10;
   host.values[kRelease] = 120;
-  host.values[kEnhance] = 1;
+  host.values[kEnhance] = 0;
   host.values[kWet] = 100;
   host.values[kPreGain] = 0;
 
@@ -109,6 +109,7 @@ static double runBenchmarkCase(int bandCount, bool movingControls,
 
   const int totalFrames = (int)(seconds * 48000.0);
   const int block = 24;
+  const int numBuses = 28;
   std::vector<float> carL(totalFrames), carR(totalFrames), modL(totalFrames),
       modR(totalFrames);
   fillBuffers(carL, carR, modL, modR);
@@ -123,7 +124,8 @@ static double runBenchmarkCase(int bandCount, bool movingControls,
       factory.parameterChanged(host.algorithm, kBandWidth);
     }
 
-    float bus[block * 4];
+    float bus[block * numBuses];
+    memset(bus, 0, sizeof(bus));
     for (int i = 0; i < block; ++i) {
       bus[0 * block + i] = carL[offset + i];
       bus[1 * block + i] = carR[offset + i];

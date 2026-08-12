@@ -10,7 +10,6 @@ The target behavior is:
 - Log-spaced carrier/modulator band layout
 - Two-region depth law
 - Formant shift
-- Enhance-style carrier normalization with optional high-frequency tilt
 - Calibrated bandwidth compensation
 - Custom Disting NT UI with meters and direct performance controls
 
@@ -34,7 +33,6 @@ It defines the sound and control behavior we want to reproduce:
 - envelope behavior
 - depth law
 - formant behavior
-- Enhance behavior
 - synthesis Q floor
 - bandwidth compensation concept
 
@@ -70,7 +68,6 @@ It should hold:
 - current analysis Q
 - current synthesis Q
 - current bandwidth compensation gain
-- per-band Enhance target tilt values
 
 This layer is recomputed only when needed:
 
@@ -90,7 +87,6 @@ Required state:
 - `sy_y1[40]`, `sy_y2[40]`
 - `env[40]`
 - `eAvg[40]`
-- `cAvg[40]`
 - shared carrier input history
 - shared modulator input history
 - decimated meter values for UI
@@ -107,7 +103,6 @@ The hot loop should do only the minimum per sample:
 - update slow envelope average
 - derive band gain from the two-region depth law
 - filter carrier band
-- optionally apply Enhance normalization
 - sum active bands
 - write the final output
 
@@ -121,10 +116,8 @@ The hot loop must not do:
 - UI drawing
 - control-page logic
 
-The only meaningful branch inside the band loop should be logic required for:
-
-- envelope attack vs release
-- Enhance on vs off, if not already folded into precomputed values
+The only meaningful branch inside the band loop should be the envelope
+attack-versus-release choice.
 
 The outer loop should stop at `activeBands`.
 
@@ -144,7 +137,6 @@ Additional parameters should include:
 - Max Frequency
 - Attack
 - Release
-- Enhance
 - routing parameters required by the Disting NT API
 
 UI goals:
@@ -189,20 +181,6 @@ Keep the two-region depth law:
 - upper region transitions into stronger peak-retention or exponential behavior
 
 The law should match the Drambo behavior closely, but constants may be retuned after the C++ float32 port is audible and measurable.
-
-### Enhance
-
-Enhance is a real behavioral toggle, not a cosmetic parameter.
-
-When enabled:
-
-- normalize carrier band energy before modulation
-- use a slow carrier-band average
-- allow a mild HF tilt in the normalization target so the result brightens instead of flattening unnaturally
-
-When disabled:
-
-- bypass that normalization path cleanly
 
 ### Bandwidth Compensation
 
@@ -249,7 +227,6 @@ Required initial tests:
 - wet equals zero passthrough
 - non-zero impulse response
 - control motion stays finite
-- Enhance changes output
 
 The point is to lock down behavior before implementation, not after.
 
@@ -266,7 +243,6 @@ Scope:
 - slow envelope average
 - two-region depth law
 - formant shift
-- Enhance behavior
 - synthesis Q floor
 - block-rate smoothing for Formant and Bandwidth
 
@@ -282,7 +258,6 @@ Required checks:
 - sensible output levels
 - no zippering during moving controls
 - no obvious clicks at block boundaries
-- working Enhance toggle
 - audible formant movement
 
 This phase should still be host-driven first. Do not defer all validation to the hardware.
@@ -476,7 +451,6 @@ The project is done when all of the following are true:
 - the sound behavior matches the verified Drambo prototype closely
 - 4 to 40 bands work correctly
 - Bandwidth, Depth, Formant, band count, and dry/wet are mapped correctly to controls
-- Enhance works as intended
 - bandwidth compensation is measured and real
 - UI is useful and stable
 - parameter motion is smooth and click-free
