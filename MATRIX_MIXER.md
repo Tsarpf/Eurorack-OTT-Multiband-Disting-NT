@@ -30,6 +30,8 @@ final block represents positive gain through +6 dB.
   selected cell's current value.
 - Click the left pot: mute the hovered cell or selected run. Click it again to
   restore each cell's exact pre-mute dB value.
+- Click the centre pot: clear MIDI mappings from the hovered cell or every cell
+  in the active selection. `MIDI CLEARED` briefly confirms the action.
 - Click the right pot: arm MIDI learn for the current cell or every cell in the
   active row/column selection; `LEARN` remains on screen until the next MIDI CC
   arrives. The selection is snapshotted when learn is armed. The learned

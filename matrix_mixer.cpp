@@ -40,6 +40,7 @@ constexpr int kMaxGain = 60;         // +6.0 dB
 constexpr int16_t kNoMidiMapping = -1;
 constexpr int16_t kNotMuted = -32768;
 constexpr float kInputMeterScale = 0.1f; // NT audio busses are expressed in volts.
+constexpr uint8_t kMidiClearedNoticeFrames = 45;
 
 enum SelectionAxis : uint8_t {
     kSelectionSingle,
@@ -74,6 +75,7 @@ struct MatrixMixer : _NT_algorithm {
     bool potCaught;
     bool potHasPrevious;
     bool potMoved;
+    uint8_t midiClearedNoticeFrames;
     float potPrevious;
     float potArmPosition;
     uint32_t lastEncoderCycle[2];
@@ -393,6 +395,7 @@ _NT_algorithm* construct(const _NT_algorithmMemoryPtrs& ptrs,
     self->potCaught = false;
     self->potHasPrevious = false;
     self->potMoved = false;
+    self->midiClearedNoticeFrames = 0;
     self->potPrevious = 0.0f;
     self->potArmPosition = 0.0f;
     self->lastEncoderCycle[0] = self->lastEncoderCycle[1] = 0;
@@ -685,7 +688,12 @@ bool draw(_NT_algorithm* algorithm) {
     constexpr int cellW = 7;
     constexpr int cellH = 4;
     const int inputCount = configuredInputs(self);
-    NT_drawText(2, 1, "12x16 MATRIX", 8, kNT_textLeft, kNT_textTiny);
+    if (self->midiClearedNoticeFrames) {
+        NT_drawText(2, 1, "MIDI CLEARED", 15, kNT_textLeft, kNT_textTiny);
+        --self->midiClearedNoticeFrames;
+    } else {
+        NT_drawText(2, 1, "12x16 MATRIX", 8, kNT_textLeft, kNT_textTiny);
+    }
     for (int in = 0; in < kInputs; ++in) {
         for (int out = 0; out < kOutputs; ++out) {
             const int x = x0 + (out + 1) * cellW;
@@ -857,6 +865,28 @@ void armMidiLearnForSelection(MatrixMixer* self) {
     });
 }
 
+void clearMidiMappingsForSelection(MatrixMixer* self) {
+    cancelMidiLearn(self);
+    bool changed = false;
+    forEachOperationTarget(self, [&](int target) {
+        if (self->midiMappings[target] != kNoMidiMapping) {
+            self->midiMappings[target] = kNoMidiMapping;
+            changed = true;
+        }
+    });
+
+    self->hasMidiMappings = false;
+    for (int target = 0; target < kTargets; ++target) {
+        if (self->midiMappings[target] != kNoMidiMapping) {
+            self->hasMidiMappings = true;
+            break;
+        }
+    }
+    self->midiClearedNoticeFrames = kMidiClearedNoticeFrames;
+    if (changed)
+        markMatrixDirty(self, true);
+}
+
 void setSelectionGain(MatrixMixer* self, int value, bool fromUi) {
     bool changed = false;
     forEachOperationTarget(self, [&](int target) {
@@ -960,7 +990,8 @@ void midiMessage(_NT_algorithm* algorithm, uint8_t byte0,
 
 uint32_t hasCustomUi(_NT_algorithm*) {
     return kNT_encoderL | kNT_encoderR | kNT_encoderButtonL |
-           kNT_encoderButtonR | kNT_potButtonL | kNT_potButtonR | kNT_potC;
+           kNT_encoderButtonR | kNT_potButtonL | kNT_potButtonC |
+           kNT_potButtonR | kNT_potC;
 }
 
 void armPotPickup(MatrixMixer* self, float position) {
@@ -990,6 +1021,8 @@ void customUi(_NT_algorithm* algorithm, const _NT_uiData& data) {
 
     if (pressed & kNT_potButtonL)
         toggleSelectionMute(self);
+    if (pressed & kNT_potButtonC)
+        clearMidiMappingsForSelection(self);
     if (pressed & kNT_potButtonR) {
         if (self->midiLearnArmed)
             cancelMidiLearn(self);

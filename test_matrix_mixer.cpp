@@ -319,6 +319,27 @@ int main() {
     }
     assert(self->midiMappings[crosspointIndex(2, 3)] == kNoMidiMapping);
 
+    // Centre-pot click clears MIDI mappings from every target in the active
+    // selection, cancels an armed learn, and raises a visible confirmation.
+    ui = {};
+    ui.controls = kNT_potButtonR;
+    customUi(algorithm, ui);
+    assert(self->midiLearnArmed);
+    const int revisionBeforeMidiClear = values[kParamStateRevision];
+    ui = {};
+    ui.controls = kNT_potButtonC;
+    customUi(algorithm, ui);
+    assert(!self->midiLearnArmed);
+    assert(!self->hasMidiMappings);
+    assert(self->midiClearedNoticeFrames == kMidiClearedNoticeFrames);
+    assert(values[kParamStateRevision] != revisionBeforeMidiClear);
+    for (int output = 0; output < 3; ++output)
+        assert(self->midiMappings[crosspointIndex(2, output)] == kNoMidiMapping);
+    const int gainBeforeClearedCc = self->gainValues[crosspointIndex(2, 0)];
+    midiMessage(algorithm, 0xb4, 21, 127);
+    assert(self->gainValues[crosspointIndex(2, 0)] == gainBeforeClearedCc);
+    assert(hasCustomUi(algorithm) & kNT_potButtonC);
+
     // Left encoder press-turn makes the corresponding one-column selection.
     self->editing = false;
     self->selectionAxis = kSelectionSingle;
