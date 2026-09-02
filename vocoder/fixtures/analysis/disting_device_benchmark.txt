@@ -2,7 +2,7 @@
 v1.16.0beta | Mar 24 2026 15:33:26
 
 ## Paths
-/presets/codex_dev.json
+/presets/vocoder.json
 /presets
 
 ## Plugins

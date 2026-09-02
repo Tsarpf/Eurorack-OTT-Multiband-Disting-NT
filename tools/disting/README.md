@@ -17,7 +17,7 @@ Examples:
 python tools/disting/ntctl.py version
 python tools/disting/ntctl.py paths
 python tools/disting/ntctl.py list /programs/plug-ins
-python tools/disting/ntctl.py push-plugin vocoder/vocoder.o --save-as codex-dev
+python tools/disting/ntctl.py push-plugin vocoder/vocoder.o --save-as vocoder
 python tools/disting/ntctl.py benchmark-vocoder --samples 8 --interval 0.5
 ```
 

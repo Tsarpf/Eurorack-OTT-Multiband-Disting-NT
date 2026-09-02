@@ -33,7 +33,7 @@ HOST_CMSIS_OBJS := $(OBJDIR)/host_cmsis_df2t.o $(OBJDIR)/host_cmsis_df2t_init.o
 PYTHON ?= python
 VENV_ACTIVATE := . $(abspath $(ROOT)/.venv-disting/bin/activate)
 NTCTL := $(PYTHON) $(abspath $(ROOT)/tools/disting/ntctl.py)
-PRESET ?= codex-dev
+PRESET ?= vocoder
 BENCH_SAMPLES ?= 8
 BENCH_INTERVAL ?= 0.5
 

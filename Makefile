@@ -9,7 +9,7 @@ OBJDIR := build
 VENV_ACTIVATE := . $(abspath .venv-disting/bin/activate)
 PYTHON        ?= python
 NTCTL          = $(PYTHON) $(abspath tools/disting/ntctl.py)
-PRESET        ?= codex-dev
+PRESET        ?= matrix_mixer
 
 HOST_CXX      ?= c++
 HOST_CC       ?= cc

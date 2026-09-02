@@ -598,7 +598,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     push = sub.add_parser("push-plugin")
     push.add_argument("local_plugin")
-    push.add_argument("--save-as", default="codex-dev")
+    push.add_argument("--save-as", default="matrix_mixer")
     push.set_defaults(func=cmd_push_plugin)
 
     delete = sub.add_parser("delete")
