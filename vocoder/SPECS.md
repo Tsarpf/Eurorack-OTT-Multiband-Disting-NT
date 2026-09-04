@@ -89,3 +89,38 @@ Tests cover routing and stereo state, sustained Depth behavior, release
 recovery, precision at 20 Hz/high Q, extended control ranges, state ownership,
 and extreme control motion. Host timings do not establish device CPU headroom;
 the higher-order bank costs more than the old single-biquad design.
+
+
+## Cortex-M7 optimization and device measurements
+
+The production bank retains float TPT sections and fuses each two-section
+cascade directly into its envelope peak or smoothed-gain output accumulation.
+This removes intermediate buffer passes without changing filter history or
+coefficient-update behavior. The connected disting NT measured **38.1%**
+algorithm CPU static and **38.0%** during standard/full Width–Formant motion at
+40 bands, versus **43.0%** before optimization (11.4–11.6% relative reduction).
+Module averages were 43.0%, 44.3%, and 43.9%. The exact object is 20,872 bytes.
+
+A faster mixed Q31 prototype measured 33.6%, but was rejected: shifted wide
+filters near Nyquist exceeded its coefficient range; negative Formant exposed
+low-frequency quantization tails; multiply-accumulates could wrap before final
+saturation; and input scaling clipped large Pre transients. An analysis-only
+variant with float synthesis and increased headroom still changed startup
+behavior while Width coefficients moved. Matching stationary responses alone
+was insufficient. Q15 also lacks resolution for narrow 20 Hz coefficients.
+The shipped implementation therefore uses float DSP throughout.
+
+Regression tests compare fused and buffered filter history, envelope peaks,
+and synthesis output through live coefficient changes, 20–23,520 Hz centers,
+Q up to 120, wide near-Nyquist filters, and 40 V input transients. They include
+blocks above and below the NT's 24-frame callback size. Existing control,
+routing, and high-Q tests remain in place.
+
+See [device-performance.json](fixtures/analysis/ableton_filterbank_update/device-performance.json)
+for object hashes, raw final captures, firmware, protocol, and rejected integer
+experiments. Static runs use eight samples; motion runs use twelve samples,
+six steps, and 0.05 s control settling. Both use 0.25 s intervals and one-second
+settling. The temporary mono benchmark preset uses 20 Hz–18 kHz, Release 30 ms,
+Depth 100%, and no injected signal. Standard motion sweeps Width 15–85% and
+Formant ±18 semitones; full motion uses Width 0–200% and Formant ±36 semitones.
+The corrected object remains installed; Matrix Mixer was restored afterward.

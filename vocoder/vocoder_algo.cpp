@@ -597,16 +597,13 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
   float wetAccum[2][24];
   memset(wetAccum, 0, sizeof(wetAccum));
 
-  // Analysis output buffer (synthesis output is fused directly into wetAccum)
-  float analysisBuf[24];
-
   for (int band = 0; band < a->activeBands; ++band) {
     float meterPeakBand = 0.0f;
 
     for (int ch = 0; ch < channels; ++ch) {
-      // ── Analysis: batch biquad on modulator → analysisBuf ──
-      const float analysisPeak = batchBiquadProcessWithEnvelope(
-          s.anCoeffs[band], s.anState[ch][band], prepMod[ch], analysisBuf, N);
+      // ── Analysis: filter directly into the block envelope peak ──
+      const float analysisPeak = batchBiquadEnvelopeOnly(
+          s.anCoeffs[band], s.anState[ch][band], prepMod[ch], N);
 
       // ── Envelope follower: update once per block ──
       // Meter tracks modulator (voice) energy per band.

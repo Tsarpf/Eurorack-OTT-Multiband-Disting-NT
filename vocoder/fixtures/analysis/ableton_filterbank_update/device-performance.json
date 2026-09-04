@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "captured_date": "2026-09-05",
+  "scope": {
+    "device": "Expert Sleepers disting NT",
+    "firmware": "1.18.0beta",
+    "sample_rate_hz": 48000,
+    "plugin_slot": 0,
+    "plugin_name": "Vocoder",
+    "band_count": 40,
+    "sample_interval_seconds": 0.25,
+    "metric": "CPU percentage reported by the disting NT",
+    "cases": {
+      "static": "Loaded preset at 40 bands with controls held still.",
+      "motion": "40 bands; Width swept 15..85 percent and Formant swept -18..+18 semitones.",
+      "motion_full_range": "40 bands; Width swept 0..200 percent and Formant swept -36..+36 semitones."
+    },
+    "samples": {
+      "static": 8,
+      "motion": 12,
+      "motion_full_range": 12
+    },
+    "settle_seconds": 1,
+    "reload_settle_seconds": 1,
+    "motion_steps": 6,
+    "control_settle_seconds": 0.05,
+    "formant_phase": 3,
+    "preset": "Temporary mono carrier 1 / modulator 2 / output 13, Depth 100, range 20\u201318000 Hz, Attack 10 ms, Release 30 ms, Wet 100, Pre 0; no injected signal.",
+    "firmware_build_date": "2026-08-07",
+    "sdk_api": 13
+  },
+  "candidates": [
+    {
+      "id": "float_baseline",
+      "status": "measured_not_selected",
+      "object_sha256": "5a9d89612d43ab3a649dfc687b52c7886db76c7730436cd4a9d0b7074cc49205",
+      "object_size_bytes": 19320,
+      "implementation": "Loader-fixed fourth-order float TPT filterbank baseline.",
+      "results": {
+        "static": {
+          "algorithm_average_percent": 43.0,
+          "algorithm_max_percent": 43,
+          "module_average_percent": 47.0,
+          "module_max_percent": 47,
+          "capture_sha256": "733c8e725b59cf6373132054e64712074acd24035392cc644bc20f32f8dcc53e"
+        },
+        "motion": {
+          "algorithm_average_percent": 43.0,
+          "algorithm_max_percent": 43,
+          "module_average_percent": 48.2,
+          "module_max_percent": 50,
+          "capture_sha256": "d2f9a2ee38b731ab1f299da9949c2a2c08ce35f456aa1ddba9b1ac97fee7bce1"
+        },
+        "motion_full_range": {
+          "algorithm_average_percent": 43.0,
+          "algorithm_max_percent": 43,
+          "module_average_percent": 48.4,
+          "module_max_percent": 50,
+          "capture_sha256": "00a6de976e853200fc6c0fd657ab59614869abe3d29fe22bd944ef2e9e703e09"
+        }
+      }
+    },
+    {
+      "id": "all_band_precise_q31",
+      "status": "measured_not_selected",
+      "object_sha256": "275734da3d0e1e3866c94e507d5e5a57f1ee717f9e4119862b860d887e7ce320",
+      "object_size_bytes": null,
+      "implementation": "All-band Q31 direct form with precise accumulation and quantization-error residue.",
+      "results": {
+        "static": {
+          "algorithm_average_percent": 45.4,
+          "algorithm_max_percent": 46,
+          "module_average_percent": 49.0,
+          "module_max_percent": 49,
+          "capture_sha256": "0e3cc5b9c474e36e17261139eeaf6c29224a38522f67064280fadfa53762504e"
+        },
+        "motion": {
+          "algorithm_average_percent": 45.2,
+          "algorithm_max_percent": 46,
+          "module_average_percent": 52.0,
+          "module_max_percent": 53,
+          "capture_sha256": "06ec92393fdb12a361a7404ec61ca9e4b2ac1557115711260d87682f5883ca17"
+        },
+        "motion_full_range": {
+          "algorithm_average_percent": 45.6,
+          "algorithm_max_percent": 46,
+          "module_average_percent": 51.4,
+          "module_max_percent": 53,
+          "capture_sha256": "52e2f6b1f5d24af2a11fd567f0da96efb6bb163c144afab60492200ce94b3af1"
+        }
+      }
+    },
+    {
+      "id": "conservative_hybrid",
+      "status": "measured_not_selected",
+      "object_sha256": "a7ec0f3348a334fbfb09db13000689d4ed9e8c14429c8f0373046546ff03e195",
+      "object_size_bytes": 21308,
+      "implementation": "Float TPT at low frequencies and fast Q31 direct form at conservative fixed band thresholds; synthesis realization does not switch during Formant motion.",
+      "results": {
+        "static": {
+          "algorithm_average_percent": 39.4,
+          "algorithm_max_percent": 40,
+          "module_average_percent": 44.0,
+          "module_max_percent": 44,
+          "capture_sha256": "b1b4c5d3e571e3bfe43f252d0f087b788ff8cd75864af67d1f68a59a7f6bffef"
+        },
+        "motion": {
+          "algorithm_average_percent": 39.3,
+          "algorithm_max_percent": 40,
+          "module_average_percent": 45.3,
+          "module_max_percent": 47,
+          "capture_sha256": "0d5ff80968b2f693c6ed6d8170f2ddc682974040b28543822ea60fcae720d1cf"
+        },
+        "motion_full_range": {
+          "algorithm_average_percent": 39.4,
+          "algorithm_max_percent": 40,
+          "module_average_percent": 46.2,
+          "module_max_percent": 48,
+          "capture_sha256": "6325afe8947096b00c49d0b3d0201c0b604150db9c1fab2f9276107f3892b8aa"
+        }
+      }
+    },
+    {
+      "id": "fused_float_prototype",
+      "status": "measured_not_selected",
+      "object_sha256": "67e50db388e4c1fa04fec0a9348fe27294e44de46982dfb9f9f6657d6a0e0127",
+      "object_size_bytes": 20872,
+      "implementation": "Fused float TPT loops; response-equivalent with minor floating-point reassociation.",
+      "results": {
+        "static": {
+          "algorithm_average_percent": 37.0,
+          "algorithm_max_percent": 37,
+          "module_average_percent": 41.5,
+          "module_max_percent": 42,
+          "capture_sha256": "cc617108fd3122595a79bf9fe5737bdd6cb91a397cd238a3a6fd9d74e293c557"
+        },
+        "motion": {
+          "algorithm_average_percent": 37.0,
+          "algorithm_max_percent": 37,
+          "module_average_percent": 44.1,
+          "module_max_percent": 46,
+          "capture_sha256": "d3756dfdd612551ae7a855abb2aafa686becedb01b3c03c96c5e61bdbd468077"
+        },
+        "motion_full_range": {
+          "algorithm_average_percent": 37.0,
+          "algorithm_max_percent": 37,
+          "module_average_percent": 42.7,
+          "module_max_percent": 44,
+          "capture_sha256": "127cd06f11d85d3aae9d93ee2cc73ed93299eacc46cf6cc23148ee5b9e69a8e1"
+        }
+      }
+    },
+    {
+      "id": "mixed_q31_rejected",
+      "status": "measured_rejected_correctness",
+      "object_sha256": "86244c04db5dce187eea77e91610a3e8f205d104ad2b2437b080ea79add8db79",
+      "object_size_bytes": 33816,
+      "results": {
+        "static": {
+          "algorithm_average_percent": 33.6,
+          "algorithm_max_percent": 34,
+          "module_average_percent": 37.6,
+          "module_max_percent": 38,
+          "capture_sha256": "bb64f7936dde8549231a3d10bfdf37efe16e7509312a7cfc85780cb84ae56955"
+        },
+        "motion": {
+          "algorithm_average_percent": 33.6,
+          "algorithm_max_percent": 34,
+          "module_average_percent": 39.7,
+          "module_max_percent": 42,
+          "capture_sha256": "9338b95beba1fc76622ae70a4d7f8118439e0c45685144dddf57a305bcb81c42"
+        },
+        "motion_full_range": {
+          "algorithm_average_percent": 33.6,
+          "algorithm_max_percent": 34,
+          "module_average_percent": 39.3,
+          "module_max_percent": 41,
+          "capture_sha256": "540d45238976502826323826be78d7638561bf4eef8043d90321667e9f114280"
+        }
+      }
+    },
+    {
+      "id": "corrected_fused_float",
+      "status": "selected",
+      "implementation": "Fuse both TPT sections directly into analysis peak and synthesis gain accumulation; retain original float state and coefficient update behavior. No Q31 production path.",
+      "object_sha256": "32373768f1fd24bac436e83f660a00093d852b9fa53a9ac5db3f7d3e3ee120d6",
+      "object_size_bytes": 20872,
+      "arm_sections_bytes": {
+        "text": 10309,
+        "data": 448,
+        "bss": 0
+      },
+      "results": {
+        "static": {
+          "algorithm_average_percent": 38.1,
+          "algorithm_max_percent": 39,
+          "module_average_percent": 43,
+          "module_max_percent": 43,
+          "capture_sha256": "e351551d704ad2c33b5a38a08e99101e655e2d59f879008038229058ca7e5cc7",
+          "capture_text": "slot=0 name=Vocoder                 original_bands=16\nbands=40 alg_avg= 38.1% alg_max= 39% module_avg= 43.0% module_max= 43%\n"
+        },
+        "motion": {
+          "algorithm_average_percent": 38,
+          "algorithm_max_percent": 38,
+          "module_average_percent": 44.3,
+          "module_max_percent": 46,
+          "capture_sha256": "ccfbb04db91f3c64a8d3ae4b5f38f6628d8d7cf5a3e4552ea81cc1863ef60dcb",
+          "capture_text": "slot=0 name=Vocoder                 bandwidth=100 formant=0\nbands=40 alg_avg= 38.0% alg_max= 38% module_avg= 44.3% module_max= 46%\n"
+        },
+        "motion_full_range": {
+          "algorithm_average_percent": 38,
+          "algorithm_max_percent": 38,
+          "module_average_percent": 43.9,
+          "module_max_percent": 45,
+          "capture_sha256": "c80e1696c848df0637068ed8fc2291fea0f88d7d4c1c9ffc02933ac45b032246",
+          "capture_text": "slot=0 name=Vocoder                 bandwidth=100 formant=0\nbands=40 alg_avg= 38.0% alg_max= 38% module_avg= 43.9% module_max= 45%\n"
+        }
+      }
+    }
+  ],
+  "q15_rejection": {
+    "status": "rejected_before_device_benchmark",
+    "reason": "Q15 cannot represent the low-frequency, high-Q coefficients required by the supported control range.",
+    "evidence": [
+      "The TPT a3 coefficient is about 1.7e-6 at 20 Hz and 4.8e-6 at 30 Hz in the narrow high-Q region, below one Q15 least-significant bit (about 3.05e-5), so it rounds to zero.",
+      "A direct-form b0 is about 1.09e-5 at 20 Hz and Q approximately 120 and also rounds to zero after the required Q15 scaling.",
+      "Quantized response sweeps produced zero feed-forward terms or unstable low-band poles; the Width 100 grid reached about 54 dB worst-case response error near 20 Hz."
+    ]
+  },
+  "interpretation": [
+    "Final corrected object measures 38.1% static and 38.0% moving versus 43.0% baseline (11.4\u201311.6% relative reduction).",
+    "The earlier 33.6% integer result is rejected and is not the installed production implementation.",
+    "Device CPU captures use no injected signal; sound/state equivalence is checked separately on the host.",
+    "Final plugin installed; temporary benchmark preset removed and matrix_mixer.json restored."
+  ],
+  "integer_rejection": {
+    "high_frequency": "At 4 bands, Width 200%, Formant +4 semitones, the active top synthesis band near 22.68 kHz requires a coefficient around 684, exceeding postShift 7 representation (128).",
+    "low_frequency": "The unshifted 500 Hz rule allows synthesis at 62.5 Hz under -36 semitones. Width 0/Depth 0 showed about 0.552 dB spectral deviation and a persistent tail.",
+    "arithmetic": "The SMMLAR accumulator wraps before final saturation; \u00b116 V input scaling also clips legal +12 dB Pre transients before the smoothed guard settles.",
+    "analysis_only_trial": "Keeping synthesis float and using saturated additions plus \u00b164/128/256 V Q31 scaling did not preserve startup Width-motion behavior: a 2-second stereo \u00b110 V probe, Pre +12 dB, Width 0, Depth 100, Attack 1 ms, no settling silence measured approximately 22.28 dB active-output SNR versus float at all three scales. The discrepancy decayed as controls settled. This points to realization/state behavior under coefficient changes, not merely input scaling.",
+    "decision": "Ship fused float loops. Fixed-point replacement needs a separate design that preserves time-varying filter behavior, coefficient range, and headroom; steady-state transfer-function agreement is insufficient."
+  }
+}

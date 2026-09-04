@@ -70,6 +70,50 @@ inline float batchBiquadProcessWithEnvelope(const BatchBiquadCoeffs &c,
   return peak;
 }
 
+inline float batchBiquadEnvelopeOnly(const BatchBiquadCoeffs &c,
+                                     BatchBiquadState &s, const float *src,
+                                     int blockSize) {
+  if (c.useSvf) {
+    const float *p = c.svf;
+    float ic10 = s.state[0], ic20 = s.state[1];
+    float ic11 = s.state[2], ic21 = s.state[3];
+    float peak = 0.0f;
+    for (int index = 0; index < blockSize; ++index) {
+      const float v30 = src[index] - ic20;
+      const float v10 = p[0] * ic10 + p[1] * v30;
+      const float v20 = ic20 + p[1] * ic10 + p[2] * v30;
+      ic10 = 2.0f * v10 - ic10;
+      ic20 = 2.0f * v20 - ic20;
+      const float firstOutput = p[3] * v10;
+      const float v31 = firstOutput - ic21;
+      const float v11 = p[4] * ic11 + p[5] * v31;
+      const float v21 = ic21 + p[5] * ic11 + p[6] * v31;
+      ic11 = 2.0f * v11 - ic11;
+      ic21 = 2.0f * v21 - ic21;
+      const float filtered = p[7] * v11;
+      const float magnitude = filtered < 0.0f ? -filtered : filtered;
+      if (magnitude > peak) peak = magnitude;
+    }
+    s.state[0] = ic10 > -1.0e-20f && ic10 < 1.0e-20f ? 0.0f : ic10;
+    s.state[1] = ic20 > -1.0e-20f && ic20 < 1.0e-20f ? 0.0f : ic20;
+    s.state[2] = ic11 > -1.0e-20f && ic11 < 1.0e-20f ? 0.0f : ic11;
+    s.state[3] = ic21 > -1.0e-20f && ic21 < 1.0e-20f ? 0.0f : ic21;
+    return peak;
+  }
+  float filtered[24];
+  float peak = 0.0f;
+  for (int offset = 0; offset < blockSize; offset += 24) {
+    const int count = blockSize - offset < 24 ? blockSize - offset : 24;
+    batchBiquadProcess(c, s, src + offset, filtered, count);
+    for (int index = 0; index < count; ++index) {
+      const float magnitude =
+          filtered[index] < 0.0f ? -filtered[index] : filtered[index];
+      if (magnitude > peak) peak = magnitude;
+    }
+  }
+  return peak;
+}
+
 // Construct a repeated DF2T cascade for reference tests.
 // Convert DF1 feedback coefficients to CMSIS-DSP DF2T format.
 //
@@ -125,13 +169,45 @@ inline void batchBiquadProcessAndAccum(BatchBiquadState &s,
                                        float gainTarget, float gainMix,
                                        float gainMixComp,
                                        float bandGainScale) {
-  float filtered[24];
-  for (int offset = 0; offset < blockSize; offset += 24) {
-    const int count = blockSize - offset < 24 ? blockSize - offset : 24;
-    batchBiquadProcess(*s.coefficients, s, src + offset, filtered, count);
-    for (int i = 0; i < count; ++i) {
-      gainState = gainMix * gainState + gainMixComp * gainTarget;
-      accum[offset + i] += filtered[i] * gainState * bandGainScale;
+  if (s.coefficients->useSvf) {
+    const float *p = s.coefficients->svf;
+    for (int offset = 0; offset < blockSize; offset += 24) {
+      const int count = blockSize - offset < 24 ? blockSize - offset : 24;
+      float ic10 = s.state[0], ic20 = s.state[1];
+      float ic11 = s.state[2], ic21 = s.state[3];
+      for (int index = 0; index < count; ++index) {
+        const float v30 = src[offset + index] - ic20;
+        const float v10 = p[0] * ic10 + p[1] * v30;
+        const float v20 = ic20 + p[1] * ic10 + p[2] * v30;
+        ic10 = 2.0f * v10 - ic10;
+        ic20 = 2.0f * v20 - ic20;
+        const float firstOutput = p[3] * v10;
+
+        const float v31 = firstOutput - ic21;
+        const float v11 = p[4] * ic11 + p[5] * v31;
+        const float v21 = ic21 + p[5] * ic11 + p[6] * v31;
+        ic11 = 2.0f * v11 - ic11;
+        ic21 = 2.0f * v21 - ic21;
+        const float filtered = p[7] * v11;
+
+        gainState = gainMix * gainState + gainMixComp * gainTarget;
+        accum[offset + index] += filtered * gainState * bandGainScale;
+      }
+      s.state[0] = ic10 > -1.0e-20f && ic10 < 1.0e-20f ? 0.0f : ic10;
+      s.state[1] = ic20 > -1.0e-20f && ic20 < 1.0e-20f ? 0.0f : ic20;
+      s.state[2] = ic11 > -1.0e-20f && ic11 < 1.0e-20f ? 0.0f : ic11;
+      s.state[3] = ic21 > -1.0e-20f && ic21 < 1.0e-20f ? 0.0f : ic21;
+    }
+  } else {
+    float filtered[24];
+    for (int offset = 0; offset < blockSize; offset += 24) {
+      const int count = blockSize - offset < 24 ? blockSize - offset : 24;
+      batchBiquadProcess(*s.coefficients, s, src + offset, filtered, count);
+      for (int index = 0; index < count; ++index) {
+        gainState = gainMix * gainState + gainMixComp * gainTarget;
+        accum[offset + index] +=
+            filtered[index] * gainState * bandGainScale;
+      }
     }
   }
   if (gainState >= 0.0f && gainState < 1.0e-20f) gainState = 0.0f;

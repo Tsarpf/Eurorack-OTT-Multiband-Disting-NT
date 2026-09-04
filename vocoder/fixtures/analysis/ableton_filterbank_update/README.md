@@ -112,10 +112,14 @@ elision. Checks cover all filter stages and owner pointers, 20 Hz/high-Q center
 accuracy, sustained Depth, level-linear Depth 0, release recovery, stereo/routing,
 full parameter ranges, and extreme control movement. The ARM plugin builds.
 
-The higher-order bank costs more CPU. Host measurements are roughly twice the
-old implementation's processing cost; they do not establish the disting NT's
-real CPU load. No updated plugin was installed on hardware during this work.
-The final measurement files and source hashes identify the tested implementation.
+The connected disting NT measured the fourth-order float baseline at 43.0%
+algorithm CPU. The corrected fused-float implementation measures 38.1% static
+and 38.0% during Width/Formant motion at 40 bands. A mixed Q31 prototype reached
+33.6% but failed expanded range, transient, and state-history checks and was
+rejected. The production bank remains float throughout. The corrected object
+is installed and the original Matrix Mixer preset is restored. Full protocol,
+object hashes, and rejected integer experiments are recorded in
+[device-performance.json](device-performance.json).
 
 Enhance remains unimplemented. After gain matching, residual formant-shape
 errors against Enhance-on are about 2.3–3.3 dB across the tested shifts. This

@@ -52,6 +52,13 @@ static bool nearlyEqual(float a, float b, float tolerance) {
   return fabsf(a - b) <= tolerance;
 }
 
+static bool sameFloatBits(float a, float b) {
+  uint32_t aBits = 0, bBits = 0;
+  memcpy(&aBits, &a, sizeof(aBits));
+  memcpy(&bBits, &b, sizeof(bBits));
+  return aBits == bBits;
+}
+
 struct HostAlgorithm {
   _NT_algorithm *algorithm;
   std::vector<uint8_t> sram;
@@ -282,6 +289,91 @@ static void testCascadeReseatPreservesAllStagesAndGain() {
   vocoderCalculateBandpass(1300.0f, 12.0f, 48000.0f, b0, b2, a1, a2);
   checkCascadeReseatPreservesAllStagesAndGain(batchBiquadFromDF1(b0, b2, a1, a2));
   checkCascadeReseatPreservesAllStagesAndGain(calculateCascade(1300.0f, 12.0f, 48000.0f));
+}
+
+static void testEnvelopeOnlyMatchesBufferedCascade() {
+  const float frequencies[] = {20.0f, 100.0f, 1000.0f, 18000.0f,
+                               20000.0f};
+  const float qValues[] = {0.5f, 6.457f, 120.0f};
+  const int blockSizes[] = {1, 7, 24, 25, 53, 96};
+  uint32_t seed = 0x12345678u;
+
+  for (float frequency : frequencies) {
+    for (float q : qValues) {
+      const BatchBiquadCoeffs coefficients =
+          calculateCascade(frequency, q, 48000.0f);
+      for (int blockSize : blockSizes) {
+        BatchBiquadState buffered = {}, fused = {};
+        batchBiquadInit(buffered, coefficients);
+        batchBiquadInit(fused, coefficients);
+        for (int index = 0; index < 2 * kVocoderFilterStages; ++index) {
+          seed = 1664525u * seed + 1013904223u;
+          const float initial =
+              (float)(int32_t)(seed >> 8) * (0.02f / 8388608.0f);
+          buffered.state[index] = initial;
+          fused.state[index] = initial;
+        }
+
+        std::vector<float> input(blockSize), output(blockSize);
+        for (int index = 0; index < blockSize; ++index) {
+          seed = 1664525u * seed + 1013904223u;
+          input[index] =
+              (float)(int32_t)(seed >> 8) * (0.7f / 8388608.0f);
+        }
+
+        const float bufferedPeak = batchBiquadProcessWithEnvelope(
+            coefficients, buffered, input.data(), output.data(), blockSize);
+        const float fusedPeak = batchBiquadEnvelopeOnly(
+            coefficients, fused, input.data(), blockSize);
+        require(sameFloatBits(bufferedPeak, fusedPeak),
+                "fused analysis changed the envelope peak");
+        require(memcmp(buffered.state, fused.state, sizeof(buffered.state)) == 0,
+                "fused analysis changed filter state");
+      }
+    }
+  }
+}
+
+// Exercise live coefficient changes and full modular transients against the
+// buffered realization. Equal state is essential for smooth control motion.
+static void testFusedSynthesisMatchesBufferedMotion() {
+  const float frequencies[] = {20.0f, 62.5f, 500.0f, 20000.0f, 22678.6f, 23520.0f};
+  const float qs[] = {120.0f, 6.0f, 0.23355f};
+  const int sizes[] = {1, 7, 24, 25, 53, 96};
+  uint32_t seed = 37;
+  for (int size : sizes) {
+    BatchBiquadCoeffs c = calculateCascade(1000.0f, 6.0f, 48000.0f);
+    BatchBiquadState buffered = {}, fused = {};
+    batchBiquadInit(buffered, c);
+    batchBiquadInit(fused, c);
+    float referenceGain = 0.0f, fusedGain = 0.0f;
+    for (float frequency : frequencies) for (float q : qs) {
+      c = calculateCascade(frequency, q, 48000.0f);
+      std::vector<float> input(size), expected(size, 0.25f), actual(size, 0.25f);
+      for (float &sample : input) {
+        seed = 1664525u * seed + 1013904223u;
+        sample = ((float)(seed >> 8) / 8388608.0f - 1.0f) * 40.0f;
+      }
+      float scratch[24];
+      for (int offset = 0; offset < size; offset += 24) {
+        const int count = std::min(24, size - offset);
+        batchBiquadProcess(c, buffered, input.data() + offset, scratch, count);
+        for (int i = 0; i < count; ++i) {
+          referenceGain = 0.99f * referenceGain + 0.01f * 0.75f;
+          expected[offset + i] += scratch[i] * referenceGain * -0.5f;
+        }
+      }
+      batchBiquadProcessAndAccum(fused, input.data(), actual.data(), size,
+                                 fusedGain, 0.75f, 0.99f, 0.01f, -0.5f);
+      require(memcmp(buffered.state, fused.state, sizeof(buffered.state)) == 0,
+              "fused synthesis changed filter history during control motion");
+      require(sameFloatBits(referenceGain, fusedGain), "fused gain history changed");
+      for (int i = 0; i < size; ++i)
+        require(std::isfinite(actual[i]) &&
+                    fabsf(expected[i] - actual[i]) <= 1e-6f * (1.0f + fabsf(expected[i])),
+                "fused synthesis differs from buffered response at an extreme");
+    }
+  }
 }
 
 static void testCascadeCenterGainAtDifficultFrequencies() {
@@ -1187,6 +1279,8 @@ static void testMetersRespondToModulator() {
 
 int main() {
   testCascadeReseatPreservesAllStagesAndGain();
+  testEnvelopeOnlyMatchesBufferedCascade();
+  testFusedSynthesisMatchesBufferedMotion();
   testCascadeCenterGainAtDifficultFrequencies();
   testDescriptorLayout();
   testWetZeroPassthrough();
