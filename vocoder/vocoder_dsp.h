@@ -54,8 +54,11 @@ inline void vocoderCalculateButterworthBandpass(float frequency, float q,
   const float centerSquared = center * center;
   const float bandwidthSquared = bandwidth * bandwidth;
   const float halfRoot = 0.353553390593f * bandwidth;
-  const float imaginaryRoot = sqrtf(0.5f *
-      (hypotf(centerSquared, 0.25f * bandwidthSquared) + centerSquared));
+  const float quarterBandwidthSquared = 0.25f * bandwidthSquared;
+  const float rootMagnitude = sqrtf(centerSquared * centerSquared +
+                                    quarterBandwidthSquared * quarterBandwidthSquared);
+  const float imaginaryRoot =
+      sqrtf(0.5f * (rootMagnitude + centerSquared));
   // Obtain the smaller quadratic root through the product of the roots.
   // Direct subtraction loses precision for very wide bands near Nyquist.
   const float realRoot = 0.125f * bandwidthSquared / imaginaryRoot;
