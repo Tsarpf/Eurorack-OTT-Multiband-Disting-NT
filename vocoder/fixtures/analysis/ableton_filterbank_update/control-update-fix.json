@@ -1,0 +1,71 @@
+{
+  "date": "2026-09-05",
+  "object_sha256": "f576064e294035a058b8c4efae564cfff1033383b49f75d60bec11c75c9d111b",
+  "control_work": {
+    "minimum_frames_between_band_pairs": 24,
+    "band_pairs_per_tick": 1,
+    "maximum_40_band_bank_rate_hz_at_48k": 50,
+    "publication": "Complete target bank; preserve running filter state and smooth synthesis coefficients. Latest control changes queued without restarting in-progress bank."
+  },
+  "device": {
+    "firmware": "1.18.0beta",
+    "bands": 40,
+    "routing": "mono carrier 1, modulator 2, output 13",
+    "results": {
+      "static": {
+        "text": "slot=0 name=Vocoder                 original_bands=16\nbands=40 alg_avg= 38.0% alg_max= 38% module_avg= 42.0% module_max= 43%\n",
+        "sha256": "8e30c37b47d05a629f86f860c237fd60d9fe96070f3cf006e6b887920c6f0246"
+      },
+      "motion": {
+        "text": "slot=0 name=Vocoder                 bandwidth=100 formant=0\nbands=40 alg_avg= 38.1% alg_max= 39% module_avg= 42.8% module_max= 44%\n",
+        "sha256": "27ceac4b465b4314c1391d7c4c9f5a30c7642dea7987b57097f2e4cd8971545e"
+      },
+      "motion-full-range": {
+        "text": "slot=0 name=Vocoder                 bandwidth=100 formant=0\nbands=40 alg_avg= 38.0% alg_max= 38% module_avg= 43.1% module_max= 44%\n",
+        "sha256": "8b0d80eab658b16cb3122827958e95aced172ca829c9b158bd97cdc7825d02c8"
+      },
+      "continuous-motion": {
+        "text": "slot=0 name=Vocoder                 bandwidth=100 formant=0\nbands=40 alg_avg= 38.0% alg_max= 38% module_avg= 45.2% module_max= 47%\n",
+        "sha256": "59c642f7c5c6135cd200da0c9f9fe479a249df80d05ea24c87d63529e8fdf7f3"
+      }
+    },
+    "continuous_protocol": "benchmark-vocoder-motion --samples 120 --interval 0 --control-settle 0 --motion-steps 6 --width-min 0 --width-max 200 --formant-min -360 --formant-max 360 --formant-phase 3 --band-counts 40. MIDI/request latency still limits command rate; meter readings are not per-callback cycle measurements."
+  },
+  "depth_saw": [
+    {
+      "peak_bus_volts": 1.0,
+      "rms": {
+        "100": 0.08719425814,
+        "150": 0.03949956317,
+        "200": 0.0157802148
+      },
+      "change_100_to_200_db": -14.847499529439641
+    },
+    {
+      "peak_bus_volts": 2.0,
+      "rms": {
+        "100": 0.1743885163,
+        "150": 0.131217041,
+        "200": 0.1000835504
+      },
+      "change_100_to_200_db": -4.823103588604077
+    },
+    {
+      "peak_bus_volts": 4.0,
+      "rms": {
+        "100": 0.3487770326,
+        "150": 0.379970662,
+        "200": 0.4202534624
+      },
+      "change_100_to_200_db": 1.6192684367172587
+    }
+  ],
+  "depth_probe": "110 Hz bandlimited saw, 40 bands, Width100,20\u201320k,Attack10ms,Release30ms; float WAV \u00b11 maps to explicit bus scale. No Depth curve changes.",
+  "validation": [
+    "Host routing, DSP, and motion tests passed",
+    "New 4-frame callback regression verifies coefficient-work cadence, atomic publication, and bit-identical final SVF coefficients against synchronous design",
+    "UI formatting tests cover -36,-12.3,-0.1,0,+0.1,+12.3,+36",
+    "Address/undefined behavior sanitizers passed including the scheduler regression",
+    "Device plugin installed and prior preset/parameter values restored"
+  ]
+}

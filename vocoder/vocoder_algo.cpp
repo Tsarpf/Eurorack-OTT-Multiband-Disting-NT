@@ -96,9 +96,7 @@ static BatchBiquadCoeffs calculateCascade(float frequency, float q, float sample
   return coefficients;
 }
 
-static void rebuildSynthesisDescriptor(_vocoderAlgorithm *a) {
-  VocoderDescriptor &d = *a->descriptor;
-  const float formantRatio = powf(2.0f, a->controls.currentFormant / 120.0f);
+static void rebuildSynthesisBand(VocoderDescriptor &d, int i, float formantRatio) {
   const float sampleRate = (float)NT_globals.sampleRate;
   const float synthesisFloorHz = 20.0f;
   const float synthesisFadeStartHz = 10.0f;
@@ -106,7 +104,7 @@ static void rebuildSynthesisDescriptor(_vocoderAlgorithm *a) {
   const float synthesisHighFadeStartHz =
       synthesisCeilingHz < 20000.0f ? 0.85f * synthesisCeilingHz : 20000.0f;
 
-  for (int i = 0; i < d.activeBands; ++i) {
+  {
     const float shiftedFreq = d.analysisFreq[i] * formantRatio;
     d.synthesisFreq[i] =
         vocoderClamp(shiftedFreq, synthesisFloorHz, synthesisCeilingHz);
@@ -125,6 +123,13 @@ static void rebuildSynthesisDescriptor(_vocoderAlgorithm *a) {
     d.synthesisCoeffs[i] = calculateCascade(d.synthesisFreq[i], d.synthesisQ, sampleRate);
   }
 
+
+}
+
+static void rebuildSynthesisDescriptor(_vocoderAlgorithm *a) {
+  const float ratio = powf(2.0f, a->controls.currentFormant / 120.0f);
+  for (int band = 0; band < a->descriptor->activeBands; ++band)
+    rebuildSynthesisBand(*a->descriptor, band, ratio);
   a->uiDirty = true;
 }
 
@@ -296,40 +301,53 @@ static int parameterString(_NT_algorithm *self, int parameter, int, char *buff) 
 }
 
 static void updateControlState(_vocoderAlgorithm *a) {
-  constexpr float kControlSmoothing = 0.35f;
-  const bool movingBandwidth = fabsf(a->controls.targetBandwidth -
-                                     a->controls.currentBandwidth) > 0.001f;
-  const bool movingFormant =
-      fabsf(a->controls.targetFormant - a->controls.currentFormant) > 0.001f;
-
-  a->controls.currentBandwidth =
-      vocoderSmoothToward(a->controls.currentBandwidth,
-                          a->controls.targetBandwidth, kControlSmoothing);
-  a->controls.currentFormant = vocoderSmoothToward(
-      a->controls.currentFormant, a->controls.targetFormant, kControlSmoothing);
+  // Cheap scalar smoothing remains at block rate. Bank design is separately
+  // budgeted to one analysis/synthesis band pair per 24 audio frames.
   a->controls.currentWet = vocoderSmoothToward(
-      a->controls.currentWet, a->controls.targetWet, kControlSmoothing);
-  a->controls.currentOutputGainDb =
-      vocoderSmoothToward(a->controls.currentOutputGainDb,
-                          a->controls.targetOutputGainDb, kControlSmoothing);
-
-  if (a->controls.descriptorDirty || a->controls.synthesisDirty ||
-      movingBandwidth || movingFormant) {
-    if (a->controls.descriptorDirty || movingBandwidth) {
-      rebuildDescriptor(a);
-    } else {
-      rebuildSynthesisDescriptor(a);
-    }
-    if (movingBandwidth || movingFormant) {
-      // The descriptor holds targets; the state holds the running coefficients.
-      a->controls.synthesisCoeffSmoothing = true;
-    } else {
-      syncSynthesisCoefficients(a);
-      a->controls.synthesisCoeffSmoothing = false;
-    }
-    a->controls.descriptorDirty = movingBandwidth;
-    a->controls.synthesisDirty = movingFormant;
+      a->controls.currentWet, a->controls.targetWet, 0.35f);
+  a->controls.currentOutputGainDb = vocoderSmoothToward(
+      a->controls.currentOutputGainDb, a->controls.targetOutputGainDb, 0.35f);
+  if (!a->buildingDescriptor) {
+    if (!a->controls.descriptorDirty && !a->controls.synthesisDirty) return;
+    a->controls.currentBandwidth = a->controls.targetBandwidth;
+    a->controls.currentFormant = a->controls.targetFormant;
+    a->controls.descriptorDirty = false;
+    a->controls.synthesisDirty = false;
+    VocoderDescriptor &d = a->pendingDescriptor;
+    d.activeBands = (int)vocoderClamp((float)a->v[kBandCount], 4, 40);
+    a->pendingMin = (float)a->v[kMinFreq];
+    const float maximum = (float)a->v[kMaxFreq];
+    const float spacing = logf(maximum / a->pendingMin) / (d.activeBands - 1);
+    const float width = effectiveBandwidth(a->controls.currentBandwidth);
+    d.analysisQ = d.synthesisQ = 1.059133f / (spacing * width);
+    d.bandwidthCompensation = 0.13924f / sqrtf(width);
+    a->pendingStep = powf(maximum / a->pendingMin, 1.0f / (d.activeBands - 1));
+    a->pendingRatio = powf(2.0f, a->controls.currentFormant / 120.0f);
+    a->pendingBand = 0;
+    a->buildingDescriptor = true;
   }
+  VocoderDescriptor &d = a->pendingDescriptor;
+  const int band = a->pendingBand++;
+  d.analysisFreq[band] = a->pendingMin * powf(a->pendingStep, (float)band);
+  d.analysisCoeffs[band] = calculateCascade(
+      d.analysisFreq[band], d.analysisQ, (float)NT_globals.sampleRate);
+  rebuildSynthesisBand(d, band, a->pendingRatio);
+  if (a->pendingBand < d.activeBands) return;
+  // Publish complete banks only. A newer UI target remains dirty and will be
+  // picked up next cycle; continuous knob movement cannot starve completion.
+  if (d.activeBands != a->activeBands) {
+    for (int ch = 0; ch < 2; ++ch) for (int i = 0; i < kVocoderMaxBands; ++i) {
+      memset(a->state->anState[ch][i].state, 0, sizeof(a->state->anState[ch][i].state));
+      memset(a->state->syState[ch][i].state, 0, sizeof(a->state->syState[ch][i].state));
+      a->state->env[ch][i] = a->state->gainState[ch][i] = 0;
+    }
+  }
+  *a->descriptor = d;
+  a->activeBands = d.activeBands;
+  syncAnalysisCoefficients(a);
+  a->controls.synthesisCoeffSmoothing = true;
+  a->buildingDescriptor = false;
+  a->uiDirty = true;
 }
 
 // Smooth synthesis coefficients toward target (called once per block, not per
@@ -384,13 +402,16 @@ static void computeBlockCoeffs(_vocoderAlgorithm *a, int N, float sampleRate) {
 
 static void step(_NT_algorithm *self, float *bus, int nfBy4) {
   auto *a = (_vocoderAlgorithm *)self;
-  updateControlState(a);
-
   const int N = nfBy4 * 4;
   // The current disting NT callback ceiling is 24 frames. Keep the stack
   // buffers fixed and fail closed if a future host violates that contract.
   if (N <= 0 || N > 24) {
     return;
+  }
+  a->coefficientWorkPhase += N;
+  if (a->coefficientWorkPhase >= 24) {
+    a->coefficientWorkPhase -= 24;
+    updateControlState(a);
   }
   const float wet = vocoderClamp(a->controls.currentWet / 100.0f, 0.0f, 1.0f);
   const float preGainLinear =

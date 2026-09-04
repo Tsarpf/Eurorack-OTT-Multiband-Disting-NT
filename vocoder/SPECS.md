@@ -124,3 +124,29 @@ settling. The temporary mono benchmark preset uses 20 Hz–18 kHz, Release 30 ms
 Depth 100%, and no injected signal. Standard motion sweeps Width 15–85% and
 Formant ±18 semitones; full motion uses Width 0–200% and Formant ±36 semitones.
 The corrected object remains installed; Matrix Mixer was restored afterward.
+
+
+## Control update scheduling
+
+Width/Formant changes no longer design the entire bank on every audio callback.
+The algorithm snapshots a target and builds one analysis/synthesis band pair per
+24 audio frames, then publishes the completed bank together. At 48 kHz, a
+40-band bank completes in 20 ms (up to 50 Hz); four-frame callbacks retain the
+same work rate. New knob changes queue the latest target without discarding
+work already in progress. Running filter histories remain intact, and synthesis
+coefficient interpolation continues at block rate. Final stationary filter
+coefficients match the synchronous design.
+
+The 120-step MIDI motion stress run, with zero explicit interval and zero
+post-control settling delay, reported 38% algorithm CPU and at most 47% whole
+module CPU. This exercises control changes but the MIDI transport and CPU meter
+cannot measure every callback deadline. The scheduler regression separately
+asserts the per-callback work budget. See
+[control-update-fix.json](fixtures/analysis/ableton_filterbank_update/control-update-fix.json).
+
+Depth above 100% remains an absolute-level expansion: the same sawtooth can get
+quieter at low drive and louder at high drive. At 110 Hz, Width100, 40 bands,
+raising Depth100→200 measured about -15 dB at 1 V peak, -5 dB at 2 V, and +1.6 dB
+at 4 V. This release does not normalize or alter that gain curve. The custom
+Formant display now uses plain integer/string printf conversions, avoiding sign
+and width flags unsupported by some firmware formatters.

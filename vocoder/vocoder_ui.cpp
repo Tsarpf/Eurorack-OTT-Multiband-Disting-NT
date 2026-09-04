@@ -18,21 +18,21 @@ static void formatOutputGain(char *buf, size_t bufSize, int valueTenthsDb) {
   if (valueTenthsDb <= -600) {
     snprintf(buf, bufSize, "-inf");
   } else if ((valueTenthsDb % 10) == 0) {
-    snprintf(buf, bufSize, "%+d", valueTenthsDb / 10);
+    snprintf(buf, bufSize, "%s%d", valueTenthsDb < 0 ? "-" : "+", (valueTenthsDb < 0 ? -valueTenthsDb : valueTenthsDb) / 10);
   } else {
     const char sign = valueTenthsDb < 0 ? '-' : '+';
     const int absTenths = valueTenthsDb < 0 ? -valueTenthsDb : valueTenthsDb;
-    snprintf(buf, bufSize, "%c%d.%1d", sign, absTenths / 10, absTenths % 10);
+    snprintf(buf, bufSize, "%s%d.%d", sign == '-' ? "-" : "+", absTenths / 10, absTenths % 10);
   }
 }
 
 static void formatSignedTenths(char *buf, size_t bufSize, int valueTenths) {
   if ((valueTenths % 10) == 0) {
-    snprintf(buf, bufSize, "%+d", valueTenths / 10);
+    snprintf(buf, bufSize, "%s%d", valueTenths < 0 ? "-" : "+", (valueTenths < 0 ? -valueTenths : valueTenths) / 10);
   } else {
     const char sign = valueTenths < 0 ? '-' : '+';
     const int magnitude = valueTenths < 0 ? -valueTenths : valueTenths;
-    snprintf(buf, bufSize, "%c%d.%1d", sign, magnitude / 10, magnitude % 10);
+    snprintf(buf, bufSize, "%s%d.%d", sign == '-' ? "-" : "+", magnitude / 10, magnitude % 10);
   }
 }
 
@@ -41,7 +41,7 @@ static void formatDecay(char *buf, size_t bufSize, int valueMs) {
     snprintf(buf, bufSize, "%dms", valueMs);
   } else {
     const int tenths = roundTenths((float)valueMs / 100.0f);
-    snprintf(buf, bufSize, "%d.%1ds", tenths / 10, tenths % 10);
+    snprintf(buf, bufSize, "%d.%ds", tenths / 10, tenths % 10);
   }
 }
 

@@ -132,6 +132,14 @@ struct _vocoderAlgorithm : public _NT_algorithm {
   int uiOutputGainDisplay;
   // Appended last — must not be reordered or removed (NT memory layout rule)
   VocoderCachedCoeffs blockCoeffs;
+  // Build targets incrementally so transcendental work never fills a callback.
+  VocoderDescriptor pendingDescriptor;
+  int pendingBand = 0;
+  bool buildingDescriptor = false;
+  float pendingRatio = 1.0f;
+  float pendingMin = 20.0f;
+  float pendingStep = 1.0f;
+  int coefficientWorkPhase = 0;
 };
 
 #endif // VOCODER_STRUCTS_H

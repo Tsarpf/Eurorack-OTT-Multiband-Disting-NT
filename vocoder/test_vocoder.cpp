@@ -18,7 +18,7 @@ uint8_t NT_screen[128 * 64];
 
 void NT_drawText(int, int, const char *, int, _NT_textAlignment, _NT_textSize) {}
 void NT_drawShapeI(_NT_shape, int, int, int, int, int) {}
-void NT_setParameterFromUi(int, int, int) {}
+void NT_setParameterFromUi(uint32_t, uint32_t, int16_t) {}
 int NT_algorithmIndex(_NT_algorithm *) { return 0; }
 uint32_t NT_parameterOffset(void) { return 0; }
 uint32_t NT_getCpuCycleCount(void) { return 0; }
@@ -34,12 +34,9 @@ bool _NT_jsonParse::matchName(const char *) { return false; }
 bool _NT_jsonParse::number(int &) { return false; }
 bool _NT_jsonParse::skipMember(void) { return true; }
 
-bool draw(_NT_algorithm *) { return false; }
-uint32_t hasCustomUi(_NT_algorithm *) { return 0; }
-void customUi(_NT_algorithm *, const _NT_uiData &) {}
-void setupUi(_NT_algorithm *, _NT_float3 &) {}
 
 #include "vocoder_algo.cpp"
+#include "vocoder_ui.cpp"
 
 static void require(bool condition, const char *message) {
   if (!condition) {
@@ -990,12 +987,15 @@ static void testFormantSmoothingMovesDescriptor() {
   host.values[kFormant] = 120;
   factory.parameterChanged(host.algorithm, kFormant);
   updateControlState(algo);
-  const float after = algo->descriptor->synthesisFreq[4];
-
-  require(algo->controls.currentFormant > 0.0f &&
-              algo->controls.currentFormant < 120.0f,
-          "formant smoothing should move gradually");
-  require(after > before, "formant shift should raise synthesis frequency");
+  require(algo->descriptor->synthesisFreq[4] == before,
+          "an incomplete bank must not replace the live descriptor");
+  require(algo->pendingBand == 1, "control tick must build only one band pair");
+  for (int tick = 1; tick < algo->activeBands; ++tick) updateControlState(algo);
+  require(!algo->buildingDescriptor, "bank must finish within its band count");
+  require(algo->descriptor->synthesisFreq[4] > before,
+          "completed formant bank must raise synthesis frequency");
+  require(algo->controls.synthesisCoeffSmoothing,
+          "completed bank must smoothly approach new synthesis coefficients");
 }
 
 static void testSupportedRangesAndWidthMotion() {
@@ -1277,7 +1277,50 @@ static void testMetersRespondToModulator() {
   require(maxMeterSignal > 0.1f, "meters should respond to modulator signal");
 }
 
+static void testCoefficientWorkBudget() {
+  HostAlgorithm host = makeAlgorithm();
+  auto *a = (_vocoderAlgorithm *)host.algorithm;
+  host.values[kBandCount] = 40;
+  host.values[kBandWidth] = 200;
+  factory.parameterChanged(host.algorithm, kBandCount);
+  factory.parameterChanged(host.algorithm, kBandWidth);
+  float bus[4 * kNT_lastBus] = {};
+  for (int callback = 0; callback < 240; ++callback) {
+    factory.step(host.algorithm, bus, 1);
+    require(a->pendingBand == (callback + 1) / 6,
+            "small callbacks exceeded one coefficient pair per 24 frames");
+    if (callback < 239)
+      require(a->activeBands != 40, "partially built bank was published");
+  }
+  require(a->activeBands == 40 && !a->buildingDescriptor,
+          "complete 40-band bank did not publish within 20 ms");
+  const VocoderDescriptor published = *a->descriptor;
+  rebuildDescriptor(a);
+  for (int band = 0; band < 40; ++band) {
+    require(memcmp(published.analysisCoeffs[band].svf,
+                   a->descriptor->analysisCoeffs[band].svf,
+                   sizeof(published.analysisCoeffs[band].svf)) == 0,
+            "incremental analysis changed the final filter shape");
+    require(memcmp(published.synthesisCoeffs[band].svf,
+                   a->descriptor->synthesisCoeffs[band].svf,
+                   sizeof(published.synthesisCoeffs[band].svf)) == 0,
+            "incremental synthesis changed the final filter shape");
+  }
+}
+
+static void testSignedDisplay() {
+  char text[32];
+  for (const auto &entry : std::vector<std::pair<int, const char *>>{
+      {-360, "-36"}, {-123, "-12.3"}, {-1, "-0.1"}, {0, "+0"},
+      {1, "+0.1"}, {123, "+12.3"}, {360, "+36"}}) {
+    formatSignedTenths(text, sizeof(text), entry.first);
+    require(strcmp(text, entry.second) == 0, "Formant decimal formatting");
+  }
+}
+
 int main() {
+  testSignedDisplay();
+  testCoefficientWorkBudget();
   testCascadeReseatPreservesAllStagesAndGain();
   testEnvelopeOnlyMatchesBufferedCascade();
   testFusedSynthesisMatchesBufferedMotion();
