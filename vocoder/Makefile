@@ -1,4 +1,5 @@
 ROOT := ..
+.DEFAULT_GOAL := all
 SDK ?= $(abspath $(ROOT)/distingnt_api)
 PLUGIN := vocoder
 OBJDIR := build
@@ -7,7 +8,7 @@ CMSIS_DSP := $(abspath $(ROOT)/CMSIS-DSP)
 CMSIS_CORE := $(abspath $(ROOT)/CMSIS_6)
 
 CXX := arm-none-eabi-g++
-CXXFLAGS := -std=c++11 -mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -fPIC \
+CXXFLAGS := -std=c++11 -MMD -MP -mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -fPIC \
 	-I$(SDK)/include \
 	-I$(CMSIS_DSP)/Include -I$(CMSIS_DSP)/PrivateInclude -I$(CMSIS_CORE)/CMSIS/Core/Include \
 	-DARM_MATH_CM7 -D__FPU_PRESENT=1 \
@@ -46,7 +47,9 @@ C_OBJS := $(patsubst $(CMSIS_DSP)/Source/FilteringFunctions/%.c,$(OBJDIR)/cmsis_
 
 OBJS := $(CXX_OBJS) $(C_OBJS)
 
-.PHONY: all build push test benchmark-host benchmark-device benchmark-device-motion version paths list clean
+-include $(CXX_OBJS:.o=.d)
+
+.PHONY: all build push test render-probe benchmark-host benchmark-device benchmark-device-motion version paths list clean
 
 all: build
 
@@ -76,6 +79,11 @@ $(OBJDIR)/host_cmsis_df2t_init.o: $(CMSIS_DSP)/Source/FilteringFunctions/arm_biq
 
 test: $(HOST_CMSIS_OBJS)
 	$(HOST_CXX) $(HOST_CXXFLAGS) test_vocoder.cpp $(HOST_CMSIS_OBJS) -o /tmp/test_$(PLUGIN) && /tmp/test_$(PLUGIN)
+
+render-probe: $(OBJDIR)/render_probe
+
+$(OBJDIR)/render_probe: render_probe.cpp host_plugin.h wav_io.h vocoder_algo.cpp vocoder_parameters.h vocoder_structs.h vocoder_dsp.h envelope_shape.h batch_biquad.h $(HOST_CMSIS_OBJS)
+	$(HOST_CXX) -O2 $(HOST_CXXFLAGS) render_probe.cpp $(HOST_CMSIS_OBJS) -o $@
 
 benchmark-host: $(HOST_CMSIS_OBJS)
 	$(HOST_CXX) -O3 $(HOST_CXXFLAGS) benchmark_vocoder.cpp $(HOST_CMSIS_OBJS) -o /tmp/benchmark_$(PLUGIN) && /tmp/benchmark_$(PLUGIN)

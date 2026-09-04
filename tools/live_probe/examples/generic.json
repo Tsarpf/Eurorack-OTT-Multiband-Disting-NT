@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "name": "Reusable effect measurement example",
+  "notes": "Replace Your Effect and Your Parameter with names returned by devices/parameters before running. Dry-run works without Live.",
+  "device": "Your Effect",
+  "sample_rate": 48000,
+  "settle_seconds": 0.5,
+  "preroll_seconds": 0.15,
+  "tail_seconds": 0.5,
+  "parameters": {},
+  "sweep": {
+    "Your Parameter": [
+      {"normalized": 0},
+      {"normalized": 0.5},
+      {"normalized": 1}
+    ]
+  },
+  "signals": [
+    {
+      "name": "impulse",
+      "kind": "impulse",
+      "duration": 1,
+      "offset_seconds": 0.1,
+      "level_dbfs": -12
+    },
+    {
+      "name": "sine-440",
+      "kind": "sine",
+      "duration": 2,
+      "frequency": 440,
+      "level_dbfs": -18
+    },
+    {
+      "name": "stepped-levels",
+      "kind": "stepped_sine",
+      "frequency": 1000,
+      "levels_dbfs": [-48, -36, -24, -12, -6],
+      "segment_seconds": 1
+    },
+    {
+      "name": "noise",
+      "kind": "noise",
+      "duration": 2,
+      "level_dbfs": -18,
+      "seed": 42
+    }
+  ]
+}

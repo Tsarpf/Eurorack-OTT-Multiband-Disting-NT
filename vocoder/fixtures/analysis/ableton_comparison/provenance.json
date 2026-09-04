@@ -1,0 +1,39 @@
+{
+  "workspace": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe",
+  "root": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current",
+  "manifests": {
+    "width": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/manifests/width.json",
+    "depth": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/manifests/depth.json",
+    "formant": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/manifests/formant.json",
+    "release": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/manifests/release.json"
+  },
+  "runs": {
+    "width": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223437Z-2f39d093",
+    "depth": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223934Z-57fb10cb",
+    "formant": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T224134Z-390cd5b0",
+    "release": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T224309Z-e2151a19"
+  },
+  "native_widths": [
+    0,
+    10,
+    25,
+    40,
+    50,
+    60,
+    70,
+    75,
+    80,
+    85,
+    90,
+    100
+  ],
+  "native_source_commit": "e3c4b292922e46855595de7659dd9f3741960a4d",
+  "native_source_sha256": {
+    "vocoder_algo.cpp": "22a19fbc42fe3c0268c20eb2ac65bbe4a43c434b19f4b847486169184d74ac63",
+    "vocoder_dsp.h": "906e9984b31e33dfd46b238dc62303ab52395bb2258ca9cdf038e1bb75f91c87",
+    "batch_biquad.h": "faa1a73744f3dab38286ae1dc622521ea2f92f22166374011b0e25f303bc7696",
+    "vocoder_parameters.h": "d9de584a0c585cedf2405f35833cc469533137c872b9246544e2d4feac4fa243",
+    "vocoder_structs.h": "70a12321e742940c9be5c6942eb2c43e685a110d05fa17184511d51a8d10fcce"
+  },
+  "source_identity_note": "Recorded after captures and renders; these tracked DSP source files are unchanged from the recorded commit."
+}

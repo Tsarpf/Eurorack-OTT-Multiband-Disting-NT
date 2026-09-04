@@ -1,0 +1,634 @@
+{
+  "scope": "Fairness check using the saved historical binary with input times5/output divided5. Matched legacy_5v and new use5V per full-scale WAV amplitude; legacy_original retains the original1:1 numeric bus convention. No original files changed.",
+  "voltage_effect": [
+    {
+      "formant": 0,
+      "raw_rmse_db": 4.377511706743171,
+      "gain_normalized_shape_rmse_db": 0.3161076041353343,
+      "gain_normalized_shape_mae_db": 0.27356073382610413,
+      "native_minus_reference_mean_db": 4.366083453769674
+    },
+    {
+      "formant": 12,
+      "raw_rmse_db": 4.549433345968769,
+      "gain_normalized_shape_rmse_db": 0.32559375620608655,
+      "gain_normalized_shape_mae_db": 0.2877918339058535,
+      "native_minus_reference_mean_db": 4.537767344777848
+    }
+  ],
+  "live_distances": [
+    {
+      "formant": 0,
+      "enhance": "On",
+      "native": "legacy_original",
+      "raw_rmse_db": 21.948453388446953,
+      "gain_normalized_shape_rmse_db": 6.5757443932230215,
+      "gain_normalized_shape_mae_db": 5.679596438380657,
+      "native_minus_reference_mean_db": 20.94025290725555
+    },
+    {
+      "formant": 0,
+      "enhance": "On",
+      "native": "legacy_5v",
+      "raw_rmse_db": 26.18385547558716,
+      "gain_normalized_shape_rmse_db": 6.721876787705056,
+      "gain_normalized_shape_mae_db": 5.785655539026655,
+      "native_minus_reference_mean_db": 25.306336361025227
+    },
+    {
+      "formant": 0,
+      "enhance": "On",
+      "native": "new",
+      "raw_rmse_db": 12.19539154289649,
+      "gain_normalized_shape_rmse_db": 3.103877577285604,
+      "gain_normalized_shape_mae_db": 2.6076654825718895,
+      "native_minus_reference_mean_db": -11.793791539185982
+    },
+    {
+      "formant": 0,
+      "enhance": "Off",
+      "native": "legacy_original",
+      "raw_rmse_db": 32.18609376411173,
+      "gain_normalized_shape_rmse_db": 8.68905810570546,
+      "gain_normalized_shape_mae_db": 7.433443570107118,
+      "native_minus_reference_mean_db": 30.991045497495985
+    },
+    {
+      "formant": 0,
+      "enhance": "Off",
+      "native": "legacy_5v",
+      "raw_rmse_db": 36.447203145893596,
+      "gain_normalized_shape_rmse_db": 8.847149229079804,
+      "gain_normalized_shape_mae_db": 7.555991096587109,
+      "native_minus_reference_mean_db": 35.357128951265665
+    },
+    {
+      "formant": 0,
+      "enhance": "Off",
+      "native": "new",
+      "raw_rmse_db": 2.2752257740660133,
+      "gain_normalized_shape_rmse_db": 1.4623976842668351,
+      "gain_normalized_shape_mae_db": 1.15530936599284,
+      "native_minus_reference_mean_db": -1.7429989489455489
+    },
+    {
+      "formant": 12,
+      "enhance": "On",
+      "native": "legacy_original",
+      "raw_rmse_db": 26.47954606059376,
+      "gain_normalized_shape_rmse_db": 10.883248764561452,
+      "gain_normalized_shape_mae_db": 9.758156880920144,
+      "native_minus_reference_mean_db": 24.139620044726847
+    },
+    {
+      "formant": 12,
+      "enhance": "On",
+      "native": "legacy_5v",
+      "raw_rmse_db": 30.738382416012865,
+      "gain_normalized_shape_rmse_db": 11.065966115316185,
+      "gain_normalized_shape_mae_db": 9.924248498387367,
+      "native_minus_reference_mean_db": 28.677387389504695
+    },
+    {
+      "formant": 12,
+      "enhance": "On",
+      "native": "new",
+      "raw_rmse_db": 13.163684593854594,
+      "gain_normalized_shape_rmse_db": 2.3129928307666563,
+      "gain_normalized_shape_mae_db": 1.8000303487384963,
+      "native_minus_reference_mean_db": -12.958883294918078
+    },
+    {
+      "formant": 12,
+      "enhance": "Off",
+      "native": "legacy_original",
+      "raw_rmse_db": 35.72475347398128,
+      "gain_normalized_shape_rmse_db": 10.666209652284667,
+      "gain_normalized_shape_mae_db": 9.586010142055466,
+      "native_minus_reference_mean_db": 34.095307337377776
+    },
+    {
+      "formant": 12,
+      "enhance": "Off",
+      "native": "legacy_5v",
+      "raw_rmse_db": 40.1307906230185,
+      "gain_normalized_shape_rmse_db": 10.861210642996257,
+      "gain_normalized_shape_mae_db": 9.752626689617294,
+      "native_minus_reference_mean_db": 38.63307468215563
+    },
+    {
+      "formant": 12,
+      "enhance": "Off",
+      "native": "new",
+      "raw_rmse_db": 3.3272491548878755,
+      "gain_normalized_shape_rmse_db": 1.432271172183784,
+      "gain_normalized_shape_mae_db": 1.126470667533616,
+      "native_minus_reference_mean_db": -3.0031960022671464
+    }
+  ],
+  "changes": [
+    {
+      "native": "legacy_original",
+      "mean_spectral_change_db": -1.0735822236740997,
+      "gain_normalized_change_rms_db": 1.9221650836386917,
+      "steady_output_rms_change_db": -0.4985999942002053,
+      "strongest_relative_boost_hz": 10000.0,
+      "strongest_relative_cut_hz": 100.0
+    },
+    {
+      "native": "legacy_5v",
+      "mean_spectral_change_db": -0.9018983326659257,
+      "gain_normalized_change_rms_db": 1.802185479058249,
+      "steady_output_rms_change_db": -0.18285143646789592,
+      "strongest_relative_boost_hz": 10000.0,
+      "strongest_relative_cut_hz": 104.83778362928848
+    },
+    {
+      "native": "new",
+      "mean_spectral_change_db": -5.43804111687749,
+      "gain_normalized_change_rms_db": 13.863846873366509,
+      "steady_output_rms_change_db": -8.501718601678789,
+      "strongest_relative_boost_hz": 940.0077015549872,
+      "strongest_relative_cut_hz": 477.5760082382684
+    },
+    {
+      "native": "live_On",
+      "mean_spectral_change_db": -4.272949361145393,
+      "gain_normalized_change_rms_db": 13.482843312130717,
+      "steady_output_rms_change_db": -5.5070320391387995,
+      "strongest_relative_boost_hz": 6961.400646014571,
+      "strongest_relative_cut_hz": 474.3636286140489
+    },
+    {
+      "native": "live_Off",
+      "mean_spectral_change_db": -4.177844063555891,
+      "gain_normalized_change_rms_db": 13.583745648502013,
+      "steady_output_rms_change_db": -7.7777011354055645,
+      "strongest_relative_boost_hz": 6977.0794554743725,
+      "strongest_relative_cut_hz": 477.5760082382684
+    }
+  ],
+  "curves": [
+    {
+      "name": "legacy_original",
+      "formant": 0,
+      "output": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/formant/width100-formant+0.wav",
+      "output_sha256": "7132a8ef9e42d73f03198e3efd3a6905bfc0fd72d468e5b068a73a601b7319c6",
+      "alignment_lag_samples": 48000,
+      "alignment_lag_seconds": 1.0,
+      "aligned_window_correlation": 0.9261603554566024,
+      "coherence_median": 0.9821734608940494,
+      "coherence_p05": 0.9538447341357582,
+      "steady_output_rms": 0.02540247704375994,
+      "steady_output_rms_dbfs": -31.902478648715686,
+      "stereo_max_abs_difference": 0.0,
+      "broad_output_peaks": [
+        {
+          "frequency_hz": 501.80775857231504,
+          "prominence_db": 28.92561008377136,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 1500.913425736015,
+          "prominence_db": 23.146736051226085,
+          "relative_level_db": -1.840515746911592
+        },
+        {
+          "frequency_hz": 3497.2165162911015,
+          "prominence_db": 15.761180880885178,
+          "relative_level_db": -7.874460163282649
+        }
+      ],
+      "broad_output_minus_input_peaks": [
+        {
+          "frequency_hz": 1605.7089552896216,
+          "prominence_db": 4.516674333144494,
+          "relative_level_db": 0.0
+        }
+      ]
+    },
+    {
+      "name": "legacy_5v",
+      "formant": 0,
+      "output": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-filterbank-v2/native/legacy-voltage-check/width100-formant+0-normalized.wav",
+      "output_sha256": "c69c969e19aa2adbd5c30c9897dc564cb61a40718b62470663094a1f4b24e712",
+      "alignment_lag_samples": 48000,
+      "alignment_lag_seconds": 1.0,
+      "aligned_window_correlation": 0.9414735958969683,
+      "coherence_median": 0.9893877694024379,
+      "coherence_p05": 0.9704405904435722,
+      "steady_output_rms": 0.04048576077186567,
+      "steady_output_rms_dbfs": -27.853953908826092,
+      "stereo_max_abs_difference": 0.0,
+      "broad_output_peaks": [
+        {
+          "frequency_hz": 501.80775857231504,
+          "prominence_db": 28.973969929271853,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 1500.913425736015,
+          "prominence_db": 22.653377441671445,
+          "relative_level_db": -2.598871517176235
+        },
+        {
+          "frequency_hz": 3497.2165162911015,
+          "prominence_db": 16.016854636078037,
+          "relative_level_db": -8.361426735502214
+        }
+      ],
+      "broad_output_minus_input_peaks": [
+        {
+          "frequency_hz": 1535.0624139366062,
+          "prominence_db": 3.783426094305309,
+          "relative_level_db": 0.0
+        }
+      ]
+    },
+    {
+      "name": "new",
+      "formant": 0,
+      "output": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-filterbank-v2/native/formant/width100-formant+0.wav",
+      "output_sha256": "f15753b23a57a0ba748e19adad3ab8ce47a1a14211c2542705fcbf2d616a3e2e",
+      "alignment_lag_samples": 48062,
+      "alignment_lag_seconds": 1.0012916666666667,
+      "aligned_window_correlation": 0.7714822160425013,
+      "coherence_median": 0.9864269390961502,
+      "coherence_p05": 0.7571334635310151,
+      "steady_output_rms": 0.0029237925282154815,
+      "steady_output_rms_dbfs": -50.681068961561024,
+      "stereo_max_abs_difference": 0.0,
+      "broad_output_peaks": [
+        {
+          "frequency_hz": 500.6801021822287,
+          "prominence_db": 45.30833345492077,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 1500.913425736015,
+          "prominence_db": 37.86442124293221,
+          "relative_level_db": -2.3255536454275614
+        },
+        {
+          "frequency_hz": 3505.0931196051183,
+          "prominence_db": 29.076486078154005,
+          "relative_level_db": -9.273976003312484
+        }
+      ],
+      "broad_output_minus_input_peaks": [
+        {
+          "frequency_hz": 501.80775857231504,
+          "prominence_db": 19.382136916233055,
+          "relative_level_db": -1.4390307180853767
+        },
+        {
+          "frequency_hz": 1507.681901617156,
+          "prominence_db": 15.459844761029085,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 3512.987462993128,
+          "prominence_db": 12.955898898137132,
+          "relative_level_db": -1.3737377147571692
+        }
+      ]
+    },
+    {
+      "name": "legacy_original",
+      "formant": 12,
+      "output": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/formant/width100-formant+12.wav",
+      "output_sha256": "2b1495f7a280963f72b61c4802cfd9a91c0e010deeb12a050ccc23d8e1c27592",
+      "alignment_lag_samples": 48000,
+      "alignment_lag_seconds": 1.0,
+      "aligned_window_correlation": 0.891790922357961,
+      "coherence_median": 0.978301701794685,
+      "coherence_p05": 0.9492189817435601,
+      "steady_output_rms": 0.02398535042395708,
+      "steady_output_rms_dbfs": -32.40107864291589,
+      "stereo_max_abs_difference": 0.0,
+      "broad_output_peaks": [
+        {
+          "frequency_hz": 504.07069636248093,
+          "prominence_db": 24.14125704428463,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 1504.2938568898007,
+          "prominence_db": 23.280710421070268,
+          "relative_level_db": -0.7400981993816345
+        },
+        {
+          "frequency_hz": 3505.0931196051183,
+          "prominence_db": 16.49400940436685,
+          "relative_level_db": -5.308358296633926
+        }
+      ],
+      "broad_output_minus_input_peaks": [
+        {
+          "frequency_hz": 3528.829529901387,
+          "prominence_db": 1.6963665721625834,
+          "relative_level_db": 0.0
+        }
+      ]
+    },
+    {
+      "name": "legacy_5v",
+      "formant": 12,
+      "output": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-filterbank-v2/native/legacy-voltage-check/width100-formant+12-normalized.wav",
+      "output_sha256": "3ac807073f4bf4ff220c4c1fbcad728a600782e686c2e70396a31af05f4d05ad",
+      "alignment_lag_samples": 48000,
+      "alignment_lag_seconds": 1.0,
+      "aligned_window_correlation": 0.9057479141177703,
+      "coherence_median": 0.9891116909449722,
+      "coherence_p05": 0.9612293173587775,
+      "steady_output_rms": 0.039642381141579454,
+      "steady_output_rms_dbfs": -28.03680534529399,
+      "stereo_max_abs_difference": 0.0,
+      "broad_output_peaks": [
+        {
+          "frequency_hz": 504.07069636248093,
+          "prominence_db": 24.396069307458433,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 1500.913425736015,
+          "prominence_db": 23.25361010566214,
+          "relative_level_db": -0.9377552920916443
+        },
+        {
+          "frequency_hz": 3505.0931196051183,
+          "prominence_db": 16.200149595172746,
+          "relative_level_db": -6.13124664134854
+        }
+      ],
+      "broad_output_minus_input_peaks": []
+    },
+    {
+      "name": "new",
+      "formant": 12,
+      "output": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-filterbank-v2/native/formant/width100-formant+12.wav",
+      "output_sha256": "41379de5740dee458b1d5f5a980d35d54aa3df44507f4394d77c8acf457c38c5",
+      "alignment_lag_samples": 48039,
+      "alignment_lag_seconds": 1.0008125,
+      "aligned_window_correlation": -0.5430882234669799,
+      "coherence_median": 0.963879457289921,
+      "coherence_p05": 0.8370208279074545,
+      "steady_output_rms": 0.0010986531919932644,
+      "steady_output_rms_dbfs": -59.18278756323981,
+      "stereo_max_abs_difference": 0.0,
+      "broad_output_peaks": [
+        {
+          "frequency_hz": 516.7005052010528,
+          "prominence_db": 7.570229494556685,
+          "relative_level_db": -19.00923580871944
+        },
+        {
+          "frequency_hz": 1387.2644507969221,
+          "prominence_db": 19.560050456926405,
+          "relative_level_db": -8.29276339017261
+        },
+        {
+          "frequency_hz": 3343.349123059773,
+          "prominence_db": 26.65298974977638,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 7024.328077686002,
+          "prominence_db": 11.30545226033989,
+          "relative_level_db": -15.143053152248683
+        }
+      ],
+      "broad_output_minus_input_peaks": [
+        {
+          "frequency_hz": 1017.0160265756484,
+          "prominence_db": 18.615279601714267,
+          "relative_level_db": -2.426022346250882
+        },
+        {
+          "frequency_hz": 3021.4467782646348,
+          "prominence_db": 13.75132151367188,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 7024.328077686002,
+          "prominence_db": 11.261207832311786,
+          "relative_level_db": -0.9485013528534196
+        }
+      ]
+    },
+    {
+      "name": "live_On",
+      "formant": 0,
+      "output": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T224134Z-390cd5b0/cases/0006-formant/output.wav",
+      "output_sha256": "a6aeecf322697872c1aa102bd2cadf7a5b97c67861629770be3093fce32af77e",
+      "alignment_lag_samples": 16446,
+      "alignment_lag_seconds": 0.342625,
+      "aligned_window_correlation": 0.7670504828381824,
+      "coherence_median": 0.9714258503020505,
+      "coherence_p05": 0.6178927555468601,
+      "steady_output_rms": 0.00626355831235589,
+      "steady_output_rms_dbfs": -44.06357750070654,
+      "stereo_max_abs_difference": 0.0,
+      "broad_output_peaks": [
+        {
+          "frequency_hz": 499.55497984808795,
+          "prominence_db": 38.155570871105084,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 1500.913425736015,
+          "prominence_db": 34.74766078877943,
+          "relative_level_db": -2.333995843453124
+        },
+        {
+          "frequency_hz": 3505.0931196051183,
+          "prominence_db": 25.44520502215451,
+          "relative_level_db": -8.497961442963657
+        }
+      ],
+      "broad_output_minus_input_peaks": [
+        {
+          "frequency_hz": 496.1947603002903,
+          "prominence_db": 12.197090883322415,
+          "relative_level_db": -1.4234250712878502
+        },
+        {
+          "frequency_hz": 1497.5405910466652,
+          "prominence_db": 12.323846629969125,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 3505.0931196051183,
+          "prominence_db": 9.313320382907337,
+          "relative_level_db": -0.5872681193301172
+        }
+      ]
+    },
+    {
+      "name": "live_On",
+      "formant": 12,
+      "output": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T224134Z-390cd5b0/cases/0008-formant/output.wav",
+      "output_sha256": "5a6dac9cad9f60f214344dcfd785646c652f0f6cdf84cc311bcd39454b1ef962",
+      "alignment_lag_samples": 16423,
+      "alignment_lag_seconds": 0.3421458333333333,
+      "aligned_window_correlation": -0.4905966783463936,
+      "coherence_median": 0.9257066136758408,
+      "coherence_p05": 0.6883266859068907,
+      "steady_output_rms": 0.003322534682173873,
+      "steady_output_rms_dbfs": -49.57060953984534,
+      "stereo_max_abs_difference": 0.0,
+      "broad_output_peaks": [
+        {
+          "frequency_hz": 529.6467618562702,
+          "prominence_db": 3.915908587109584,
+          "relative_level_db": -17.891556456474106
+        },
+        {
+          "frequency_hz": 1323.248549113131,
+          "prominence_db": 17.406915293441784,
+          "relative_level_db": -7.699213362931005
+        },
+        {
+          "frequency_hz": 3313.397735372822,
+          "prominence_db": 25.705241887541007,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 7008.543091687777,
+          "prominence_db": 12.954799035455025,
+          "relative_level_db": -12.045248021283257
+        }
+      ],
+      "broad_output_minus_input_peaks": [
+        {
+          "frequency_hz": 268.4852127746856,
+          "prominence_db": 2.654144043992588,
+          "relative_level_db": -30.401876300992633
+        },
+        {
+          "frequency_hz": 1007.9050901539288,
+          "prominence_db": 22.46224057284646,
+          "relative_level_db": -0.8542829572440116
+        },
+        {
+          "frequency_hz": 2914.622515996893,
+          "prominence_db": 14.092650871826027,
+          "relative_level_db": -0.8071611308065645
+        },
+        {
+          "frequency_hz": 7024.328077686002,
+          "prominence_db": 13.41099403031892,
+          "relative_level_db": 0.0
+        }
+      ]
+    },
+    {
+      "name": "live_Off",
+      "formant": 0,
+      "output": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T224134Z-390cd5b0/cases/0005-formant/output.wav",
+      "output_sha256": "eb7f3cf93acefe862e314f108c09390d5d371868ebd7ea748afbf356126d716d",
+      "alignment_lag_samples": 14142,
+      "alignment_lag_seconds": 0.294625,
+      "aligned_window_correlation": 0.7619396703707314,
+      "coherence_median": 0.9688441107766123,
+      "coherence_p05": 0.7154298973910187,
+      "steady_output_rms": 0.0036358326433902776,
+      "steady_output_rms_dbfs": -48.78792230946816,
+      "stereo_max_abs_difference": 0.0,
+      "broad_output_peaks": [
+        {
+          "frequency_hz": 500.6801021822287,
+          "prominence_db": 43.235894806047554,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 1500.913425736015,
+          "prominence_db": 40.37310763660285,
+          "relative_level_db": -1.47038097203054
+        },
+        {
+          "frequency_hz": 3505.0931196051183,
+          "prominence_db": 29.762813156081236,
+          "relative_level_db": -8.682915226693751
+        }
+      ],
+      "broad_output_minus_input_peaks": [
+        {
+          "frequency_hz": 501.80775857231504,
+          "prominence_db": 17.280048312908942,
+          "relative_level_db": -2.2915154013108
+        },
+        {
+          "frequency_hz": 1504.2938568898007,
+          "prominence_db": 17.96372735695867,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 3512.987462993128,
+          "prominence_db": 13.629317059922045,
+          "relative_level_db": -1.6369139708261287
+        }
+      ]
+    },
+    {
+      "name": "live_Off",
+      "formant": 12,
+      "output": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T224134Z-390cd5b0/cases/0007-formant/output.wav",
+      "output_sha256": "600ddf305fd1f1fe78106926d6eba28a68360f8c51b964aa00f73e32a0356ea3",
+      "alignment_lag_samples": 16423,
+      "alignment_lag_seconds": 0.3421458333333333,
+      "aligned_window_correlation": -0.5326739950059478,
+      "coherence_median": 0.9315060591578872,
+      "coherence_p05": 0.7442860535423551,
+      "steady_output_rms": 0.0014849739247032373,
+      "steady_output_rms_dbfs": -56.56562344487372,
+      "stereo_max_abs_difference": 0.0,
+      "broad_output_peaks": [
+        {
+          "frequency_hz": 519.0306028917386,
+          "prominence_db": 7.375224865673417,
+          "relative_level_db": -17.45045078823283
+        },
+        {
+          "frequency_hz": 1381.0365681342,
+          "prominence_db": 19.79723051966839,
+          "relative_level_db": -8.200825673663857
+        },
+        {
+          "frequency_hz": 3335.8359889192525,
+          "prominence_db": 29.391447539938667,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 7008.543091687777,
+          "prominence_db": 12.53489657706946,
+          "relative_level_db": -15.613624453023817
+        }
+      ],
+      "broad_output_minus_input_peaks": [
+        {
+          "frequency_hz": 1014.7306003310422,
+          "prominence_db": 19.109973130723716,
+          "relative_level_db": -2.3014419254641005
+        },
+        {
+          "frequency_hz": 3014.65701922123,
+          "prominence_db": 15.528431656117316,
+          "relative_level_db": 0.0
+        },
+        {
+          "frequency_hz": 7024.328077686002,
+          "prominence_db": 13.528807757874876,
+          "relative_level_db": -1.5334591356628735
+        }
+      ]
+    }
+  ],
+  "bus_volts_per_full_scale": {
+    "legacy_original": 1,
+    "legacy_5v": 5,
+    "new": 5,
+    "live": "digital DAW capture; no hardware bus"
+  },
+  "historical_renderer_sha256": "6f549cd8277baa0ee825dd32570d23fcb34ffcf0334c39f89be8e3b6a6ee3f8a"
+}

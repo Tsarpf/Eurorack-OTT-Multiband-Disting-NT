@@ -80,6 +80,19 @@ The command writes numerical metadata to JSON and the source/reference audio to
 a compressed NPZ file. Add `--extended` for the slower branch-isolation,
 band-makeup, crossover and stereo-link probes used for detailed calibration.
 
+## Ableton Live reference renders
+
+[Live Probe](tools/live_probe/README.md) runs batches through native Live effects
+or hosted plug-ins using two generated Max for Live devices. The Python runner
+plays generated probes or existing WAVs, sweeps parameters, captures stereo
+float WAVs with parameter readbacks, and restores the initial settings. It
+includes a Vocoder Modulator-mode width/depth sweep and a generic effect example.
+
+The [native vocoder](vocoder/SPECS.md) uses a measured fourth-order filterbank
+and sustained envelope contrast. Its
+[before/after report](vocoder/fixtures/analysis/ableton_filterbank_update/README.md)
+compares the current implementation with Live and the previous DSP.
+
 ## License
 
 Original code in this repository is MIT licensed. Third-party dependencies keep

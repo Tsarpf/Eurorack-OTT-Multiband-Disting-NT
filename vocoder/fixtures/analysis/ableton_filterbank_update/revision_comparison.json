@@ -1,0 +1,272 @@
+{
+  "created_utc": "2026-09-02T23:42:23.726555+00:00",
+  "before": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current",
+  "after": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-filterbank-v2",
+  "figure": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-filterbank-v2/analysis/revision_comparison.png",
+  "scope": "Native revisions share parameter settings; Live Enhance is labeled per panel and is unavailable in native. Curves are normalized to compare shape, not calibrated overall loudness.",
+  "width_25": {
+    "settings": "40 bands;30Hz\u201318kHz;Depth0;Live Enhance off;both native Width25",
+    "plot": "700\u20131250Hz H1, each curve normalized to its own local peak",
+    "error_scope": "100\u201310000Hz; constant dB gain removed; linear_hz and log_hz weightings",
+    "before": {
+      "native_width_percent": 25,
+      "linear_hz": {
+        "raw_gain_rmse_db": 20.673009734456283,
+        "gain_normalized_shape_rmse_db": 4.50671150480533,
+        "native_minus_reference_gain_db": 20.17579943628949,
+        "gain_to_apply_to_native_db": -20.17579943628949
+      },
+      "log_hz": {
+        "raw_gain_rmse_db": 20.997703411847056,
+        "gain_normalized_shape_rmse_db": 3.8363671436180096,
+        "native_minus_reference_gain_db": 20.64426883450372,
+        "gain_to_apply_to_native_db": -20.64426883450372
+      }
+    },
+    "after": {
+      "native_width_percent": 25,
+      "linear_hz": {
+        "raw_gain_rmse_db": 0.08215992356304057,
+        "gain_normalized_shape_rmse_db": 0.07896272196615015,
+        "native_minus_reference_gain_db": -0.022696730592337264,
+        "gain_to_apply_to_native_db": 0.022696730592337264
+      },
+      "log_hz": {
+        "raw_gain_rmse_db": 0.1696633338438338,
+        "gain_normalized_shape_rmse_db": 0.14417770391237894,
+        "native_minus_reference_gain_db": 0.08943397869690572,
+        "gain_to_apply_to_native_db": -0.08943397869690572
+      }
+    }
+  },
+  "formant_plus12": {
+    "settings": "40 bands;30Hz\u201318kHz;Depth100;all Width100",
+    "plot": "100\u201310000Hz output/input PSD ratio, equal log-frequency mean removed",
+    "error_scope": "Saved smoothed output-PSD shape RMSE, constant dB gain removed",
+    "before": {
+      "On": {
+        "enhance": "On",
+        "formant_semitones": 12,
+        "native_width_percent": 100,
+        "output_shape": {
+          "raw_rmse_db": 26.47954606059376,
+          "gain_normalized_shape_rmse_db": 10.883248764561452,
+          "gain_normalized_shape_mae_db": 9.758156880920144,
+          "native_minus_reference_mean_db": 24.139620044726847
+        },
+        "output_shape_unsmoothed": {
+          "raw_rmse_db": 26.52275006150006,
+          "gain_normalized_shape_rmse_db": 10.99493377226366,
+          "gain_normalized_shape_mae_db": 9.831146766689859,
+          "native_minus_reference_mean_db": 24.13643930177642
+        },
+        "change_from_zero": {
+          "raw_rmse_db": 12.96471866226582,
+          "gain_normalized_shape_rmse_db": 12.563756600291665,
+          "gain_normalized_shape_mae_db": 9.966682366363852,
+          "native_minus_reference_mean_db": 3.1993671374712935
+        }
+      },
+      "Off": {
+        "enhance": "Off",
+        "formant_semitones": 12,
+        "native_width_percent": 100,
+        "output_shape": {
+          "raw_rmse_db": 35.72475347398128,
+          "gain_normalized_shape_rmse_db": 10.666209652284667,
+          "gain_normalized_shape_mae_db": 9.586010142055466,
+          "native_minus_reference_mean_db": 34.095307337377776
+        },
+        "output_shape_unsmoothed": {
+          "raw_rmse_db": 35.75065622019585,
+          "gain_normalized_shape_rmse_db": 10.763989135179399,
+          "gain_normalized_shape_mae_db": 9.65314949261649,
+          "native_minus_reference_mean_db": 34.09172858733285
+        },
+        "change_from_zero": {
+          "raw_rmse_db": 13.118439433318393,
+          "gain_normalized_shape_rmse_db": 12.7458625284873,
+          "gain_normalized_shape_mae_db": 9.985252363104163,
+          "native_minus_reference_mean_db": 3.104261839881791
+        }
+      }
+    },
+    "after": {
+      "On": {
+        "enhance": "On",
+        "formant_semitones": 12,
+        "native_width_percent": 100,
+        "output_shape": {
+          "raw_rmse_db": 13.163684593854594,
+          "gain_normalized_shape_rmse_db": 2.3129928307666563,
+          "gain_normalized_shape_mae_db": 1.8000303487384963,
+          "native_minus_reference_mean_db": -12.958883294918078
+        },
+        "output_shape_unsmoothed": {
+          "raw_rmse_db": 13.188054881156582,
+          "gain_normalized_shape_rmse_db": 2.4464613051489783,
+          "gain_normalized_shape_mae_db": 1.900048444107579,
+          "native_minus_reference_mean_db": -12.959151925600946
+        },
+        "change_from_zero": {
+          "raw_rmse_db": 2.1870184139271176,
+          "gain_normalized_shape_rmse_db": 1.8508405505557164,
+          "gain_normalized_shape_mae_db": 1.4976285163986045,
+          "native_minus_reference_mean_db": -1.1650917557320954
+        }
+      },
+      "Off": {
+        "enhance": "Off",
+        "formant_semitones": 12,
+        "native_width_percent": 100,
+        "output_shape": {
+          "raw_rmse_db": 3.3272491548878755,
+          "gain_normalized_shape_rmse_db": 1.432271172183784,
+          "gain_normalized_shape_mae_db": 1.126470667533616,
+          "native_minus_reference_mean_db": -3.0031960022671464
+        },
+        "output_shape_unsmoothed": {
+          "raw_rmse_db": 3.3928741127975286,
+          "gain_normalized_shape_rmse_db": 1.5774675860493623,
+          "gain_normalized_shape_mae_db": 1.2206406014117663,
+          "native_minus_reference_mean_db": -3.0038626400445168
+        },
+        "change_from_zero": {
+          "raw_rmse_db": 1.9226702922105814,
+          "gain_normalized_shape_rmse_db": 1.4520896802018408,
+          "gain_normalized_shape_mae_db": 1.239250916350532,
+          "native_minus_reference_mean_db": -1.2601970533215978
+        }
+      }
+    }
+  },
+  "release_30": {
+    "event": "1 kHz tone steps from -6 to -30 dBFS peak after 1.25 seconds at the louder level",
+    "plot": "5ms centered RMS relative to each recording's final steady level",
+    "alignment_note": "Native exact input step; Live detected output fall, approximately \u00b120ms uncertainty. This does not measure absolute latency.",
+    "live": {
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T224309Z-e2151a19/cases/0002-release/output.wav",
+      "settings": {
+        "release_ms": 30,
+        "width_percent": 100,
+        "depth_percent": 100,
+        "enhance": true
+      },
+      "alignment": {
+        "seconds": 0.3440000000000003,
+        "method": "strongest 10 ms dB-envelope fall near the final -6 to -30 dBFS step",
+        "detected_fall_seconds": 5.594,
+        "fall_db_in_10ms": -21.426094351666638,
+        "uncertainty_seconds": 0.02,
+        "steady_window_guard_seconds": 0.04
+      },
+      "final_plateau_output_rms_dbfs": -44.82261249061766,
+      "undershoot_db_below_final_plateau": 0.0569352508111578,
+      "undershoot_time_ms": 24.00000000000002,
+      "down_step_time_to_within_1db_for_100ms_ms": 20.999999999999908
+    },
+    "before": {
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-100-depth-100.wav",
+      "settings": {
+        "release_ms": 30,
+        "width_percent": 100,
+        "depth_percent": 100,
+        "enhance": false
+      },
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "final_plateau_output_rms_dbfs": -39.17282700993368,
+      "undershoot_db_below_final_plateau": 15.351474516990542,
+      "undershoot_time_ms": 125.0,
+      "down_step_time_to_within_1db_for_100ms_ms": 642.0000000000003
+    },
+    "after": {
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-filterbank-v2/native/depth/width-100-depth-100.wav",
+      "settings": {
+        "release_ms": 30,
+        "width_percent": 100,
+        "depth_percent": 100,
+        "enhance": false
+      },
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "final_plateau_output_rms_dbfs": -49.29736811871885,
+      "undershoot_db_below_final_plateau": 0.0013840205041759646,
+      "undershoot_time_ms": 52.999999999999936,
+      "down_step_time_to_within_1db_for_100ms_ms": 22.00000000000024
+    }
+  },
+  "audition": {
+    "output": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-filterbank-v2/analysis/formant-plus12-live-old-new.wav",
+    "sample_rate": 48000,
+    "channels": 2,
+    "format": "float32 WAV",
+    "duration_seconds": 8.1,
+    "input_time_crop_seconds": [
+      1.25,
+      3.75
+    ],
+    "fade_seconds": 0.01,
+    "silence_between_seconds": 0.3,
+    "target_rms_dbfs": -20,
+    "common_peak_protection_gain": 1.0,
+    "output_sha256": "22660e703d78a005467870d7e28b69586cd11ccd8ba7570c6acc39d285e687ae",
+    "segments": [
+      {
+        "label": "Live \u00b7 Enhance on \u00b7 Width100 \u00b7 Formant+12st",
+        "source": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T224134Z-390cd5b0/cases/0008-formant/output.wav",
+        "source_sha256": "5a6dac9cad9f60f214344dcfd785646c652f0f6cdf84cc311bcd39454b1ef962",
+        "alignment_lag_samples": 16423,
+        "crop_start_frame": 76423,
+        "crop_end_frame": 196423,
+        "source_crop_rms_dbfs": -49.57060953984534,
+        "gain_before_common_attenuation": 30.163253972248143,
+        "start_seconds": 0.0,
+        "end_seconds": 2.5,
+        "applied_gain_linear": 30.163253972248143,
+        "applied_gain_db": 29.589563816874342,
+        "output_rms_dbfs": -20.0,
+        "output_peak": 0.5428496659281383
+      },
+      {
+        "label": "Old native \u00b7 Width100 \u00b7 Formant+12st",
+        "source": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/formant/width100-formant+12.wav",
+        "source_sha256": "2b1495f7a280963f72b61c4802cfd9a91c0e010deeb12a050ccc23d8e1c27592",
+        "alignment_lag_samples": 48000,
+        "crop_start_frame": 108000,
+        "crop_end_frame": 228000,
+        "source_crop_rms_dbfs": -32.40107864291589,
+        "gain_before_common_attenuation": 4.177685482275356,
+        "start_seconds": 2.8,
+        "end_seconds": 5.3,
+        "applied_gain_linear": 4.177685482275356,
+        "applied_gain_db": 12.418714818898867,
+        "output_rms_dbfs": -20.0,
+        "output_peak": 0.49861952912413837
+      },
+      {
+        "label": "New native \u00b7 Width100 \u00b7 Formant+12st",
+        "source": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-filterbank-v2/native/formant/width100-formant+12.wav",
+        "source_sha256": "41379de5740dee458b1d5f5a980d35d54aa3df44507f4394d77c8acf457c38c5",
+        "alignment_lag_samples": 48039,
+        "crop_start_frame": 108039,
+        "crop_end_frame": 228039,
+        "source_crop_rms_dbfs": -59.18278756323981,
+        "gain_before_common_attenuation": 91.23033957035992,
+        "start_seconds": 5.6,
+        "end_seconds": 8.1,
+        "applied_gain_linear": 91.23033957035992,
+        "applied_gain_db": 39.202785827268016,
+        "output_rms_dbfs": -20.0,
+        "output_peak": 0.5542664061202042
+      }
+    ],
+    "note": "Listening comparison only: each faded clip is RMS-matched, followed by common attenuation if needed. No limiting or raw-capture changes. Native Enhance is unimplemented; Live uses Enhance on."
+  }
+}

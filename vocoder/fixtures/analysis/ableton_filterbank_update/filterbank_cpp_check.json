@@ -1,0 +1,203 @@
+{
+  "scope": "Actual C++ float SVF coefficients, analytically evaluated against SciPy Butterworth SOS at unity peak; errors within reference passband down to -60dB; dense local frequency grid",
+  "cases": [
+    {
+      "center_hz": 20.0,
+      "q": 3.22885275,
+      "peak_abs_magnitude_error_db": 0.00028797891916544193,
+      "rms_magnitude_error_db": 0.00011903147589452238,
+      "max_svf_pole_radius": 0.9997447443551465
+    },
+    {
+      "center_hz": 20.0,
+      "q": 6.4577055,
+      "peak_abs_magnitude_error_db": 0.0020625926816775935,
+      "rms_magnitude_error_db": 0.000597120422908917,
+      "max_svf_pole_radius": 0.9998645552091839
+    },
+    {
+      "center_hz": 20.0,
+      "q": 25.830822,
+      "peak_abs_magnitude_error_db": 0.015980347439711686,
+      "rms_magnitude_error_db": 0.0033854776588438085,
+      "max_svf_pole_radius": 0.9999647115186325
+    },
+    {
+      "center_hz": 20.0,
+      "q": 64.5770569,
+      "peak_abs_magnitude_error_db": 0.02777840417732029,
+      "rms_magnitude_error_db": 0.0035474026157495614,
+      "max_svf_pole_radius": 0.999985720685836
+    },
+    {
+      "center_hz": 30.0,
+      "q": 3.22885275,
+      "peak_abs_magnitude_error_db": 0.0007764223098376312,
+      "rms_magnitude_error_db": 0.00029117325931371794,
+      "max_svf_pole_radius": 0.9996171399110259
+    },
+    {
+      "center_hz": 30.0,
+      "q": 6.4577055,
+      "peak_abs_magnitude_error_db": 0.001911979080712738,
+      "rms_magnitude_error_db": 0.0005131996604885718,
+      "max_svf_pole_radius": 0.99979678472433
+    },
+    {
+      "center_hz": 30.0,
+      "q": 25.830822,
+      "peak_abs_magnitude_error_db": 0.005663404956532541,
+      "rms_magnitude_error_db": 0.0010389251563690432,
+      "max_svf_pole_radius": 0.9999470055947546
+    },
+    {
+      "center_hz": 30.0,
+      "q": 64.5770569,
+      "peak_abs_magnitude_error_db": 0.017309971083509505,
+      "rms_magnitude_error_db": 0.0023797975440692366,
+      "max_svf_pole_radius": 0.9999786600161855
+    },
+    {
+      "center_hz": 100.0,
+      "q": 3.22885275,
+      "peak_abs_magnitude_error_db": 0.00021523170814853712,
+      "rms_magnitude_error_db": 9.833261754390781e-05,
+      "max_svf_pole_radius": 0.998724427322586
+    },
+    {
+      "center_hz": 100.0,
+      "q": 6.4577055,
+      "peak_abs_magnitude_error_db": 0.00045627071626178176,
+      "rms_magnitude_error_db": 0.0001581950774585328,
+      "max_svf_pole_radius": 0.9993228189866531
+    },
+    {
+      "center_hz": 100.0,
+      "q": 25.830822,
+      "peak_abs_magnitude_error_db": 0.0010896839262599157,
+      "rms_magnitude_error_db": 0.00015724062107035913,
+      "max_svf_pole_radius": 0.9998233244738972
+    },
+    {
+      "center_hz": 100.0,
+      "q": 64.5770569,
+      "peak_abs_magnitude_error_db": 0.003737573488368366,
+      "rms_magnitude_error_db": 0.000544805318458186,
+      "max_svf_pole_radius": 0.9999287581675509
+    },
+    {
+      "center_hz": 939.829041,
+      "q": 3.22885275,
+      "peak_abs_magnitude_error_db": 2.3282085346154675e-05,
+      "rms_magnitude_error_db": 1.0882765457102688e-05,
+      "max_svf_pole_radius": 0.9880699839621278
+    },
+    {
+      "center_hz": 939.829041,
+      "q": 6.4577055,
+      "peak_abs_magnitude_error_db": 1.0511755221129018e-05,
+      "rms_magnitude_error_db": 4.401660650652993e-06,
+      "max_svf_pole_radius": 0.9936519183755497
+    },
+    {
+      "center_hz": 939.829041,
+      "q": 25.830822,
+      "peak_abs_magnitude_error_db": 0.00024474218407978635,
+      "rms_magnitude_error_db": 4.150610003362742e-05,
+      "max_svf_pole_radius": 0.9983404425288657
+    },
+    {
+      "center_hz": 939.829041,
+      "q": 64.5770569,
+      "peak_abs_magnitude_error_db": 0.000356769458702651,
+      "rms_magnitude_error_db": 4.380665972046871e-05,
+      "max_svf_pole_radius": 0.9993303630722126
+    },
+    {
+      "center_hz": 10000.0,
+      "q": 3.22885275,
+      "peak_abs_magnitude_error_db": 6.640632214856532e-06,
+      "rms_magnitude_error_db": 3.2321381562340956e-06,
+      "max_svf_pole_radius": 0.872996301937543
+    },
+    {
+      "center_hz": 10000.0,
+      "q": 6.4577055,
+      "peak_abs_magnitude_error_db": 7.969750240386652e-06,
+      "rms_magnitude_error_db": 3.6568083127680187e-06,
+      "max_svf_pole_radius": 0.9323533456972991
+    },
+    {
+      "center_hz": 10000.0,
+      "q": 25.830822,
+      "peak_abs_magnitude_error_db": 3.222224315044208e-05,
+      "rms_magnitude_error_db": 8.437548918654673e-06,
+      "max_svf_pole_radius": 0.9823312315596623
+    },
+    {
+      "center_hz": 10000.0,
+      "q": 64.5770569,
+      "peak_abs_magnitude_error_db": 0.00015827944043814637,
+      "rms_magnitude_error_db": 3.4550640287151464e-05,
+      "max_svf_pole_radius": 0.992872923683792
+    },
+    {
+      "center_hz": 18000.0,
+      "q": 3.22885275,
+      "peak_abs_magnitude_error_db": 8.81708773602901e-06,
+      "rms_magnitude_error_db": 3.814100591299848e-06,
+      "max_svf_pole_radius": 0.8348512030704971
+    },
+    {
+      "center_hz": 18000.0,
+      "q": 6.4577055,
+      "peak_abs_magnitude_error_db": 9.688893480338383e-06,
+      "rms_magnitude_error_db": 4.583008318495799e-06,
+      "max_svf_pole_radius": 0.8950094679721293
+    },
+    {
+      "center_hz": 18000.0,
+      "q": 25.830822,
+      "peak_abs_magnitude_error_db": 2.0254158349627386e-05,
+      "rms_magnitude_error_db": 3.5344743187937758e-06,
+      "max_svf_pole_radius": 0.9692938993614378
+    },
+    {
+      "center_hz": 18000.0,
+      "q": 64.5770569,
+      "peak_abs_magnitude_error_db": 3.890619812277545e-05,
+      "rms_magnitude_error_db": 6.710512624998334e-06,
+      "max_svf_pole_radius": 0.9873485882047444
+    },
+    {
+      "center_hz": 23520.0,
+      "q": 3.22885275,
+      "peak_abs_magnitude_error_db": 0.00017684977491126607,
+      "rms_magnitude_error_db": 7.991753874633948e-06,
+      "max_svf_pole_radius": 0.9970903169253632
+    },
+    {
+      "center_hz": 23520.0,
+      "q": 6.4577055,
+      "peak_abs_magnitude_error_db": 0.00013803779954971358,
+      "rms_magnitude_error_db": 8.915774874385577e-06,
+      "max_svf_pole_radius": 0.9942679935257598
+    },
+    {
+      "center_hz": 23520.0,
+      "q": 25.830822,
+      "peak_abs_magnitude_error_db": 0.00011279706994357643,
+      "rms_magnitude_error_db": 1.2936430871921835e-05,
+      "max_svf_pole_radius": 0.9840872540754895
+    },
+    {
+      "center_hz": 23520.0,
+      "q": 64.5770569,
+      "peak_abs_magnitude_error_db": 0.00014036835967668086,
+      "rms_magnitude_error_db": 2.14738183535446e-05,
+      "max_svf_pole_radius": 0.9877274505293896
+    }
+  ],
+  "block_split_max_error": 0.0,
+  "pointer_reseat_checked": true
+}

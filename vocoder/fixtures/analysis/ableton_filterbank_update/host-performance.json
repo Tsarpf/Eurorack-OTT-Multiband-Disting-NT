@@ -1,0 +1,139 @@
+{
+  "created_utc": "2026-09-02T23:45:32.529813+00:00",
+  "scope": {
+    "platform": "Linux/WSL x86_64 host; not a Cortex-M7 or disting NT device benchmark",
+    "audio_seconds_per_run": 5,
+    "sample_rate": 48000,
+    "block_frames": 24,
+    "bands": 40,
+    "carrier_stereo": true,
+    "modulator_stereo": true,
+    "input": "Existing benchmark_vocoder.cpp deterministic sinusoidal carrier/modulator signals",
+    "width": "50 static; moving Width15..85 and Formant approximately +/-12 semitones",
+    "compiler": "Host c++ -O3 -std=c++17; existing host CMSIS objects",
+    "timing": "Final comparisons use std::clock process CPU time, two runs per case and their median; shared-host wall-time contention excluded",
+    "snapshot": "Frozen SVF implementation before final 9V output-guard and tiny-state-flush tuning; these timings are not an exact final-binary/device CPU claim",
+    "snapshot_sha256": {
+      "vocoder_dsp.h": "3198b0438ed72b08bc73e0f70b6c0e1609f090d86f5f0d91c9118e9bd660f718",
+      "vocoder_structs.h": "31e5387b7ce5687e305049f762ef988d2e1404ed2c54c1b379794873576a9318",
+      "vocoder_algo.cpp": "4a3a6787389374f0df8c751f6136eb27346e11c2bde3dbbd5cad04c3388ed70e",
+      "batch_biquad.h": "265c6c87a47c4a5023f6ee680bc55f85e9a83c36c54c9f8e890780fcc8abdc3f",
+      "envelope_shape.h": "e77ec7f1e92670f9c39bb8161e03a770aa21d833bdf1232898dc5bf2fb29048a",
+      "vocoder_parameters.h": "90570bfa72214225dbb4c9151e2d0d869e4899b843d5fc0fd705c8ed7a1f500c"
+    }
+  },
+  "initial_host_wall_time_context": {
+    "legacy_single_section_depth70_ms": {
+      "static": 189.828,
+      "moving": 211.155
+    },
+    "initial_svf_depth70_ms": {
+      "static": 455.67,
+      "moving": 597.648
+    },
+    "interpretation": "Host work increased roughly twofold or more. Exact ratios depend on input/control case and host load; do not extrapolate these wall-time ratios to NT CPU percentages."
+  },
+  "depth_cost_cpu_ms_with_ftz": [
+    {
+      "depth": 0,
+      "moving": false,
+      "runs_cpu_ms": [
+        432.572,
+        437.61
+      ],
+      "median_cpu_ms": 435.091
+    },
+    {
+      "depth": 0,
+      "moving": true,
+      "runs_cpu_ms": [
+        571.2,
+        527.818
+      ],
+      "median_cpu_ms": 549.509
+    },
+    {
+      "depth": 70,
+      "moving": false,
+      "runs_cpu_ms": [
+        431.075,
+        466.539
+      ],
+      "median_cpu_ms": 448.807
+    },
+    {
+      "depth": 70,
+      "moving": true,
+      "runs_cpu_ms": [
+        504.459,
+        507.105
+      ],
+      "median_cpu_ms": 505.78200000000004
+    },
+    {
+      "depth": 100,
+      "moving": false,
+      "runs_cpu_ms": [
+        425.119,
+        448.963
+      ],
+      "median_cpu_ms": 437.04100000000005
+    },
+    {
+      "depth": 100,
+      "moving": true,
+      "runs_cpu_ms": [
+        495.943,
+        494.241
+      ],
+      "median_cpu_ms": 495.092
+    },
+    {
+      "depth": 200,
+      "moving": false,
+      "runs_cpu_ms": [
+        438.532,
+        452.523
+      ],
+      "median_cpu_ms": 445.52750000000003
+    },
+    {
+      "depth": 200,
+      "moving": true,
+      "runs_cpu_ms": [
+        511.809,
+        531.215
+      ],
+      "median_cpu_ms": 521.5120000000001
+    }
+  ],
+  "synthesis_fusion": {
+    "static": {
+      "base_cpu_ms": 437.04100000000005,
+      "candidate_cpu_ms": 399.98199999999997,
+      "reduction_percent": 8.47952480430899
+    },
+    "moving": {
+      "base_cpu_ms": 495.092,
+      "candidate_cpu_ms": 468.9675,
+      "reduction_percent": 5.276696048411211
+    },
+    "numerical_check": "Temporary fused prototype produced bitwise-identical outputs and all four filter states versus unfused filtering plus gain across 14 host cascade cases, including 20..18000Hz and Q0.5..120.",
+    "decision": "Keep unfused production path. CPU-time savings did not meet the requested 10% threshold."
+  },
+  "host_ftz_daz_at_depth200": {
+    "static": {
+      "base_cpu_ms": 471.5505,
+      "candidate_cpu_ms": 445.52750000000003,
+      "reduction_percent": 5.518602991620192
+    },
+    "moving": {
+      "base_cpu_ms": 527.912,
+      "candidate_cpu_ms": 521.5120000000001,
+      "reduction_percent": 1.2123232659988714
+    },
+    "interpretation": "Modest measured improvement on this input. Earlier larger wall-time differences were confounded and are intentionally excluded. Production tiny-state flushing avoids relying on platform FTZ configuration."
+  },
+  "depth_cache_assessment": "The filterbank dominates. With FTZ, static Depth0/70/100/200 medians are approximately435/449/437/446ms. Caching the once-per-block Depth-shape calculation is unlikely to be material; no lookup/power approximation is justified by these results.",
+  "production": "No performance prototype or approximation was copied into repository DSP by this investigation."
+}

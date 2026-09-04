@@ -1,0 +1,183 @@
+{
+  "input": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-filterbank-v2/inputs/steps.wav",
+  "reference_run": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T224309Z-e2151a19",
+  "event": "1 kHz tone steps from -6 to -30 dBFS peak after 1.25 seconds at the louder level",
+  "notes": [
+    "Measures the combined effective output response, not an internal envelope-release time constant.",
+    "Native time is relative to the exact input transition; Live time is relative to the detected steep output fall, uncertain by about 20 ms.",
+    "Undershoot and plotted curves are relative to each recording's own final steady level, avoiding an assumption about calibrated native hardware gain.",
+    "Native Enhance is unimplemented; the Live release suite uses Enhance on.",
+    "Long native recovery is consistent with other gain-control or smoothing stages, but this probe alone does not establish its cause."
+  ],
+  "results": [
+    {
+      "label": "Live \u00b7 release 10 ms \u00b7 Enhance on",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T224309Z-e2151a19/cases/0001-release/output.wav",
+      "settings": {
+        "release_ms": 10,
+        "width_percent": 100,
+        "depth_percent": 100,
+        "enhance": true
+      },
+      "alignment": {
+        "seconds": 0.3490000000000002,
+        "method": "strongest 10 ms dB-envelope fall near the final -6 to -30 dBFS step",
+        "detected_fall_seconds": 5.599,
+        "fall_db_in_10ms": -22.834794543624042,
+        "uncertainty_seconds": 0.02,
+        "steady_window_guard_seconds": 0.04
+      },
+      "final_plateau_output_rms_dbfs": -44.98472346223493,
+      "undershoot_db_below_final_plateau": 0.04239356631687485,
+      "undershoot_time_ms": 28.999999999999915,
+      "down_step_time_to_within_1db_for_100ms_ms": 20.999999999999908,
+      "down_step_first_100ms_rms_dbfs": -34.118457204390715,
+      "same_input_level_history_difference_db": 2.0368801180836726e-05,
+      "deviation_from_final_plateau_db": {
+        "10": 9.53185225640013,
+        "20": 1.0164657840795324,
+        "30": -0.024448337715865676,
+        "50": 0.0007626911741452602,
+        "100": -3.148463730439393e-05,
+        "200": -3.210139460917906e-06,
+        "300": -2.5799452956213018e-06,
+        "500": 9.850100404662498e-06,
+        "700": -2.7101832031917717e-06
+      }
+    },
+    {
+      "label": "Live \u00b7 release 30 ms \u00b7 Enhance on",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T224309Z-e2151a19/cases/0002-release/output.wav",
+      "settings": {
+        "release_ms": 30,
+        "width_percent": 100,
+        "depth_percent": 100,
+        "enhance": true
+      },
+      "alignment": {
+        "seconds": 0.3440000000000003,
+        "method": "strongest 10 ms dB-envelope fall near the final -6 to -30 dBFS step",
+        "detected_fall_seconds": 5.594,
+        "fall_db_in_10ms": -21.426094351666638,
+        "uncertainty_seconds": 0.02,
+        "steady_window_guard_seconds": 0.04
+      },
+      "final_plateau_output_rms_dbfs": -44.82261249061766,
+      "undershoot_db_below_final_plateau": 0.0569352508111578,
+      "undershoot_time_ms": 24.00000000000002,
+      "down_step_time_to_within_1db_for_100ms_ms": 20.999999999999908,
+      "down_step_first_100ms_rms_dbfs": -35.65538645591536,
+      "same_input_level_history_difference_db": 1.8985430209284004e-05,
+      "deviation_from_final_plateau_db": {
+        "10": 13.121841331666142,
+        "20": 1.6521169492273018,
+        "30": -0.015415670892980467,
+        "50": -0.0006530449396463039,
+        "100": 3.4606693453991495e-05,
+        "200": 6.034068832152018e-06,
+        "300": -8.491035146108555e-06,
+        "500": 1.1152139578030074e-05,
+        "700": -4.334998443766697e-06
+      }
+    },
+    {
+      "label": "Live \u00b7 release 100 ms \u00b7 Enhance on",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T224309Z-e2151a19/cases/0003-release/output.wav",
+      "settings": {
+        "release_ms": 100,
+        "width_percent": 100,
+        "depth_percent": 100,
+        "enhance": true
+      },
+      "alignment": {
+        "seconds": 0.29499999999999993,
+        "method": "strongest 10 ms dB-envelope fall near the final -6 to -30 dBFS step",
+        "detected_fall_seconds": 5.545,
+        "fall_db_in_10ms": -20.641520715233877,
+        "uncertainty_seconds": 0.02,
+        "steady_window_guard_seconds": 0.04
+      },
+      "final_plateau_output_rms_dbfs": -44.7027811953611,
+      "undershoot_db_below_final_plateau": 0.05198177864668452,
+      "undershoot_time_ms": 64.00000000000006,
+      "down_step_time_to_within_1db_for_100ms_ms": 56.00000000000005,
+      "down_step_first_100ms_rms_dbfs": -30.08456004302498,
+      "same_input_level_history_difference_db": 2.748874042879379e-05,
+      "deviation_from_final_plateau_db": {
+        "10": 17.007132348897976,
+        "20": 14.786033740787662,
+        "30": 10.678837935345719,
+        "50": 2.690395975567484,
+        "100": -5.355227145289884e-06,
+        "200": -4.0434703691979405e-06,
+        "300": -1.2725782440269959e-05,
+        "500": 7.427049617092507e-06,
+        "700": 3.0076607302485835e-06
+      }
+    },
+    {
+      "label": "Native \u00b7 release 30 ms \u00b7 Width 50%",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-filterbank-v2/native/depth/width-050-depth-100.wav",
+      "settings": {
+        "release_ms": 30,
+        "width_percent": 50,
+        "depth_percent": 100,
+        "enhance": false
+      },
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "final_plateau_output_rms_dbfs": -63.462442090517655,
+      "undershoot_db_below_final_plateau": 0.254593984955342,
+      "undershoot_time_ms": 44.99999999999993,
+      "down_step_time_to_within_1db_for_100ms_ms": 35.00000000000014,
+      "down_step_first_100ms_rms_dbfs": -27.040431791247222,
+      "same_input_level_history_difference_db": -1.6707445951169575e-06,
+      "deviation_from_final_plateau_db": {
+        "10": 38.45508191475283,
+        "20": 6.378446482847011,
+        "30": 3.809111523818203,
+        "50": -0.07977031399106771,
+        "100": 0.0017065309845358263,
+        "200": 0.0004000835544531201,
+        "300": 9.4226267478352e-05,
+        "500": -4.4739408622263e-08,
+        "700": -7.975980054197748e-07
+      }
+    },
+    {
+      "label": "Native \u00b7 release 30 ms \u00b7 Width 100%",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-filterbank-v2/native/depth/width-100-depth-100.wav",
+      "settings": {
+        "release_ms": 30,
+        "width_percent": 100,
+        "depth_percent": 100,
+        "enhance": false
+      },
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "final_plateau_output_rms_dbfs": -49.29736811871885,
+      "undershoot_db_below_final_plateau": 0.0013840205041759646,
+      "undershoot_time_ms": 52.999999999999936,
+      "down_step_time_to_within_1db_for_100ms_ms": 22.00000000000024,
+      "down_step_first_100ms_rms_dbfs": -17.62446347107755,
+      "same_input_level_history_difference_db": 2.93497994832137e-05,
+      "deviation_from_final_plateau_db": {
+        "10": 14.753807423573884,
+        "20": 1.3882070603936003,
+        "30": 0.05269404372647931,
+        "50": -0.0002995740201968525,
+        "100": -0.0001383647573760625,
+        "200": 2.2206680370119658e-06,
+        "300": 9.061342822746804e-07,
+        "500": 9.498149466935502e-08,
+        "700": -2.0612745288409923e-08
+      }
+    }
+  ]
+}

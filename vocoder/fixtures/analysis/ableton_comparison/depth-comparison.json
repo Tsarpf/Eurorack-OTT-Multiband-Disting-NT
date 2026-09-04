@@ -1,0 +1,2062 @@
+{
+  "input": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/inputs/steps.wav",
+  "sample_rate": 48000,
+  "input_sha256": "25a43dc9d3679d4e543e81ec5a12721a316323d2fd69b026b49ef6e656f58b64",
+  "input_rms_dbfs": [
+    -45.010312574390134,
+    -33.01030230314216,
+    -21.010299427473285,
+    -9.01029979263531,
+    -33.01030230314216
+  ],
+  "steady_window_seconds": 0.3,
+  "native": [
+    {
+      "width_percent": 50,
+      "depth_percent": 0,
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-050-depth-000.wav",
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -54.6537224479719,
+          "gain_db": -9.643409873581767,
+          "window_start_seconds": 2.2,
+          "window_end_seconds": 2.5,
+          "output_rms": 0.0018506056237647536,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -37.76950702901131,
+          "gain_db": -4.759204725869147,
+          "window_start_seconds": 3.45,
+          "window_end_seconds": 3.75,
+          "output_rms": 0.012927800709520744,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -21.782710704620033,
+          "gain_db": -0.7724112771467482,
+          "window_start_seconds": 4.7,
+          "window_end_seconds": 5.0,
+          "output_rms": 0.08144500696351302,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -9.782700953929696,
+          "gain_db": -0.7724011612943862,
+          "window_start_seconds": 5.95,
+          "window_end_seconds": 6.25,
+          "output_rms": 0.32423877676645085,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -37.76162947502555,
+          "gain_db": -4.751327171883389,
+          "window_start_seconds": 7.2,
+          "window_end_seconds": 7.5,
+          "output_rms": 0.012939530727652871,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 469.0000000000003,
+        "down_step_first_100ms_rms_dbfs": -26.58035403366151,
+        "same_input_level_history_difference_db": 0.007877553985757402
+      }
+    },
+    {
+      "width_percent": 50,
+      "depth_percent": 50,
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-050-depth-050.wav",
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -60.058920687058844,
+          "gain_db": -15.04860811266871,
+          "window_start_seconds": 2.2,
+          "window_end_seconds": 2.5,
+          "output_rms": 0.0009932394611796619,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -41.80848617349114,
+          "gain_db": -8.798183870348979,
+          "window_start_seconds": 3.45,
+          "window_end_seconds": 3.75,
+          "output_rms": 0.00812036763013362,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -25.787988975430007,
+          "gain_db": -4.777689547956722,
+          "window_start_seconds": 4.7,
+          "window_end_seconds": 5.0,
+          "output_rms": 0.05135710696982921,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -10.40741704177215,
+          "gain_db": -1.3971172491368407,
+          "window_start_seconds": 5.95,
+          "window_end_seconds": 6.25,
+          "output_rms": 0.3017374028512255,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -41.801510837643065,
+          "gain_db": -8.791208534500903,
+          "window_start_seconds": 7.2,
+          "window_end_seconds": 7.5,
+          "output_rms": 0.008126891434097035,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 453.0000000000003,
+        "down_step_first_100ms_rms_dbfs": -27.609807582927573,
+        "same_input_level_history_difference_db": 0.006975335848075304
+      }
+    },
+    {
+      "width_percent": 50,
+      "depth_percent": 100,
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-050-depth-100.wav",
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -89.1892416377808,
+          "gain_db": -44.17892906339066,
+          "window_start_seconds": 2.2,
+          "window_end_seconds": 2.5,
+          "output_rms": 3.471665855669829e-05,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -58.135961312584435,
+          "gain_db": -25.125659009442273,
+          "window_start_seconds": 3.45,
+          "window_end_seconds": 3.75,
+          "output_rms": 0.001239372725040586,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -33.29086336181213,
+          "gain_db": -12.280563934338844,
+          "window_start_seconds": 4.7,
+          "window_end_seconds": 5.0,
+          "output_rms": 0.02164994672034923,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -11.05388208826133,
+          "gain_db": -2.0435822956260203,
+          "window_start_seconds": 5.95,
+          "window_end_seconds": 6.25,
+          "output_rms": 0.28009534783220386,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -58.130334271532234,
+          "gain_db": -25.120031968390073,
+          "window_start_seconds": 7.2,
+          "window_end_seconds": 7.5,
+          "output_rms": 0.0012401758967350849,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 256.0000000000002,
+        "down_step_first_100ms_rms_dbfs": -27.787148539020457,
+        "same_input_level_history_difference_db": 0.0056270410522003544
+      }
+    },
+    {
+      "width_percent": 50,
+      "depth_percent": 150,
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-050-depth-150.wav",
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -89.19060237467306,
+          "gain_db": -44.18028980028293,
+          "window_start_seconds": 2.2,
+          "window_end_seconds": 2.5,
+          "output_rms": 3.4711220249294755e-05,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -58.13644441170066,
+          "gain_db": -25.126142108558497,
+          "window_start_seconds": 3.45,
+          "window_end_seconds": 3.75,
+          "output_rms": 0.001239303794482775,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -33.29109110194007,
+          "gain_db": -12.280791674466784,
+          "window_start_seconds": 4.7,
+          "window_end_seconds": 5.0,
+          "output_rms": 0.02164937907590479,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -11.053886110485367,
+          "gain_db": -2.043586317850057,
+          "window_start_seconds": 5.95,
+          "window_end_seconds": 6.25,
+          "output_rms": 0.2800952181268972,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -58.130634448785344,
+          "gain_db": -25.120332145643182,
+          "window_start_seconds": 7.2,
+          "window_end_seconds": 7.5,
+          "output_rms": 0.0012401330380093908,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 282.0,
+        "down_step_first_100ms_rms_dbfs": -27.862314489971695,
+        "same_input_level_history_difference_db": 0.00580996291531477
+      }
+    },
+    {
+      "width_percent": 50,
+      "depth_percent": 200,
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-050-depth-200.wav",
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -89.19222153249547,
+          "gain_db": -44.18190895810533,
+          "window_start_seconds": 2.2,
+          "window_end_seconds": 2.5,
+          "output_rms": 3.4704750249329925e-05,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -58.13691257206655,
+          "gain_db": -25.126610268924388,
+          "window_start_seconds": 3.45,
+          "window_end_seconds": 3.75,
+          "output_rms": 0.0012392369991047038,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -33.291101805643414,
+          "gain_db": -12.28080237817013,
+          "window_start_seconds": 4.7,
+          "window_end_seconds": 5.0,
+          "output_rms": 0.02164935239718815,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -11.053884492544782,
+          "gain_db": -2.043584699909472,
+          "window_start_seconds": 5.95,
+          "window_end_seconds": 6.25,
+          "output_rms": 0.2800952703008807,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -58.130946973431946,
+          "gain_db": -25.120644670289785,
+          "window_start_seconds": 7.2,
+          "window_end_seconds": 7.5,
+          "output_rms": 0.0012400884179205901,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 299.99999999999983,
+        "down_step_first_100ms_rms_dbfs": -27.928988210109154,
+        "same_input_level_history_difference_db": 0.005965598634602998
+      }
+    },
+    {
+      "width_percent": 50,
+      "depth_percent": 400,
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-050-depth-400.wav",
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -89.1987380646154,
+          "gain_db": -44.188425490225264,
+          "window_start_seconds": 2.2,
+          "window_end_seconds": 2.5,
+          "output_rms": 3.4678723001134116e-05,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -58.138815507760384,
+          "gain_db": -25.128513204618223,
+          "window_start_seconds": 3.45,
+          "window_end_seconds": 3.75,
+          "output_rms": 0.0012389655323792814,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -33.29154635943124,
+          "gain_db": -12.281246931957952,
+          "window_start_seconds": 4.7,
+          "window_end_seconds": 5.0,
+          "output_rms": 0.021648244386871903,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -11.054034358322628,
+          "gain_db": -2.043734565687318,
+          "window_start_seconds": 5.95,
+          "window_end_seconds": 6.25,
+          "output_rms": 0.2800904375969005,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -58.132394068452896,
+          "gain_db": -25.122091765310735,
+          "window_start_seconds": 7.2,
+          "window_end_seconds": 7.5,
+          "output_rms": 0.0012398818327149844,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 344.0000000000003,
+        "down_step_first_100ms_rms_dbfs": -28.129662333971606,
+        "same_input_level_history_difference_db": 0.006421439307487731
+      }
+    },
+    {
+      "width_percent": 100,
+      "depth_percent": 0,
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-100-depth-000.wav",
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -43.297454318421195,
+          "gain_db": 1.7128582559689391,
+          "window_start_seconds": 2.2,
+          "window_end_seconds": 2.5,
+          "output_rms": 0.00684112119139911,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -30.80012091171351,
+          "gain_db": 2.2101813914286517,
+          "window_start_seconds": 3.45,
+          "window_end_seconds": 3.75,
+          "output_rms": 0.028839913563162886,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -18.52691586027283,
+          "gain_db": 2.4833835672004554,
+          "window_start_seconds": 4.7,
+          "window_end_seconds": 5.0,
+          "output_rms": 0.11848249937044944,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -6.436338758508185,
+          "gain_db": 2.573961034127125,
+          "window_start_seconds": 5.95,
+          "window_end_seconds": 6.25,
+          "output_rms": 0.4766318524222392,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -30.799446017405742,
+          "gain_db": 2.210856285736419,
+          "window_start_seconds": 7.2,
+          "window_end_seconds": 7.5,
+          "output_rms": 0.028842154513774046,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 3.9999999999995595,
+        "down_step_first_100ms_rms_dbfs": -30.34410955331004,
+        "same_input_level_history_difference_db": 0.0006748943077674596
+      }
+    },
+    {
+      "width_percent": 100,
+      "depth_percent": 50,
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-100-depth-050.wav",
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -47.15035780266212,
+          "gain_db": -2.140045228271987,
+          "window_start_seconds": 2.2,
+          "window_end_seconds": 2.5,
+          "output_rms": 0.004390177805658893,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -32.41702381091433,
+          "gain_db": 0.5932784922278316,
+          "window_start_seconds": 3.45,
+          "window_end_seconds": 3.75,
+          "output_rms": 0.02394135958019439,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -18.72580086715207,
+          "gain_db": 2.2844985603212145,
+          "window_start_seconds": 4.7,
+          "window_end_seconds": 5.0,
+          "output_rms": 0.11580037256269744,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -6.437898003437485,
+          "gain_db": 2.5724017891978255,
+          "window_start_seconds": 5.95,
+          "window_end_seconds": 6.25,
+          "output_rms": 0.4765462976745279,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -32.42605060040174,
+          "gain_db": 0.5842517027404242,
+          "window_start_seconds": 7.2,
+          "window_end_seconds": 7.5,
+          "output_rms": 0.02391649150529429,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 445.0000000000003,
+        "down_step_first_100ms_rms_dbfs": -33.17318729887366,
+        "same_input_level_history_difference_db": -0.009026789487407427
+      }
+    },
+    {
+      "width_percent": 100,
+      "depth_percent": 100,
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-100-depth-100.wav",
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -67.82700329150957,
+          "gain_db": -22.816690717119435,
+          "window_start_seconds": 2.2,
+          "window_end_seconds": 2.5,
+          "output_rms": 0.00040611575259866717,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -39.13756690685022,
+          "gain_db": -6.127264603708056,
+          "window_start_seconds": 3.45,
+          "window_end_seconds": 3.75,
+          "output_rms": 0.011043879379479036,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -19.057394473541606,
+          "gain_db": 1.9529049539316787,
+          "window_start_seconds": 4.7,
+          "window_end_seconds": 5.0,
+          "output_rms": 0.11146288412461744,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -6.43860852667984,
+          "gain_db": 2.5716912659554705,
+          "window_start_seconds": 5.95,
+          "window_end_seconds": 6.25,
+          "output_rms": 0.47650731682327657,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -39.17282700993368,
+          "gain_db": -6.162524706791515,
+          "window_start_seconds": 7.2,
+          "window_end_seconds": 7.5,
+          "output_rms": 0.01099913796387146,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 642.0000000000003,
+        "down_step_first_100ms_rms_dbfs": -35.80752900394805,
+        "same_input_level_history_difference_db": -0.03526010308345917
+      }
+    },
+    {
+      "width_percent": 100,
+      "depth_percent": 150,
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-100-depth-150.wav",
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -67.82784869434454,
+          "gain_db": -22.817536119954404,
+          "window_start_seconds": 2.2,
+          "window_end_seconds": 2.5,
+          "output_rms": 0.0004060762270330549,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -39.13797472684132,
+          "gain_db": -6.12767242369916,
+          "window_start_seconds": 3.45,
+          "window_end_seconds": 3.75,
+          "output_rms": 0.011043360859299104,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -19.058241845637944,
+          "gain_db": 1.9520575818353407,
+          "window_start_seconds": 4.7,
+          "window_end_seconds": 5.0,
+          "output_rms": 0.11145201063500387,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -6.4400089379327685,
+          "gain_db": 2.5702908547025416,
+          "window_start_seconds": 5.95,
+          "window_end_seconds": 6.25,
+          "output_rms": 0.476430496549827,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -39.17177014378495,
+          "gain_db": -6.161467840642786,
+          "window_start_seconds": 7.2,
+          "window_end_seconds": 7.5,
+          "output_rms": 0.011000476378738798,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 637.9999999999999,
+        "down_step_first_100ms_rms_dbfs": -36.7266321664274,
+        "same_input_level_history_difference_db": -0.03379541694362587
+      }
+    },
+    {
+      "width_percent": 100,
+      "depth_percent": 200,
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-100-depth-200.wav",
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -67.82875229428416,
+          "gain_db": -22.818439719894023,
+          "window_start_seconds": 2.2,
+          "window_end_seconds": 2.5,
+          "output_rms": 0.0004060339848006361,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -39.13846729343823,
+          "gain_db": -6.128164990296071,
+          "window_start_seconds": 3.45,
+          "window_end_seconds": 3.75,
+          "output_rms": 0.01104273462103565,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -19.05947745718972,
+          "gain_db": 1.9508219702835667,
+          "window_start_seconds": 4.7,
+          "window_end_seconds": 5.0,
+          "output_rms": 0.11143615715275372,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -6.440718202190265,
+          "gain_db": 2.569581590445045,
+          "window_start_seconds": 5.95,
+          "window_end_seconds": 6.25,
+          "output_rms": 0.4763915942219986,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -39.170874680706135,
+          "gain_db": -6.160572377563973,
+          "window_start_seconds": 7.2,
+          "window_end_seconds": 7.5,
+          "output_rms": 0.011001610520276298,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 634.0000000000003,
+        "down_step_first_100ms_rms_dbfs": -37.46006651774935,
+        "same_input_level_history_difference_db": -0.032407387267902266
+      }
+    },
+    {
+      "width_percent": 100,
+      "depth_percent": 400,
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-100-depth-400.wav",
+      "alignment": {
+        "seconds": 1.0,
+        "method": "renderer input_start_frame",
+        "uncertainty_seconds": 0
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -67.83429351343895,
+          "gain_db": -22.823980939048816,
+          "window_start_seconds": 2.2,
+          "window_end_seconds": 2.5,
+          "output_rms": 0.0004057750354167655,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -39.14287393874933,
+          "gain_db": -6.132571635607171,
+          "window_start_seconds": 3.45,
+          "window_end_seconds": 3.75,
+          "output_rms": 0.011037133689517538,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -19.064209021883173,
+          "gain_db": 1.9460904055901125,
+          "window_start_seconds": 4.7,
+          "window_end_seconds": 5.0,
+          "output_rms": 0.1113754697824809,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -6.442338026405635,
+          "gain_db": 2.5679617662296748,
+          "window_start_seconds": 5.95,
+          "window_end_seconds": 6.25,
+          "output_rms": 0.47630276063985083,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -39.16901552825285,
+          "gain_db": -6.158713225110688,
+          "window_start_seconds": 7.2,
+          "window_end_seconds": 7.5,
+          "output_rms": 0.011003965588228843,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 625.0,
+        "down_step_first_100ms_rms_dbfs": -38.74349774356539,
+        "same_input_level_history_difference_db": -0.026141589503517082
+      }
+    }
+  ],
+  "live": [
+    {
+      "depth_percent": 0,
+      "enhance": false,
+      "case_id": "0001-depth",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223934Z-57fb10cb/cases/0001-depth/output.wav",
+      "alignment": {
+        "seconds": 0.351,
+        "method": "strongest 10 ms dB-envelope fall near the final -6 to -30 dBFS step",
+        "detected_fall_seconds": 5.601,
+        "fall_db_in_10ms": -21.363459621349712,
+        "uncertainty_seconds": 0.02,
+        "steady_window_guard_seconds": 0.04
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -59.961514788590065,
+          "gain_db": -14.951202214199931,
+          "window_start_seconds": 1.511,
+          "window_end_seconds": 1.811,
+          "output_rms": 0.001004440604095856,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -47.86291105068543,
+          "gain_db": -14.852608747543272,
+          "window_start_seconds": 2.761,
+          "window_end_seconds": 3.061,
+          "output_rms": 0.004044403219815329,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -35.87766383393901,
+          "gain_db": -14.867364406465725,
+          "window_start_seconds": 4.011,
+          "window_end_seconds": 4.311,
+          "output_rms": 0.016073735157596875,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -23.88062665990701,
+          "gain_db": -14.870326867271698,
+          "window_start_seconds": 5.261,
+          "window_end_seconds": 5.561,
+          "output_rms": 0.063968868227004,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -47.86290294035829,
+          "gain_db": -14.852600637216128,
+          "window_start_seconds": 6.511,
+          "window_end_seconds": 6.811,
+          "output_rms": 0.00404440699622165,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 11.00000000000012,
+        "down_step_first_100ms_rms_dbfs": -47.26012462579162,
+        "same_input_level_history_difference_db": 8.110327144095208e-06
+      }
+    },
+    {
+      "depth_percent": 0,
+      "enhance": true,
+      "case_id": "0002-depth",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223934Z-57fb10cb/cases/0002-depth/output.wav",
+      "alignment": {
+        "seconds": 0.3540000000000001,
+        "method": "strongest 10 ms dB-envelope fall near the final -6 to -30 dBFS step",
+        "detected_fall_seconds": 5.604,
+        "fall_db_in_10ms": -9.926678492797723,
+        "uncertainty_seconds": 0.02,
+        "steady_window_guard_seconds": 0.04
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -49.78830677123433,
+          "gain_db": -4.7779941968441975,
+          "window_start_seconds": 1.514,
+          "window_end_seconds": 1.814,
+          "output_rms": 0.0032402958265896147,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -43.66349111719434,
+          "gain_db": -10.653188814052179,
+          "window_start_seconds": 2.7640000000000002,
+          "window_end_seconds": 3.064,
+          "output_rms": 0.006558815950116406,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -37.921326122732964,
+          "gain_db": -16.91102669525968,
+          "window_start_seconds": 4.014,
+          "window_end_seconds": 4.314,
+          "output_rms": 0.012703801344516878,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -31.92444555721505,
+          "gain_db": -22.914145764579743,
+          "window_start_seconds": 5.264,
+          "window_end_seconds": 5.564,
+          "output_rms": 0.02533831448948229,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -43.66348284677226,
+          "gain_db": -10.6531805436301,
+          "window_start_seconds": 6.514,
+          "window_end_seconds": 6.814,
+          "output_rms": 0.006558822195210958,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 11.999999999999567,
+        "down_step_first_100ms_rms_dbfs": -43.25774100966032,
+        "same_input_level_history_difference_db": 8.270422078737738e-06
+      }
+    },
+    {
+      "depth_percent": 50,
+      "enhance": false,
+      "case_id": "0003-depth",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223934Z-57fb10cb/cases/0003-depth/output.wav",
+      "alignment": {
+        "seconds": 0.34699999999999953,
+        "method": "strongest 10 ms dB-envelope fall near the final -6 to -30 dBFS step",
+        "detected_fall_seconds": 5.5969999999999995,
+        "fall_db_in_10ms": -26.16535728080216,
+        "uncertainty_seconds": 0.02,
+        "steady_window_guard_seconds": 0.04
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -62.745335297710874,
+          "gain_db": -17.73502272332074,
+          "window_start_seconds": 1.5069999999999995,
+          "window_end_seconds": 1.8069999999999995,
+          "output_rms": 0.0007290095794032444,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -47.04274638918908,
+          "gain_db": -14.032444086046915,
+          "window_start_seconds": 2.7569999999999997,
+          "window_end_seconds": 3.0569999999999995,
+          "output_rms": 0.004444907018479856,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -30.435444764179557,
+          "gain_db": -9.425145336706272,
+          "window_start_seconds": 4.007,
+          "window_end_seconds": 4.3069999999999995,
+          "output_rms": 0.03007653225469441,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -14.248641284955339,
+          "gain_db": -5.238341492320028,
+          "window_start_seconds": 5.257,
+          "window_end_seconds": 5.5569999999999995,
+          "output_rms": 0.19389559189370037,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -47.04268073533059,
+          "gain_db": -14.03237843218843,
+          "window_start_seconds": 6.507,
+          "window_end_seconds": 6.8069999999999995,
+          "output_rms": 0.0044449406162356915,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 11.00000000000012,
+        "down_step_first_100ms_rms_dbfs": -45.715800657124596,
+        "same_input_level_history_difference_db": 6.565385848489314e-05
+      }
+    },
+    {
+      "depth_percent": 50,
+      "enhance": true,
+      "case_id": "0004-depth",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223934Z-57fb10cb/cases/0004-depth/output.wav",
+      "alignment": {
+        "seconds": 0.351,
+        "method": "strongest 10 ms dB-envelope fall near the final -6 to -30 dBFS step",
+        "detected_fall_seconds": 5.601,
+        "fall_db_in_10ms": -18.71813077655132,
+        "uncertainty_seconds": 0.02,
+        "steady_window_guard_seconds": 0.04
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -52.59678809956445,
+          "gain_db": -7.586475525174315,
+          "window_start_seconds": 1.511,
+          "window_end_seconds": 1.811,
+          "output_rms": 0.0023450958332269576,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -42.7546092594529,
+          "gain_db": -9.744306956310737,
+          "window_start_seconds": 2.761,
+          "window_end_seconds": 3.061,
+          "output_rms": 0.0072823162812325004,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -32.25330115127873,
+          "gain_db": -11.243001723805442,
+          "window_start_seconds": 4.011,
+          "window_end_seconds": 4.311,
+          "output_rms": 0.02439691664834375,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -21.984293620003687,
+          "gain_db": -12.973993827368377,
+          "window_start_seconds": 5.261,
+          "window_end_seconds": 5.561,
+          "output_rms": 0.07957658891716257,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -42.754543661645776,
+          "gain_db": -9.744241358503615,
+          "window_start_seconds": 6.511,
+          "window_end_seconds": 6.811,
+          "output_rms": 0.007282371279143202,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 11.00000000000012,
+        "down_step_first_100ms_rms_dbfs": -42.34931703659157,
+        "same_input_level_history_difference_db": 6.559780712223073e-05
+      }
+    },
+    {
+      "depth_percent": 100,
+      "enhance": false,
+      "case_id": "0005-depth",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223934Z-57fb10cb/cases/0005-depth/output.wav",
+      "alignment": {
+        "seconds": 0.351,
+        "method": "strongest 10 ms dB-envelope fall near the final -6 to -30 dBFS step",
+        "detected_fall_seconds": 5.601,
+        "fall_db_in_10ms": -26.38651052522053,
+        "uncertainty_seconds": 0.02,
+        "steady_window_guard_seconds": 0.04
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -73.13165212296963,
+          "gain_db": -28.121339548579492,
+          "window_start_seconds": 1.511,
+          "window_end_seconds": 1.811,
+          "output_rms": 0.00022050446800558036,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -49.130819791738276,
+          "gain_db": -16.120517488596114,
+          "window_start_seconds": 2.761,
+          "window_end_seconds": 3.061,
+          "output_rms": 0.0034950952063014275,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -25.130854194107876,
+          "gain_db": -4.120554766634591,
+          "window_start_seconds": 4.011,
+          "window_end_seconds": 4.311,
+          "output_rms": 0.0553933065969402,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -4.32113517993077,
+          "gain_db": 4.68916461270454,
+          "window_start_seconds": 5.261,
+          "window_end_seconds": 5.561,
+          "output_rms": 0.6080555278375271,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -49.13080458305969,
+          "gain_db": -16.12050227991753,
+          "window_start_seconds": 6.511,
+          "window_end_seconds": 6.811,
+          "output_rms": 0.003495101326092072,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 20.000000000000462,
+        "down_step_first_100ms_rms_dbfs": -38.18579502349446,
+        "same_input_level_history_difference_db": 1.5208678583178425e-05
+      }
+    },
+    {
+      "depth_percent": 100,
+      "enhance": true,
+      "case_id": "0006-depth",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223934Z-57fb10cb/cases/0006-depth/output.wav",
+      "alignment": {
+        "seconds": 0.3440000000000003,
+        "method": "strongest 10 ms dB-envelope fall near the final -6 to -30 dBFS step",
+        "detected_fall_seconds": 5.594,
+        "fall_db_in_10ms": -21.426094351666638,
+        "uncertainty_seconds": 0.02,
+        "steady_window_guard_seconds": 0.04
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -63.06555841083017,
+          "gain_db": -18.055245836440037,
+          "window_start_seconds": 1.5040000000000002,
+          "window_end_seconds": 1.8040000000000003,
+          "output_rms": 0.000702622542739105,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -44.82263147604787,
+          "gain_db": -11.812329172905706,
+          "window_start_seconds": 2.7540000000000004,
+          "window_end_seconds": 3.0540000000000003,
+          "output_rms": 0.005739425543000056,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -26.858871234733137,
+          "gain_db": -5.848571807259852,
+          "window_start_seconds": 4.0040000000000004,
+          "window_end_seconds": 4.304,
+          "output_rms": 0.04540006119686593,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -11.893854984957052,
+          "gain_db": -2.883555192321742,
+          "window_start_seconds": 5.2540000000000004,
+          "window_end_seconds": 5.554,
+          "output_rms": 0.2542771006102347,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -44.82261249061766,
+          "gain_db": -11.812310187475497,
+          "window_start_seconds": 6.5040000000000004,
+          "window_end_seconds": 6.804,
+          "output_rms": 0.0057394380881263096,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 20.999999999999908,
+        "down_step_first_100ms_rms_dbfs": -35.65538645591536,
+        "same_input_level_history_difference_db": 1.8985430209284004e-05
+      }
+    },
+    {
+      "depth_percent": 150,
+      "enhance": false,
+      "case_id": "0007-depth",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223934Z-57fb10cb/cases/0007-depth/output.wav",
+      "alignment": {
+        "seconds": 0.29300000000000015,
+        "method": "strongest 10 ms dB-envelope fall near the final -6 to -30 dBFS step",
+        "detected_fall_seconds": 5.543,
+        "fall_db_in_10ms": -26.450344464189694,
+        "uncertainty_seconds": 0.02,
+        "steady_window_guard_seconds": 0.04
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -114.43759578472283,
+          "gain_db": -69.42728321033269,
+          "window_start_seconds": 1.453,
+          "window_end_seconds": 1.7530000000000001,
+          "output_rms": 1.897230993564869e-06,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -62.22164111033593,
+          "gain_db": -29.21133880719377,
+          "window_start_seconds": 2.7030000000000003,
+          "window_end_seconds": 3.003,
+          "output_rms": 0.0007743154849603601,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -25.960447240393208,
+          "gain_db": -4.950147812919923,
+          "window_start_seconds": 3.9530000000000003,
+          "window_end_seconds": 4.253,
+          "output_rms": 0.05034746839808583,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -0.2016416022649847,
+          "gain_db": 8.808658190370325,
+          "window_start_seconds": 5.203,
+          "window_end_seconds": 5.503,
+          "output_rms": 0.9770525440471233,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -62.22138792992095,
+          "gain_db": -29.21108562677879,
+          "window_start_seconds": 6.453,
+          "window_end_seconds": 6.753,
+          "output_rms": 0.0007743380554029014,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 32.00000000000003,
+        "down_step_first_100ms_rms_dbfs": -35.587865476305296,
+        "same_input_level_history_difference_db": 0.00025318041497968125
+      }
+    },
+    {
+      "depth_percent": 150,
+      "enhance": true,
+      "case_id": "0008-depth",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223934Z-57fb10cb/cases/0008-depth/output.wav",
+      "alignment": {
+        "seconds": 0.29600000000000026,
+        "method": "strongest 10 ms dB-envelope fall near the final -6 to -30 dBFS step",
+        "detected_fall_seconds": 5.546,
+        "fall_db_in_10ms": -21.38897249028101,
+        "uncertainty_seconds": 0.02,
+        "steady_window_guard_seconds": 0.04
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -104.69172905319402,
+          "gain_db": -59.68141647880389,
+          "window_start_seconds": 1.4560000000000002,
+          "window_end_seconds": 1.7560000000000002,
+          "output_rms": 5.826577767107464e-06,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -58.16092544981218,
+          "gain_db": -25.15062314667002,
+          "window_start_seconds": 2.7060000000000004,
+          "window_end_seconds": 3.0060000000000002,
+          "output_rms": 0.001235815754775344,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -27.767563044252576,
+          "gain_db": -6.757263616779291,
+          "window_start_seconds": 3.9560000000000004,
+          "window_end_seconds": 4.256,
+          "output_rms": 0.040890446025734474,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -7.704220563812724,
+          "gain_db": 1.3060792288225862,
+          "window_start_seconds": 5.206,
+          "window_end_seconds": 5.506,
+          "output_rms": 0.411897325283078,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -58.16064757575941,
+          "gain_db": -25.15034527261725,
+          "window_start_seconds": 6.456,
+          "window_end_seconds": 6.756,
+          "output_rms": 0.0012358552909241525,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 35.00000000000014,
+        "down_step_first_100ms_rms_dbfs": -32.026251155616166,
+        "same_input_level_history_difference_db": 0.0002778740527702439
+      }
+    },
+    {
+      "depth_percent": 200,
+      "enhance": false,
+      "case_id": "0009-depth",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223934Z-57fb10cb/cases/0009-depth/output.wav",
+      "alignment": {
+        "seconds": 0.351,
+        "method": "strongest 10 ms dB-envelope fall near the final -6 to -30 dBFS step",
+        "detected_fall_seconds": 5.601,
+        "fall_db_in_10ms": -26.561858613063666,
+        "uncertainty_seconds": 0.02,
+        "steady_window_guard_seconds": 0.04
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -300.0,
+          "gain_db": -254.98968742560987,
+          "window_start_seconds": 1.511,
+          "window_end_seconds": 1.811,
+          "output_rms": 1.8922015641580914e-35,
+          "below_db_reporting_floor": true
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -85.53364683916185,
+          "gain_db": -52.523344536019685,
+          "window_start_seconds": 2.761,
+          "window_end_seconds": 3.061,
+          "output_rms": 5.288319163472633e-05,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -26.898996967958062,
+          "gain_db": -5.8886975404847774,
+          "window_start_seconds": 4.011,
+          "window_end_seconds": 4.311,
+          "output_rms": 0.045190812695832284,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": 4.017111204989866,
+          "gain_db": 13.027410997625175,
+          "window_start_seconds": 5.261,
+          "window_end_seconds": 5.561,
+          "output_rms": 1.5880185099160806,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -85.53361289495841,
+          "gain_db": -52.52331059181625,
+          "window_start_seconds": 6.511,
+          "window_end_seconds": 6.811,
+          "output_rms": 5.288339830110099e-05,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 57.000000000000384,
+        "down_step_first_100ms_rms_dbfs": -29.185767967005,
+        "same_input_level_history_difference_db": 3.394420343738602e-05
+      }
+    },
+    {
+      "depth_percent": 200,
+      "enhance": true,
+      "case_id": "0010-depth",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223934Z-57fb10cb/cases/0010-depth/output.wav",
+      "alignment": {
+        "seconds": 0.3440000000000003,
+        "method": "strongest 10 ms dB-envelope fall near the final -6 to -30 dBFS step",
+        "detected_fall_seconds": 5.594,
+        "fall_db_in_10ms": -21.13226870196719,
+        "uncertainty_seconds": 0.02,
+        "steady_window_guard_seconds": 0.04
+      },
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -300.0,
+          "gain_db": -254.98968742560987,
+          "window_start_seconds": 1.5040000000000002,
+          "window_end_seconds": 1.8040000000000003,
+          "output_rms": 6.477073560083989e-35,
+          "below_db_reporting_floor": true
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -81.80412715980282,
+          "gain_db": -48.793824856660656,
+          "window_start_seconds": 2.7540000000000004,
+          "window_end_seconds": 3.0540000000000003,
+          "output_rms": 8.124443859346253e-05,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -28.876544595983738,
+          "gain_db": -7.866245168510453,
+          "window_start_seconds": 4.0040000000000004,
+          "window_end_seconds": 4.304,
+          "output_rms": 0.035989247841934094,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -3.467440457571896,
+          "gain_db": 5.542859335063414,
+          "window_start_seconds": 5.2540000000000004,
+          "window_end_seconds": 5.554,
+          "output_rms": 0.6708539436188675,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -81.80409334681023,
+          "gain_db": -48.79379104366807,
+          "window_start_seconds": 6.5040000000000004,
+          "window_end_seconds": 6.804,
+          "output_rms": 8.124475486767981e-05,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 59.99999999999961,
+        "down_step_first_100ms_rms_dbfs": -27.752201374559284,
+        "same_input_level_history_difference_db": 3.381299258364834e-05
+      }
+    }
+  ],
+  "native_depth_differences": [
+    {
+      "width_percent": 50,
+      "compared_depth_percent": 150,
+      "baseline_depth_percent": 100,
+      "plateau_level_difference_db": [
+        -0.0013607368922663454,
+        -0.0004830991162236842,
+        -0.00022774012794002374,
+        -4.022224036503985e-06,
+        -0.00030017725310926835
+      ],
+      "first_100ms_after_steps": [
+        {
+          "step_index": 0,
+          "rms_gain_difference_db": 3.651141235558569,
+          "difference_signal_relative_to_100_db": -3.0178004891176045
+        },
+        {
+          "step_index": 1,
+          "rms_gain_difference_db": 0.9735683301032978,
+          "difference_signal_relative_to_100_db": -14.338463998162041
+        },
+        {
+          "step_index": 2,
+          "rms_gain_difference_db": 1.50041542588216,
+          "difference_signal_relative_to_100_db": -11.902239130165434
+        },
+        {
+          "step_index": 3,
+          "rms_gain_difference_db": 0.6724213355405322,
+          "difference_signal_relative_to_100_db": -12.401644324444414
+        },
+        {
+          "step_index": 4,
+          "rms_gain_difference_db": -0.0751659509512379,
+          "difference_signal_relative_to_100_db": -31.217878430736334
+        }
+      ]
+    },
+    {
+      "width_percent": 50,
+      "compared_depth_percent": 200,
+      "baseline_depth_percent": 100,
+      "plateau_level_difference_db": [
+        -0.002979894714670195,
+        -0.0009512594821146081,
+        -0.00023844383128590607,
+        -2.404283451440392e-06,
+        -0.0006127018997119649
+      ],
+      "first_100ms_after_steps": [
+        {
+          "step_index": 0,
+          "rms_gain_difference_db": 8.682039860997548,
+          "difference_signal_relative_to_100_db": 6.168811431794069
+        },
+        {
+          "step_index": 1,
+          "rms_gain_difference_db": 2.178273723302361,
+          "difference_signal_relative_to_100_db": -7.333450912394696
+        },
+        {
+          "step_index": 2,
+          "rms_gain_difference_db": 3.2257243592342455,
+          "difference_signal_relative_to_100_db": -4.8291817904125764
+        },
+        {
+          "step_index": 3,
+          "rms_gain_difference_db": 0.9702157989896367,
+          "difference_signal_relative_to_100_db": -9.626871104721198
+        },
+        {
+          "step_index": 4,
+          "rms_gain_difference_db": -0.14183967108869666,
+          "difference_signal_relative_to_100_db": -25.719392573862315
+        }
+      ]
+    },
+    {
+      "width_percent": 50,
+      "compared_depth_percent": 400,
+      "baseline_depth_percent": 100,
+      "plateau_level_difference_db": [
+        -0.009496426834601834,
+        -0.0028541951759493145,
+        -0.0006829976191085052,
+        -0.00015227006129769904,
+        -0.002059796920661938
+      ],
+      "first_100ms_after_steps": [
+        {
+          "step_index": 0,
+          "rms_gain_difference_db": 29.450336195242244,
+          "difference_signal_relative_to_100_db": 29.30638334966592
+        },
+        {
+          "step_index": 1,
+          "rms_gain_difference_db": 10.783584993428356,
+          "difference_signal_relative_to_100_db": 9.213590219531639
+        },
+        {
+          "step_index": 2,
+          "rms_gain_difference_db": 9.529886949491448,
+          "difference_signal_relative_to_100_db": 7.340432003920135
+        },
+        {
+          "step_index": 3,
+          "rms_gain_difference_db": 2.163176408705371,
+          "difference_signal_relative_to_100_db": -4.313497083424087
+        },
+        {
+          "step_index": 4,
+          "rms_gain_difference_db": -0.34251379495114875,
+          "difference_signal_relative_to_100_db": -19.3225242310017
+        }
+      ]
+    },
+    {
+      "width_percent": 100,
+      "compared_depth_percent": 150,
+      "baseline_depth_percent": 100,
+      "plateau_level_difference_db": [
+        -0.0008454028349689224,
+        -0.00040781999110350853,
+        -0.000847372096338006,
+        -0.0014004112529288903,
+        0.001056866148729796
+      ],
+      "first_100ms_after_steps": [
+        {
+          "step_index": 0,
+          "rms_gain_difference_db": 3.0714378264070774,
+          "difference_signal_relative_to_100_db": -4.263519495425314
+        },
+        {
+          "step_index": 1,
+          "rms_gain_difference_db": 0.6915683371453412,
+          "difference_signal_relative_to_100_db": -14.862398029541112
+        },
+        {
+          "step_index": 2,
+          "rms_gain_difference_db": 0.4632603993872735,
+          "difference_signal_relative_to_100_db": -13.117578055982953
+        },
+        {
+          "step_index": 3,
+          "rms_gain_difference_db": 1.4897120518478992,
+          "difference_signal_relative_to_100_db": -12.38703455664805
+        },
+        {
+          "step_index": 4,
+          "rms_gain_difference_db": -0.9191031624793524,
+          "difference_signal_relative_to_100_db": -15.953443033350851
+        }
+      ]
+    },
+    {
+      "width_percent": 100,
+      "compared_depth_percent": 200,
+      "baseline_depth_percent": 100,
+      "plateau_level_difference_db": [
+        -0.0017490027745878933,
+        -0.0009003865880146122,
+        -0.002082983648111991,
+        -0.0021096755104252907,
+        0.0019523292275422932
+      ],
+      "first_100ms_after_steps": [
+        {
+          "step_index": 0,
+          "rms_gain_difference_db": 7.511798517938274,
+          "difference_signal_relative_to_100_db": 4.669838576289749
+        },
+        {
+          "step_index": 1,
+          "rms_gain_difference_db": 1.642326311755113,
+          "difference_signal_relative_to_100_db": -8.007842509464304
+        },
+        {
+          "step_index": 2,
+          "rms_gain_difference_db": 1.43573776336196,
+          "difference_signal_relative_to_100_db": -6.757913602284841
+        },
+        {
+          "step_index": 3,
+          "rms_gain_difference_db": 2.095197109124592,
+          "difference_signal_relative_to_100_db": -9.75434289980284
+        },
+        {
+          "step_index": 4,
+          "rms_gain_difference_db": -1.652537513801299,
+          "difference_signal_relative_to_100_db": -10.651085853293338
+        }
+      ]
+    },
+    {
+      "width_percent": 100,
+      "compared_depth_percent": 400,
+      "baseline_depth_percent": 100,
+      "plateau_level_difference_db": [
+        -0.007290221929380891,
+        -0.005307031899114634,
+        -0.006814548341566251,
+        -0.0037294997257957263,
+        0.0038114816808274554
+      ],
+      "first_100ms_after_steps": [
+        {
+          "step_index": 0,
+          "rms_gain_difference_db": 23.731564301236553,
+          "difference_signal_relative_to_100_db": 23.459623524969565
+        },
+        {
+          "step_index": 1,
+          "rms_gain_difference_db": 8.06036462886199,
+          "difference_signal_relative_to_100_db": 6.28255043379518
+        },
+        {
+          "step_index": 2,
+          "rms_gain_difference_db": 5.061348668243687,
+          "difference_signal_relative_to_100_db": 0.9280050447368211
+        },
+        {
+          "step_index": 3,
+          "rms_gain_difference_db": 3.7857864737884874,
+          "difference_signal_relative_to_100_db": -4.487337049042639
+        },
+        {
+          "step_index": 4,
+          "rms_gain_difference_db": -2.935968739617344,
+          "difference_signal_relative_to_100_db": -5.727227097469388
+        }
+      ]
+    }
+  ],
+  "live_depth_differences": [
+    {
+      "enhance": false,
+      "baseline_depth_percent": 100,
+      "compared_depth_percent": 200,
+      "plateau_level_difference_db": [
+        null,
+        -36.40282704742357,
+        -1.7681427738501867,
+        8.338246384920636,
+        -36.40280831189872
+      ],
+      "null_difference_means": "One measured plateau is below the -300 dBFS reporting floor; no finite level difference is reported."
+    },
+    {
+      "enhance": true,
+      "baseline_depth_percent": 100,
+      "compared_depth_percent": 200,
+      "plateau_level_difference_db": [
+        null,
+        -36.98149568375495,
+        -2.0176733612506013,
+        8.426414527385155,
+        -36.981480856192576
+      ],
+      "null_difference_means": "One measured plateau is below the -300 dBFS reporting floor; no finite level difference is reported."
+    }
+  ],
+  "native_input_scaling": [
+    {
+      "depth_percent": 100,
+      "width_percent": 100,
+      "input_multiplier": 5,
+      "output_multiplier_for_report": 0.2,
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-100-depth-100-input-times-five.wav",
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -48.907698079978424,
+          "gain_db": -3.8973855055882893,
+          "window_start_seconds": 2.2,
+          "window_end_seconds": 2.5,
+          "output_rms": 0.0035860397231259247,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -30.728916428378913,
+          "gain_db": 2.2813858747632487,
+          "window_start_seconds": 3.45,
+          "window_end_seconds": 3.75,
+          "output_rms": 0.029077306785272667,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -18.43169509648048,
+          "gain_db": 2.5786043309928033,
+          "window_start_seconds": 4.7,
+          "window_end_seconds": 5.0,
+          "output_rms": 0.11978853268337133,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -6.411629083682138,
+          "gain_db": 2.598670708953172,
+          "window_start_seconds": 5.95,
+          "window_end_seconds": 6.25,
+          "output_rms": 0.4779897082908852,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -30.730588996269894,
+          "gain_db": 2.2797133068722673,
+          "window_start_seconds": 7.2,
+          "window_end_seconds": 7.5,
+          "output_rms": 0.029071708154675618,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 343.0,
+        "down_step_first_100ms_rms_dbfs": -35.56649839593696,
+        "same_input_level_history_difference_db": -0.001672567890981469
+      }
+    },
+    {
+      "depth_percent": 200,
+      "width_percent": 100,
+      "input_multiplier": 5,
+      "output_multiplier_for_report": 0.2,
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/native/depth/width-100-depth-200-input-times-five.wav",
+      "plateaus": [
+        {
+          "index": 0,
+          "input_peak_dbfs": -42,
+          "input_rms_dbfs": -45.010312574390134,
+          "output_rms_dbfs": -48.91296234603959,
+          "gain_db": -3.9026497716494575,
+          "window_start_seconds": 2.2,
+          "window_end_seconds": 2.5,
+          "output_rms": 0.0035838669868276086,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 1,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -30.731142073753823,
+          "gain_db": 2.2791602293883386,
+          "window_start_seconds": 3.45,
+          "window_end_seconds": 3.75,
+          "output_rms": 0.029069857061009338,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 2,
+          "input_peak_dbfs": -18,
+          "input_rms_dbfs": -21.010299427473285,
+          "output_rms_dbfs": -18.4338114533961,
+          "gain_db": 2.5764879740771853,
+          "window_start_seconds": 4.7,
+          "window_end_seconds": 5.0,
+          "output_rms": 0.1197593492125302,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 3,
+          "input_peak_dbfs": -6,
+          "input_rms_dbfs": -9.01029979263531,
+          "output_rms_dbfs": -6.4137912538090465,
+          "gain_db": 2.5965085388262636,
+          "window_start_seconds": 5.95,
+          "window_end_seconds": 6.25,
+          "output_rms": 0.4778707375822412,
+          "below_db_reporting_floor": false
+        },
+        {
+          "index": 4,
+          "input_peak_dbfs": -30,
+          "input_rms_dbfs": -33.01030230314216,
+          "output_rms_dbfs": -30.726011741966328,
+          "gain_db": 2.2842905611758333,
+          "window_start_seconds": 7.2,
+          "window_end_seconds": 7.5,
+          "output_rms": 0.02908703228092411,
+          "below_db_reporting_floor": false
+        }
+      ],
+      "transients": {
+        "down_step_time_to_within_1db_for_100ms_ms": 331.0000000000004,
+        "down_step_first_100ms_rms_dbfs": -38.29836438066422,
+        "same_input_level_history_difference_db": 0.0051303317874946686
+      }
+    }
+  ],
+  "notes": [
+    "Native measurements use the exact final 300 ms of every plateau.",
+    "Live measurements use a 300 ms window ending 40 ms before each estimated transition, to avoid scheduling/filter-delay uncertainty.",
+    "Live alignment is suitable for plateau measurements, not absolute latency claims.",
+    "All amplitudes are unnormalized. dB numerical floor is -300 dBFS.",
+    "Native Enhance is unimplemented; compare it separately against Live Enhance off/on.",
+    "Native absolute levels use numeric WAV samples directly as DSP bus values, not calibrated hardware full-scale voltage.",
+    "The 5x-input sensitivity test divides recorded native output by 5 for reported RMS units; recorded float WAVs remain unscaled."
+  ],
+  "native_scaled_200_vs_100_plateau_difference_db": [
+    -0.0052642660611681436,
+    -0.0022256453749101013,
+    -0.0021163569156179562,
+    -0.002162170126908336,
+    0.004577254303566036
+  ],
+  "live_run": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223934Z-57fb10cb"
+}

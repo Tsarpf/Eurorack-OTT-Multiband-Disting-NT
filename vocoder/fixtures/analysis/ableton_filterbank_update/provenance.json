@@ -1,0 +1,48 @@
+{
+  "workspace": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe",
+  "root": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-filterbank-v2",
+  "manifests": {
+    "width": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/manifests/width.json",
+    "depth": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/manifests/depth.json",
+    "formant": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/manifests/formant.json",
+    "release": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/manifests/release.json"
+  },
+  "runs": {
+    "width": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223437Z-2f39d093",
+    "depth": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T223934Z-57fb10cb",
+    "formant": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T224134Z-390cd5b0",
+    "release": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current/live-runs/20260902T224309Z-e2151a19"
+  },
+  "native_widths": [
+    0,
+    10,
+    25,
+    40,
+    50,
+    60,
+    70,
+    75,
+    80,
+    85,
+    90,
+    100,
+    150,
+    200
+  ],
+  "reference_comparison": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260903-vocoder-current",
+  "notes": "Reference Live captures reused without modification; native DSP measurements for updated implementation live in this directory.",
+  "native_parent_commit": "e3c4b292922e46855595de7659dd9f3741960a4d",
+  "native_source_state": "Uncommitted implementation update; exact source identities are recorded below.",
+  "native_source_sha256": {
+    "vocoder_algo.cpp": "f4dafcfd858dda8a15df325f38917cd7eeeceea9e39ccb2c49bb367063678563",
+    "vocoder_dsp.h": "20fac51cdcdbad3220901dac3d45d472e01bc764cfbbf930f2acc2dc56a73da4",
+    "batch_biquad.h": "ef990d53b3458ee636489a3b4b0001e388da1670850f21e77a791a707229707c",
+    "vocoder_parameters.h": "90570bfa72214225dbb4c9151e2d0d869e4899b843d5fc0fd705c8ed7a1f500c",
+    "vocoder_structs.h": "31e5387b7ce5687e305049f762ef988d2e1404ed2c54c1b379794873576a9318",
+    "envelope_shape.h": "e77ec7f1e92670f9c39bb8161e03a770aa21d833bdf1232898dc5bf2fb29048a",
+    "vocoder_ui.cpp": "15424db3eb05905b3f532ac524f274484d8eb883c7b4e17afd0269194ad25512",
+    "render_probe.cpp": "e5b13df1b26e30691189e4671c2ae3a4e346411c4fda501937c062ecab99c42f"
+  },
+  "renderer_sha256": "73a4810c9b8909c158ef5d6013357ac1c232a1637ae59437a20d340140406078",
+  "firmware_sha256": "900dd64b3d7fd6232df711c002ab2d11b3efe75d62ac8c140a27557cbde2312c"
+}

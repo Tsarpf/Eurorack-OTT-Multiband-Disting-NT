@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "name": "Source to Capture calibration",
+  "device": null,
+  "sample_rate": 48000,
+  "settle_seconds": 0.2,
+  "preroll_seconds": 0.15,
+  "tail_seconds": 0.3,
+  "signals": [
+    {"name": "impulse", "kind": "impulse", "duration": 0.5, "offset_seconds": 0.1, "level_dbfs": -12},
+    {"name": "sine", "kind": "sine", "duration": 0.5, "frequency": 440, "level_dbfs": -18},
+    {"name": "noise", "kind": "noise", "duration": 0.5, "level_dbfs": -18, "seed": 42}
+  ]
+}

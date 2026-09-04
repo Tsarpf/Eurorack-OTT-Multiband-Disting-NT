@@ -8,6 +8,15 @@ Layout:
 - `output/`: rendered vocoder outputs for each fixture
 - `analysis/`: text and CSV reports from host rendering, benchmarking, and calibration
 
+[Ableton comparison](analysis/ableton_comparison/README.md) contains measured
+Depth, Width, Formant, and Release differences against Live's Vocoder in
+40-band Modulator/Precise mode. Its reusable capture and analysis commands are
+documented in [Live Probe](../../tools/live_probe/README.md#compare-the-native-vocoder-with-live).
+
+[Filterbank update](analysis/ableton_filterbank_update/README.md) documents the
+corrected filter responses, Depth and gain behavior, with measured before/after
+results and remaining limitations.
+
 Generation flow:
 
 1. build and run `generate_fixtures.cpp`
