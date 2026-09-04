@@ -7,6 +7,7 @@
 #include <iostream>
 #include <utility>
 #include <vector>
+#include <string>
 
 const _NT_globals NT_globals = {
     .sampleRate = 48000,
@@ -16,7 +17,10 @@ const _NT_globals NT_globals = {
 };
 uint8_t NT_screen[128 * 64];
 
-void NT_drawText(int, int, const char *, int, _NT_textAlignment, _NT_textSize) {}
+static std::vector<std::string> drawnText;
+void NT_drawText(int, int, const char *text, int, _NT_textAlignment, _NT_textSize) {
+  drawnText.emplace_back(text);
+}
 void NT_drawShapeI(_NT_shape, int, int, int, int, int) {}
 void NT_setParameterFromUi(uint32_t, uint32_t, int16_t) {}
 int NT_algorithmIndex(_NT_algorithm *) { return 0; }
@@ -982,6 +986,7 @@ static void testFormantSmoothingMovesDescriptor() {
   HostAlgorithm host = makeAlgorithm();
   auto *algo = (_vocoderAlgorithm *)host.algorithm;
   rebuildDescriptor(algo);
+  algo->bankInitialized = true;
   const float before = algo->descriptor->synthesisFreq[4];
 
   host.values[kFormant] = 120;
@@ -1094,7 +1099,7 @@ static void testBlockRateCoefficientTimebase() {
   const VocoderCachedCoeffs block24 = coeffs;
   const float blockRate24 = 48000.0f / 24.0f;
   require(nearlyEqual(block24.synthesisCoeffMix,
-                      vocoderMixCoeffFromSeconds(blockRate24, 0.0015f),
+                      vocoderMixCoeffFromSeconds(blockRate24, 0.02f),
                       1.0e-6f),
           "synthesis coefficient smoothing must use the block rate");
   require(nearlyEqual(block24.synthesisScalarMix,
@@ -1308,18 +1313,56 @@ static void testCoefficientWorkBudget() {
   }
 }
 
-static void testSignedDisplay() {
-  char text[32];
-  for (const auto &entry : std::vector<std::pair<int, const char *>>{
-      {-360, "-36"}, {-123, "-12.3"}, {-1, "-0.1"}, {0, "+0"},
-      {1, "+0.1"}, {123, "+12.3"}, {360, "+36"}}) {
-    formatSignedTenths(text, sizeof(text), entry.first);
-    require(strcmp(text, entry.second) == 0, "Formant decimal formatting");
+static void testWidthChangeDoesNotDuckSaw() {
+  HostAlgorithm host = makeAlgorithm();
+  configureProbe(host, 100, 200);
+  double referencePower = 0.0, windowPower = 0.0;
+  double minimumMovingRms = 1e9;
+  const int changeFrame = 72000;
+  for (int offset = 0; offset < 96000; offset += 24) {
+    if (offset == changeFrame) {
+      host.values[kBandWidth] = 100;
+      factory.parameterChanged(host.algorithm, kBandWidth);
+    }
+    float bus[24 * kNT_lastBus] = {};
+    for (int i = 0; i < 24; ++i) {
+      const float phase = fmodf((offset + i) * 110.0f / 48000.0f, 1.0f);
+      bus[i] = bus[48 + i] = 4.0f * (2.0f * phase - 1.0f);
+    }
+    factory.step(host.algorithm, bus, 6);
+    for (int i = 0; i < 24; ++i) {
+      const double power = (double)bus[288 + i] * bus[288 + i];
+      if (offset >= changeFrame - 9600 && offset < changeFrame)
+        referencePower += power;
+      if (offset >= changeFrame) windowPower += power;
+    }
+    if (offset >= changeFrame && (offset + 24 - changeFrame) % 960 == 0) {
+      minimumMovingRms = std::min(minimumMovingRms, sqrt(windowPower / 960));
+      windowPower = 0;
+    }
   }
+  const double referenceRms = sqrt(referencePower / 9600);
+  require(referenceRms > 0.1, "Width transition probe must produce audible audio");
+  require(minimumMovingRms > referenceRms * 0.85,
+          "Width 200->100 caused a temporary saw level collapse");
+}
+
+static void testSignedDisplay() {
+  HostAlgorithm host = makeAlgorithm();
+  auto *a = (_vocoderAlgorithm *)host.algorithm;
+  host.values[kFormant] = -123;
+  a->uiOutputGainDisplay = -60;
+  drawnText.clear();
+  draw(host.algorithm);
+  require(std::find(drawnText.begin(), drawnText.end(), "-123") != drawnText.end(),
+          "Formant must use the original integer display");
+  require(std::find(drawnText.begin(), drawnText.end(), "GAIN -60") != drawnText.end(),
+          "Gain must use the original integer display");
 }
 
 int main() {
   testSignedDisplay();
+  testWidthChangeDoesNotDuckSaw();
   testCoefficientWorkBudget();
   testCascadeReseatPreservesAllStagesAndGain();
   testEnvelopeOnlyMatchesBufferedCascade();

@@ -150,3 +150,33 @@ raising Depth100→200 measured about -15 dB at 1 V peak, -5 dB at 2 V, and +1.6
 at 4 V. This release does not normalize or alter that gain curve. The custom
 Formant display now uses plain integer/string printf conversions, avoiding sign
 and width flags unsupported by some firmware formatters.
+
+
+## Width transition and display follow-up
+
+The abrupt bank publication regression is addressed by slewing the Width design
+target with a 40 ms time constant, then interpolating both analysis and synthesis
+coefficients and the bandwidth compensation over 20 ms. Both banks retain their
+running state. Previously analysis jumped immediately while synthesis alone
+interpolated; large Width steps also skipped the earlier target slew. The bounded
+one-band-pair-per-24-frames coefficient design budget remains in place.
+
+A 4 V peak 110 Hz saw at Depth100, 40 bands, 20–20k reproduced a Width200→100
+transition minimum of 1.44 V RMS in 20 ms windows. The corrected transition
+minimum is about 2.13 V RMS; the initial settled level is about 2.3 V RMS. A
+regression requires that movement stay above 85% of the initial settled RMS,
+with no change to the settled filter design or Depth curve.
+
+The prior formatter changes were not validated against the actual older draw
+calls. Formant and Gain now restore the `219b1fa` integer drawing exactly:
+`snprintf(..., "%d", rawFormant)` and
+`snprintf(..., "GAIN %d", rawGain)`. These show the stored integer/tenths values,
+as that version did. The draw test checks the actual strings passed to
+`NT_drawText`, including `-123` and `GAIN -60`, rather than just a host formatter.
+
+
+Final device stress results for this follow-up: mono algorithm average 49.3%
+(max50%), whole module max54%; stereo over20Hz–20kHz average86.5% (max87%),
+whole module max91%. These are isolated-plugin motion tests, so additional
+algorithms consume further CPU. Results and the exact object hash are in
+[width-transition-fix.json](fixtures/analysis/ableton_filterbank_update/width-transition-fix.json).

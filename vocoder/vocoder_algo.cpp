@@ -309,10 +309,17 @@ static void updateControlState(_vocoderAlgorithm *a) {
       a->controls.currentOutputGainDb, a->controls.targetOutputGainDb, 0.35f);
   if (!a->buildingDescriptor) {
     if (!a->controls.descriptorDirty && !a->controls.synthesisDirty) return;
-    a->controls.currentBandwidth = a->controls.targetBandwidth;
+    // Slew the design target too: a 20 ms bank-build interval must not turn
+    // a knob step into one large Q jump that cancels the running band energy.
+    const float elapsed = 24.0f * a->activeBands / (float)NT_globals.sampleRate;
+    const float slew = a->bankInitialized ? 1.0f - expf(-elapsed / 0.04f) : 1.0f;
+    a->controls.currentBandwidth = vocoderSmoothToward(
+        a->controls.currentBandwidth, a->controls.targetBandwidth, slew);
     a->controls.currentFormant = a->controls.targetFormant;
-    a->controls.descriptorDirty = false;
-    a->controls.synthesisDirty = false;
+    if (fabsf(a->controls.currentBandwidth - a->controls.targetBandwidth) < 0.01f)
+      a->controls.currentBandwidth = a->controls.targetBandwidth;
+    a->controls.descriptorDirty = a->controls.currentBandwidth != a->controls.targetBandwidth;
+    a->controls.synthesisDirty = a->controls.currentFormant != a->controls.targetFormant;
     VocoderDescriptor &d = a->pendingDescriptor;
     d.activeBands = (int)vocoderClamp((float)a->v[kBandCount], 4, 40);
     a->pendingMin = (float)a->v[kMinFreq];
@@ -344,8 +351,15 @@ static void updateControlState(_vocoderAlgorithm *a) {
   }
   *a->descriptor = d;
   a->activeBands = d.activeBands;
-  syncAnalysisCoefficients(a);
-  a->controls.synthesisCoeffSmoothing = true;
+  // Both banks interpolate together; jumping analysis ahead of synthesis
+  // changes their overlap and produces a temporary level dip on Width moves.
+  a->controls.synthesisCoeffSmoothing = a->bankInitialized;
+  if (!a->bankInitialized) {
+    // The first bank has no running history to preserve or interpolate.
+    syncAnalysisCoefficients(a);
+    syncSynthesisCoefficients(a);
+    a->bankInitialized = true;
+  }
   a->buildingDescriptor = false;
   a->uiDirty = true;
 }
@@ -357,6 +371,15 @@ static void smoothSynthesisCoefficients(VocoderDSPState &s,
                                         float mix) {
   const float oneMinusMix = 1.0f - mix;
   for (int band = 0; band < descriptor.activeBands; ++band) {
+    for (int coefficient = 0; coefficient < 5 * kVocoderFilterStages; ++coefficient)
+      s.anCoeffs[band].coeffs[coefficient] =
+          mix * s.anCoeffs[band].coeffs[coefficient] +
+          oneMinusMix * descriptor.analysisCoeffs[band].coeffs[coefficient];
+    for (int coefficient = 0; coefficient < 4 * kVocoderFilterStages; ++coefficient)
+      s.anCoeffs[band].svf[coefficient] =
+          mix * s.anCoeffs[band].svf[coefficient] +
+          oneMinusMix * descriptor.analysisCoeffs[band].svf[coefficient];
+    s.anCoeffs[band].useSvf = descriptor.analysisCoeffs[band].useSvf;
     for (int coefficient = 0; coefficient < 5 * kVocoderFilterStages; ++coefficient)
       s.syCoeffs[band].coeffs[coefficient] =
           mix * s.syCoeffs[band].coeffs[coefficient] +
@@ -381,8 +404,8 @@ static void computeBlockCoeffs(_vocoderAlgorithm *a, int N, float sampleRate) {
   // constant than its displayed milliseconds. The 0.1 scale fits the recorded
   // 10/30/100 ms step responses; filter settling contributes additional time.
   bc.releaseMix          = vocoderMixCoeffFromSeconds(blockRate, (float)bc.lastRelease * 0.0001f);
-  bc.synthesisCoeffMix   = vocoderMixCoeffFromSeconds(blockRate, 0.0015f);
-  bc.synthesisScalarMix  = vocoderMixCoeffFromSeconds(blockRate, 0.0015f);
+  bc.synthesisCoeffMix   = vocoderMixCoeffFromSeconds(blockRate, 0.02f);
+  bc.synthesisScalarMix  = vocoderMixCoeffFromSeconds(blockRate, 0.02f);
   bc.gainRiseMix         = vocoderMixCoeffFromSeconds(sampleRate, 0.001f);
   bc.gainFallMix         = vocoderMixCoeffFromSeconds(sampleRate, 0.001f);
   bc.masterScale         = 1.0f;
@@ -755,7 +778,14 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
       }
     }
 
+    for (int band = 0; band < a->activeBands; ++band) {
+      for (int coefficient = 0; coefficient < 5 * kVocoderFilterStages; ++coefficient)
+        maxCoeffDelta = fmaxf(maxCoeffDelta, fabsf(s.anCoeffs[band].coeffs[coefficient] - d.analysisCoeffs[band].coeffs[coefficient]));
+      for (int coefficient = 0; coefficient < 4 * kVocoderFilterStages; ++coefficient)
+        maxCoeffDelta = fmaxf(maxCoeffDelta, fabsf(s.anCoeffs[band].svf[coefficient] - d.analysisCoeffs[band].svf[coefficient]));
+    }
     if (maxCoeffDelta < 1.0e-4f) {
+      syncAnalysisCoefficients(a);
       syncSynthesisCoefficients(a);
       a->controls.synthesisCoeffSmoothing = false;
     }

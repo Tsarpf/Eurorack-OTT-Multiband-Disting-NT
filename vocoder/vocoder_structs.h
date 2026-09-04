@@ -140,6 +140,7 @@ struct _vocoderAlgorithm : public _NT_algorithm {
   float pendingMin = 20.0f;
   float pendingStep = 1.0f;
   int coefficientWorkPhase = 0;
+  bool bankInitialized = false;
 };
 
 #endif // VOCODER_STRUCTS_H

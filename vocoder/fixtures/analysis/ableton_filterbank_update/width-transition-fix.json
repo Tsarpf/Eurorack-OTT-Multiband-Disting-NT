@@ -1,0 +1,128 @@
+{
+  "baseline_commit": "f80d518",
+  "object_sha256": "3203337ec592d12915552d37112c49a1267397838a7d5ce53b4dcdde7ee1b037",
+  "probe": "110 Hz saw, 4 V peak, 40 bands, Depth100,20\u201320k,Release30ms. Width100 for1s,10 for1s,200 for1s,100 for1s. RMS windows20ms.",
+  "before": {
+    "minimum_rms_volts": 1.436933,
+    "minimum_guard": 1.0,
+    "transition_windows": [
+      [
+        3.02,
+        2.39424,
+        1.0
+      ],
+      [
+        3.04,
+        1.436933,
+        1.0
+      ],
+      [
+        3.06,
+        2.446323,
+        1.0
+      ],
+      [
+        3.08,
+        2.884077,
+        1.0
+      ],
+      [
+        3.1,
+        2.777181,
+        1.0
+      ],
+      [
+        3.12,
+        2.854009,
+        1.0
+      ],
+      [
+        3.14,
+        2.655225,
+        1.0
+      ],
+      [
+        3.16,
+        2.753418,
+        1.0
+      ],
+      [
+        3.18,
+        2.729239,
+        1.0
+      ],
+      [
+        3.2,
+        2.777979,
+        1.0
+      ]
+    ]
+  },
+  "after": {
+    "minimum_rms_volts": 2.130441,
+    "minimum_guard": 1.0,
+    "transition_windows": [
+      [
+        3.02,
+        2.395634,
+        1.0
+      ],
+      [
+        3.04,
+        2.130441,
+        1.0
+      ],
+      [
+        3.06,
+        2.399751,
+        1.0
+      ],
+      [
+        3.08,
+        2.691602,
+        1.0
+      ],
+      [
+        3.1,
+        2.861413,
+        1.0
+      ],
+      [
+        3.12,
+        3.092031,
+        1.0
+      ],
+      [
+        3.14,
+        2.795679,
+        1.0
+      ],
+      [
+        3.16,
+        2.881374,
+        1.0
+      ],
+      [
+        3.18,
+        2.87922,
+        1.0
+      ],
+      [
+        3.2,
+        2.845574,
+        1.0
+      ]
+    ]
+  },
+  "static": "slot=0 name=Vocoder                 original_bands=16\nbands=40 alg_avg= 38.2% alg_max= 39% module_avg= 40.6% module_max= 42%\n",
+  "motion": "slot=0 name=Vocoder                 bandwidth=100 formant=0\nbands=40 alg_avg= 49.0% alg_max= 49% module_avg= 48.6% module_max= 53%\n",
+  "motion-full-range": "slot=0 name=Vocoder                 bandwidth=100 formant=0\nbands=40 alg_avg= 49.1% alg_max= 50% module_avg= 50.1% module_max= 53%\n",
+  "continuous-motion": "slot=0 name=Vocoder                 bandwidth=100 formant=0\nbands=40 alg_avg= 49.3% alg_max= 50% module_avg= 52.9% module_max= 54%\n",
+  "stereo_continuous_motion": "slot=0 name=Vocoder                 bandwidth=100 formant=0\nbands=40 alg_avg= 86.5% alg_max= 87% module_avg= 89.6% module_max= 91%\n",
+  "validation": [
+    "Host regression suite and ASan/UBSan pass",
+    "Width200->100 regression requires minimum20ms RMS above85% of prior settled output",
+    "Actual draw strings match219b1fa raw integer readouts",
+    "Final object installed; prior preset and parameter values restored"
+  ]
+}
