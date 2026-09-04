@@ -1,9 +1,11 @@
 #include "../distingnt_api/include/distingnt/api.h"
 #include "../distingnt_api/include/distingnt/serialisation.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <utility>
 #include <vector>
 
 const _NT_globals NT_globals = {
@@ -56,6 +58,22 @@ struct HostAlgorithm {
   std::vector<uint8_t> dtc;
   int16_t commonValues[16];
   int16_t values[64];
+
+  HostAlgorithm() : algorithm(nullptr), commonValues{}, values{} {}
+  HostAlgorithm(const HostAlgorithm &) = delete;
+  HostAlgorithm &operator=(const HostAlgorithm &) = delete;
+  HostAlgorithm(HostAlgorithm &&other) noexcept
+      : algorithm(other.algorithm), sram(std::move(other.sram)),
+        dtc(std::move(other.dtc)) {
+    std::copy(std::begin(other.commonValues), std::end(other.commonValues),
+              commonValues);
+    std::copy(std::begin(other.values), std::end(other.values), values);
+    if (algorithm) {
+      algorithm->vIncludingCommon = commonValues;
+      algorithm->v = values;
+    }
+    other.algorithm = nullptr;
+  }
 };
 
 static HostAlgorithm makeAlgorithm() {
@@ -140,7 +158,8 @@ static float processAndMeasureAbs(HostAlgorithm &host,
   for (int offset = 0; offset < frames; offset += block) {
     float bus[block * numBuses];
     memset(bus, 0, sizeof(bus));
-    for (int i = 0; i < block; ++i) {
+    const int remaining = std::min(block, frames - offset);
+    for (int i = 0; i < remaining; ++i) {
       bus[carrierBusL * block + i] = carL[offset + i];
       if (carrierBusR != carrierBusL) {
         bus[carrierBusR * block + i] = carR[offset + i];
@@ -152,7 +171,7 @@ static float processAndMeasureAbs(HostAlgorithm &host,
     }
 
     factory.step(host.algorithm, bus, block / 4);
-    for (int i = 0; i < block; ++i) {
+    for (int i = 0; i < remaining; ++i) {
       const float sampleL = bus[outBusL * block + i];
       sumAbs += fabsf(sampleL);
       outL.push_back(sampleL);
@@ -171,6 +190,137 @@ static float processAndMeasureAbs(HostAlgorithm &host,
   return sumAbs / (float)frames;
 }
 
+static void fillFilterState(BatchBiquadState &filter, float value) {
+  for (unsigned index = 0; index < 2 * filter.inst.numStages; ++index) {
+    filter.state[index] = value * (index + 1);
+  }
+}
+
+static void requireFilterState(const BatchBiquadState &filter, float value,
+                               const char *message) {
+  for (unsigned index = 0; index < 2 * filter.inst.numStages; ++index) {
+    require(nearlyEqual(filter.state[index], value * (index + 1), 1.0e-7f),
+            message);
+  }
+}
+
+static void requireOwnedFilterPointers(const _vocoderAlgorithm &algorithm) {
+  const auto &state = *algorithm.state;
+  for (int channel = 0; channel < 2; ++channel) {
+    for (int band = 0; band < algorithm.activeBands; ++band) {
+      const auto &analysis = state.anState[channel][band];
+      const auto &synthesis = state.syState[channel][band];
+      require(analysis.inst.numStages > 1 && synthesis.inst.numStages > 1,
+              "filter bank must use the intended multi-stage cascade");
+      require(2 * analysis.inst.numStages <=
+                  sizeof(analysis.state) / sizeof(analysis.state[0]) &&
+                  2 * synthesis.inst.numStages <=
+                  sizeof(synthesis.state) / sizeof(synthesis.state[0]),
+              "filter stage count exceeds state storage");
+      require(analysis.inst.pState == analysis.state &&
+                  synthesis.inst.pState == synthesis.state,
+              "CMSIS filter points to another channel's state");
+      require(analysis.inst.pCoeffs == state.anCoeffs[band].coeffs &&
+                  synthesis.inst.pCoeffs == state.syCoeffs[band].coeffs &&
+                  analysis.coefficients == &state.anCoeffs[band] &&
+                  synthesis.coefficients == &state.syCoeffs[band],
+              "CMSIS filter points to temporary or stale coefficients");
+    }
+  }
+}
+
+static void checkCascadeReseatPreservesAllStagesAndGain(BatchBiquadCoeffs coefficients) {
+  BatchBiquadState reference = {};
+  batchBiquadInit(reference, coefficients);
+  const int frames = 53; // crosses the 24-sample scratch chunks and their tail
+  float input[frames], discarded[frames];
+  for (int index = 0; index < frames; ++index) {
+    input[index] = 0.4f * sinf(0.17f * index) + 0.2f * cosf(0.43f * index);
+  }
+  batchBiquadProcess(coefficients, reference, input, discarded, frames);
+  BatchBiquadState copied = reference;
+  BatchBiquadCoeffs copiedCoefficients = coefficients;
+  const std::vector<float> originalState(std::begin(copied.state),
+                                        std::end(copied.state));
+  batchBiquadReseat(copied, copiedCoefficients);
+  require(copied.inst.pState == copied.state &&
+              copied.inst.pCoeffs == copiedCoefficients.coeffs &&
+              copied.coefficients == &copiedCoefficients,
+          "copied cascade did not rebind to its own storage");
+  for (unsigned index = 0; index < originalState.size(); ++index) {
+    require(copied.state[index] == originalState[index],
+            "reseating a running cascade reset one of its stages");
+  }
+
+  // A direct filter pass followed by scalar gain smoothing must agree
+  // with the combined cascade/gain helper, including gain only after the final
+  // filter stage and a partial last scratch-buffer chunk.
+  float filtered[frames], accumulated[frames];
+  std::fill(std::begin(accumulated), std::end(accumulated), 0.125f);
+  batchBiquadProcess(coefficients, reference, input, filtered, frames);
+  float gain = 0.2f;
+  const float mix = 0.99f;
+  batchBiquadProcessAndAccum(copied, input, accumulated, frames, gain,
+                             0.9f, mix, 1.0f - mix, 0.7f);
+  float expectedGain = 0.2f;
+  for (int index = 0; index < frames; ++index) {
+    expectedGain = mix * expectedGain + (1.0f - mix) * 0.9f;
+    const float expected = 0.125f + filtered[index] * expectedGain * 0.7f;
+    require(nearlyEqual(accumulated[index], expected, 1.0e-6f),
+            "cascade accumulation disagrees with filtering plus smoothed gain");
+  }
+  require(nearlyEqual(gain, expectedGain, 1.0e-7f),
+          "cascade accumulation advanced gain smoothing the wrong number of times");
+  for (unsigned index = 0; index < originalState.size(); ++index) {
+    require(nearlyEqual(copied.state[index], reference.state[index], 1.0e-7f),
+            "cascade accumulation did not preserve every stage's state");
+  }
+}
+
+static void testCascadeReseatPreservesAllStagesAndGain() {
+  float b0, b2, a1, a2;
+  vocoderCalculateBandpass(1300.0f, 12.0f, 48000.0f, b0, b2, a1, a2);
+  checkCascadeReseatPreservesAllStagesAndGain(batchBiquadFromDF1(b0, b2, a1, a2));
+  checkCascadeReseatPreservesAllStagesAndGain(calculateCascade(1300.0f, 12.0f, 48000.0f));
+}
+
+static void testCascadeCenterGainAtDifficultFrequencies() {
+  struct Case { float frequency, q; int seconds; };
+  const Case cases[] = {{20.0f, 120.0f, 30}, {60.0f, 40.0f, 5},
+                        {1000.0f, 6.0f, 1}, {18000.0f, 0.5f, 1}};
+  for (const auto &test : cases) {
+    BatchBiquadCoeffs coefficients = calculateCascade(test.frequency, test.q, 48000.0f);
+    BatchBiquadState state = {};
+    batchBiquadInit(state, coefficients);
+    const int frames = test.seconds * 48000;
+    const int measureStart = frames - 24000;
+    double inputPower = 0.0, outputPower = 0.0;
+    for (int offset = 0; offset < frames; offset += 24) {
+      float input[24], output[24];
+      for (int index = 0; index < 24; ++index) {
+        input[index] = 0.25f * (float)sin(2.0 * 3.141592653589793 *
+            test.frequency * (offset + index) / 48000.0);
+      }
+      batchBiquadProcess(coefficients, state, input, output, 24);
+      for (int index = 0; index < 24; ++index) {
+        require(std::isfinite(output[index]),
+                "single-band precision probe became non-finite");
+        if (offset + index >= measureStart) {
+          inputPower += (double)input[index] * input[index];
+          outputPower += (double)output[index] * output[index];
+        }
+      }
+    }
+    const double gainDb = 10.0 * log10(outputPower / inputPower);
+    if (!(fabs(gainDb) < 0.5)) {
+      std::cerr << "Center-gain error at " << test.frequency << " Hz, Q="
+                << test.q << ": " << gainDb << " dB\n";
+    }
+    require(fabs(gainDb) < 0.5,
+            "unity-center filter lost accuracy at low frequency/high Q or near Nyquist");
+  }
+}
+
 static void testDescriptorLayout() {
   HostAlgorithm host = makeAlgorithm();
   auto *algo = (_vocoderAlgorithm *)host.algorithm;
@@ -181,7 +331,9 @@ static void testDescriptorLayout() {
           "first band frequency");
   require(nearlyEqual(algo->descriptor->analysisFreq[7], 18000.0f, 1.0f),
           "last band frequency");
-  require(algo->descriptor->synthesisQ >= 3.0f, "synthesis Q floor");
+  require(std::isfinite(algo->descriptor->synthesisQ) &&
+              algo->descriptor->synthesisQ > 0.0f,
+          "synthesis Q must be finite and positive");
   require(algo->descriptor->bandwidthCompensation > 0.0f,
           "bandwidth compensation positive");
 }
@@ -343,10 +495,11 @@ static void testAliasedStereoInputsCollapseAndResynchronise() {
   factory.step(host.algorithm, stereoBus.data(), block / 4);
   require(state.stereoOutputWasActive,
           "valid stereo inputs were not recognised as stereo");
-  state.anState[1][0].state[0] = state.anState[0][0].state[0] + 0.75f;
-  state.syState[1][0].state[1] = state.syState[0][0].state[1] - 0.5f;
+  for (int band = 0; band < algorithm->activeBands; ++band) {
+    fillFilterState(state.anState[1][band], 0.75f);
+    fillFilterState(state.syState[1][band], -0.5f);
+  }
   state.env[1][0] = state.env[0][0] + 0.25f;
-  state.eAvg[1][0] = state.eAvg[0][0] + 0.125f;
   state.gainState[1][0] = state.gainState[0][0] + 0.5f;
 
   // At bus 64 neither stereo toggle has an addressable +1 partner. The
@@ -387,24 +540,26 @@ static void testAliasedStereoInputsCollapseAndResynchronise() {
   factory.step(host.algorithm, stereoBus.data(), block / 4);
   require(state.stereoOutputWasActive,
           "restored stereo inputs were not recognised as stereo");
+  requireOwnedFilterPointers(*algorithm);
   for (int i = 0; i < block; ++i) {
     require(nearlyEqual(stereoBus[outBusL * block + i],
                         stereoBus[(outBusL + 1) * block + i], 1.0e-6f),
             "stale right DSP state leaked into restored stereo output");
   }
   for (int band = 0; band < algorithm->activeBands; ++band) {
-    require(nearlyEqual(state.anState[0][band].state[0],
-                        state.anState[1][band].state[0], 1.0e-7f) &&
-                nearlyEqual(state.anState[0][band].state[1],
-                            state.anState[1][band].state[1], 1.0e-7f) &&
-                nearlyEqual(state.syState[0][band].state[0],
-                            state.syState[1][band].state[0], 1.0e-7f) &&
-                nearlyEqual(state.syState[0][band].state[1],
-                            state.syState[1][band].state[1], 1.0e-7f) &&
-                nearlyEqual(state.env[0][band], state.env[1][band],
-                            1.0e-7f) &&
-                nearlyEqual(state.eAvg[0][band], state.eAvg[1][band],
-                            1.0e-7f) &&
+    for (unsigned index = 0;
+         index < 2 * state.anState[0][band].inst.numStages; ++index) {
+      require(nearlyEqual(state.anState[0][band].state[index],
+                          state.anState[1][band].state[index], 1.0e-7f),
+              "right analysis cascade stage was not resynchronised");
+    }
+    for (unsigned index = 0;
+         index < 2 * state.syState[0][band].inst.numStages; ++index) {
+      require(nearlyEqual(state.syState[0][band].state[index],
+                          state.syState[1][band].state[index], 1.0e-7f),
+              "right synthesis cascade stage was not resynchronised");
+    }
+    require(nearlyEqual(state.env[0][band], state.env[1][band], 1.0e-7f) &&
                 nearlyEqual(state.gainState[0][band],
                             state.gainState[1][band], 1.0e-7f),
             "right analysis/synthesis/envelope state was not resynchronised");
@@ -430,18 +585,16 @@ static void testSourceSpecificStereoStateTransitions() {
 
   // The carrier stays valid stereo while the modulator loses its +1 bus.
   // Only analysis/envelope/gain and modulator DC state should be unified.
-  state.anState[0][0].state[0] = 0.11f;
-  state.anState[1][0].state[0] = 0.91f;
+  fillFilterState(state.anState[0][0], 0.11f);
+  fillFilterState(state.anState[1][0], 0.91f);
   state.env[0][0] = 0.12f;
   state.env[1][0] = 0.92f;
-  state.eAvg[0][0] = 0.13f;
-  state.eAvg[1][0] = 0.93f;
   state.gainState[0][0] = 0.14f;
   state.gainState[1][0] = 0.94f;
   state.modDcX1[0] = 0.15f;
   state.modDcX1[1] = 0.95f;
-  state.syState[0][0].state[0] = 0.21f;
-  state.syState[1][0].state[0] = 0.81f;
+  fillFilterState(state.syState[0][0], 0.21f);
+  fillFilterState(state.syState[1][0], 0.81f);
   state.carrierDcX1[0] = 0.22f;
   state.carrierDcX1[1] = 0.82f;
   host.values[kInModulator] = kNT_lastBus;
@@ -450,14 +603,16 @@ static void testSourceSpecificStereoStateTransitions() {
   require(state.carrierStereoWasActive && !state.modulatorStereoWasActive &&
               state.stereoOutputWasActive,
           "mono modulator incorrectly collapsed the stereo carrier output");
-  require(nearlyEqual(state.anState[1][0].state[0], 0.11f, 1.0e-7f) &&
-              nearlyEqual(state.env[1][0], 0.12f, 1.0e-7f) &&
-              nearlyEqual(state.eAvg[1][0], 0.13f, 1.0e-7f) &&
+  requireOwnedFilterPointers(*algorithm);
+  requireFilterState(state.anState[1][0], 0.11f,
+                     "mono modulator did not synchronise every analysis stage");
+  require(nearlyEqual(state.env[1][0], 0.12f, 1.0e-7f) &&
               nearlyEqual(state.gainState[1][0], 0.14f, 1.0e-7f) &&
               nearlyEqual(state.modDcX1[1], 0.15f, 1.0e-7f),
           "mono modulator did not synchronise analysis/envelope/gain state");
-  require(nearlyEqual(state.syState[1][0].state[0], 0.81f, 1.0e-7f) &&
-              nearlyEqual(state.carrierDcX1[1], 0.82f, 1.0e-7f),
+  requireFilterState(state.syState[1][0], 0.81f,
+                     "modulator transition overwrote independent synthesis stages");
+  require(nearlyEqual(state.carrierDcX1[1], 0.82f, 1.0e-7f),
           "modulator transition overwrote independent carrier state");
 
   // Restore the modulator, then make only the carrier effectively mono. Its
@@ -465,12 +620,12 @@ static void testSourceSpecificStereoStateTransitions() {
   host.values[kInModulator] = 3;
   factory.parameterChanged(host.algorithm, kInModulator);
   factory.step(host.algorithm, bus.data(), block / 4);
-  state.syState[0][0].state[1] = 0.31f;
-  state.syState[1][0].state[1] = 0.71f;
+  fillFilterState(state.syState[0][0], 0.31f);
+  fillFilterState(state.syState[1][0], 0.71f);
   state.carrierDcY1[0] = 0.32f;
   state.carrierDcY1[1] = 0.72f;
-  state.anState[0][0].state[1] = 0.41f;
-  state.anState[1][0].state[1] = 0.61f;
+  fillFilterState(state.anState[0][0], 0.41f);
+  fillFilterState(state.anState[1][0], 0.61f);
   state.env[0][0] = 0.42f;
   state.env[1][0] = 0.62f;
   host.values[kInCarrier] = kNT_lastBus;
@@ -479,11 +634,14 @@ static void testSourceSpecificStereoStateTransitions() {
   require(!state.carrierStereoWasActive && state.modulatorStereoWasActive &&
               state.stereoOutputWasActive,
           "mono carrier incorrectly collapsed the stereo modulator output");
-  require(nearlyEqual(state.syState[1][0].state[1], 0.31f, 1.0e-7f) &&
-              nearlyEqual(state.carrierDcY1[1], 0.32f, 1.0e-7f),
+  requireOwnedFilterPointers(*algorithm);
+  requireFilterState(state.syState[1][0], 0.31f,
+                     "mono carrier did not synchronise every synthesis stage");
+  require(nearlyEqual(state.carrierDcY1[1], 0.32f, 1.0e-7f),
           "mono carrier did not synchronise synthesis/DC state");
-  require(nearlyEqual(state.anState[1][0].state[1], 0.61f, 1.0e-7f) &&
-              nearlyEqual(state.env[1][0], 0.62f, 1.0e-7f),
+  requireFilterState(state.anState[1][0], 0.61f,
+                     "carrier transition overwrote independent analysis stages");
+  require(nearlyEqual(state.env[1][0], 0.62f, 1.0e-7f),
           "carrier transition overwrote independent modulator state");
 }
 
@@ -572,33 +730,128 @@ static void testLastOutputBusUsesMonoFallback() {
   }
 }
 
-static void testExtremeDepthPowerInterpolation() {
-  const VocoderDepthShape shape = computeDepthShape(800.0f);
-  require(nearlyEqual(shape.peakExponent, 9.4f, 1.0e-6f),
-          "Depth 800 exponent is wrong");
-  const float x = 1.2f;
-  const float expected = vocoderLerp(powf(x, 9.0f), powf(x, 10.0f), 0.4f);
-  require(nearlyEqual(computeDepthGain(shape, 1.0f, x), expected, 1.0e-4f),
-          "extreme Depth does not interpolate the advertised power");
-  require(computeDepthGain(shape, 1.0f, 0.5f) >= 0.0f,
-          "extreme Depth produced a negative gain");
+static void configureProbe(HostAlgorithm &host, int depth, int width = 100) {
+  host.values[kBandCount] = 40;
+  host.values[kBandWidth] = width;
+  host.values[kDepth] = depth;
+  host.values[kMinFreq] = 20;
+  host.values[kMaxFreq] = 20000;
+  host.values[kAttack] = 10;
+  host.values[kRelease] = 30;
+  for (int parameter : {kBandCount, kBandWidth, kDepth, kMinFreq, kMaxFreq,
+                        kAttack, kRelease}) {
+    factory.parameterChanged(host.algorithm, parameter);
+  }
+}
+
+static double rms(const std::vector<float> &audio, int start, int end) {
+  require(start >= 0 && end > start && end <= (int)audio.size(),
+          "invalid RMS measurement window");
+  double power = 0.0;
+  for (int index = start; index < end; ++index) {
+    require(std::isfinite(audio[index]), "non-finite sample in RMS measurement");
+    power += (double)audio[index] * audio[index];
+  }
+  return sqrt(power / (end - start));
+}
+
+static double settledToneRms(int depth, float amplitude, int width = 100) {
+  HostAlgorithm host = makeAlgorithm();
+  configureProbe(host, depth, width);
+  const int frames = 72000;
+  std::vector<float> input(frames), output;
+  for (int index = 0; index < frames; ++index) {
+    input[index] = amplitude * sinf(2.0f * 3.14159265359f * 1000.0f *
+                                   index / 48000.0f);
+  }
+  processAndMeasureAbs(host, input, input, input, input, &output);
+  requireOwnedFilterPointers(*(_vocoderAlgorithm *)host.algorithm);
+  return rms(output, frames - 12000, frames);
+}
+
+static void testSustainedDepthChangesContrast() {
+  const double quiet100 = settledToneRms(100, 0.03f);
+  const double quiet200 = settledToneRms(200, 0.03f);
+  const double loud100 = settledToneRms(100, 0.3f);
+  const double loud200 = settledToneRms(200, 0.3f);
+  require(quiet100 > 1.0e-9 && loud100 > 1.0e-8 &&
+              loud200 > 1.0e-8,
+          "Depth comparison requires audible baselines and a surviving loud tone");
+  // Complete rejection of the quiet tone is a valid high-Depth behavior.
+  const double quietChange = 20.0 * log10(std::max(quiet200 / quiet100, 1.0e-12));
+  const double loudChange = 20.0 * log10(loud200 / loud100);
+  require(quietChange < -3.0,
+          "Depth 200 must change a settled quiet tone, not just its onset");
+  require(loudChange - quietChange > 6.0,
+          "Depth 200 must increase sustained loud/quiet contrast");
+
+  // Old presets can still contain the former 800% maximum. Loading one must
+  // use the supported endpoint rather than an uncontrolled exponent.
+  const double legacyDepth = settledToneRms(800, 0.3f);
+  require(fabs(legacyDepth - loud200) < loud200 * 1.0e-5,
+          "legacy Depth values above 200 must clamp to the supported endpoint");
+  std::cout << "Depth 100->200: quiet " << quietChange << " dB, loud "
+            << loudChange << " dB\n";
+}
+
+static void testDepthZeroRemainsLevelLinear() {
+  const double low = settledToneRms(0, 0.001f);
+  const double high = settledToneRms(0, 0.01f);
+  require(low > 1.0e-10 && high > 1.0e-9,
+          "Depth-zero filterbank must produce a measurable tone");
+  require(fabs(high / low - 10.0) < 0.01,
+          "Depth zero introduced level-dependent automatic makeup below guards");
+}
+
+static void testReleaseDoesNotDipAndRecoverSlowly() {
+  HostAlgorithm host = makeAlgorithm();
+  configureProbe(host, 100);
+  const int stepFrame = 72000;
+  const int frames = stepFrame + 120000;
+  std::vector<float> input(frames), output;
+  for (int index = 0; index < frames; ++index) {
+    const float amplitude = index < stepFrame ? 0.5f : 0.03f;
+    input[index] = amplitude * sinf(2.0f * 3.14159265359f * 1000.0f *
+                                   index / 48000.0f);
+  }
+  processAndMeasureAbs(host, input, input, input, input, &output);
+  const double finalLevel = rms(output, frames - 24000, frames);
+  require(finalLevel > 1.0e-9, "release reference level is too quiet to measure");
+  double minimum = finalLevel;
+  // Ignore the first 100 ms, where the filters and the 30 ms release follower
+  // legitimately respond. Measure complete 1 kHz cycles in 10 ms windows.
+  for (int start = stepFrame + 4800; start + 480 <= frames; start += 480) {
+    minimum = std::min(minimum, rms(output, start, start + 480));
+  }
+  require(minimum > 0.85 * finalLevel,
+          "release step undershot its quiet steady level then recovered slowly");
+  const double at300ms = rms(output, stepFrame + 14400, stepFrame + 19200);
+  require(at300ms < 1.2 * finalLevel,
+          "Release 30 ms retained an unrelated long gain-recovery tail");
+  std::cout << "Release step minimum relative to final: "
+            << 20.0 * log10(minimum / finalLevel) << " dB\n";
 }
 
 static void testImpulseProducesResponse() {
   HostAlgorithm host = makeAlgorithm();
-  const int frames = 240;
+  configureProbe(host, 100);
+  const int frames = 24000;
   std::vector<float> carL(frames), carR(frames), modL(frames, 0.0f),
       modR(frames, 0.0f);
-  modL[0] = 1.0f;
-  modR[0] = 1.0f;
+  modL[4800] = 1.0f;
+  modR[4800] = 1.0f;
   for (int i = 0; i < frames; ++i) {
     const float phase = fmodf(110.0f * i / 48000.0f, 1.0f);
     carL[i] = 2.0f * phase - 1.0f;
     carR[i] = carL[i];
   }
 
-  const float meanAbs = processAndMeasureAbs(host, carL, carR, modL, modR);
-  require(meanAbs > 1.0e-4f, "impulse response should produce non-zero output");
+  std::vector<float> output;
+  processAndMeasureAbs(host, carL, carR, modL, modR, &output);
+  require(rms(output, 0, 4800) < 1.0e-10,
+          "Depth 100 emitted a carrier before the modulator impulse");
+  require(rms(output, 4800, 14400) > 1.0e-9,
+          "modulator impulse failed to open the wet carrier path");
 }
 
 static void testLegacyEnhanceIsHiddenAndNoop() {
@@ -653,33 +906,88 @@ static void testFormantSmoothingMovesDescriptor() {
   require(after > before, "formant shift should raise synthesis frequency");
 }
 
-static void testHighFormantBandsFadeBeforeNyquist() {
+static void testSupportedRangesAndWidthMotion() {
+  require(parameters[kBandWidth].min == 0 && parameters[kBandWidth].max == 200,
+          "Width must expose its full 0..200 percent range");
+  require(parameters[kDepth].min == 0 && parameters[kDepth].max == 200,
+          "Depth must expose the supported contrast range");
+  require(parameters[kFormant].min == -360 && parameters[kFormant].max == 360 &&
+              parameters[kFormant].scaling == kNT_scaling10,
+          "Formant must expose plus/minus 36 semitones");
+  require(parameters[kMinFreq].min == 20 && parameters[kMaxFreq].max == 20000,
+          "filterbank frequency limits must include 20 Hz..20 kHz");
+
   HostAlgorithm host = makeAlgorithm();
-  auto *algo = (_vocoderAlgorithm *)host.algorithm;
-  host.values[kFormant] = 240;
-  factory.parameterChanged(host.algorithm, kFormant);
-
-  // Drive the existing control smoother until the +24 st descriptor settles.
-  const int block = 24;
-  const int numBuses = 28;
-  for (int iteration = 0; iteration < 80; ++iteration) {
-    float bus[block * numBuses] = {};
-    factory.step(host.algorithm, bus, block / 4);
-  }
-
-  const VocoderDescriptor &descriptor = *algo->descriptor;
-  const float ceiling = 0.49f * 48000.0f;
-  bool foundFadedBand = false;
-  for (int band = 0; band < descriptor.activeBands; ++band) {
-    require(descriptor.synthesisFreq[band] <= ceiling + 0.01f,
-            "formant shift put a synthesis filter above the safe ceiling");
-    if (descriptor.analysisFreq[band] * 2.0f >= ceiling) {
-      foundFadedBand = true;
-      require(descriptor.synthesisBandGain[band] < 0.001f,
-              "out-of-range high formant band did not fade out");
+  configureProbe(host, 0);
+  auto *algorithm = (_vocoderAlgorithm *)host.algorithm;
+  float previousQ = 1.0e9f;
+  BatchBiquadCoeffs previousCoefficients = {};
+  for (int width : {0, 25, 50, 85, 100, 150, 200}) {
+    algorithm->controls.currentBandwidth = (float)width;
+    rebuildDescriptor(algorithm);
+    const auto &descriptor = *algorithm->descriptor;
+    require(nearlyEqual(descriptor.analysisFreq[0], 20.0f, 0.01f) &&
+                nearlyEqual(descriptor.analysisFreq[39], 20000.0f, 2.0f),
+            "extended filterbank range was silently clamped");
+    require(std::isfinite(descriptor.synthesisQ) &&
+                descriptor.synthesisQ > 0.0f && descriptor.synthesisQ < previousQ,
+            "increasing Width must continue widening synthesis filters");
+    const auto &coefficients = descriptor.synthesisCoeffs[21];
+    if (width) {
+      float maximumChange = 0.0f;
+      for (unsigned index = 0; index < sizeof(coefficients.coeffs) / sizeof(float);
+           ++index) {
+        maximumChange = std::max(maximumChange,
+            fabsf(coefficients.coeffs[index] - previousCoefficients.coeffs[index]));
+      }
+      for (unsigned index = 0; index < sizeof(coefficients.svf) / sizeof(float);
+           ++index) {
+        maximumChange = std::max(maximumChange,
+            fabsf(coefficients.svf[index] - previousCoefficients.svf[index]));
+      }
+      require(maximumChange > 1.0e-6f,
+              "Width changes stopped reaching the synthesis coefficients");
     }
+    previousQ = descriptor.synthesisQ;
+    previousCoefficients = coefficients;
+    requireOwnedFilterPointers(*algorithm);
   }
-  require(foundFadedBand, "high-formant fade test did not reach the ceiling");
+}
+
+static void testExtremeFormantBandsFadeAtBothEdges() {
+  HostAlgorithm host = makeAlgorithm();
+  configureProbe(host, 100);
+  auto *algo = (_vocoderAlgorithm *)host.algorithm;
+  const float ceiling = 0.49f * 48000.0f;
+  for (int formant : {-360, 360}) {
+    host.values[kFormant] = formant;
+    factory.parameterChanged(host.algorithm, kFormant);
+    for (int iteration = 0; iteration < 100; ++iteration) {
+      float bus[24 * kNT_lastBus] = {};
+      factory.step(host.algorithm, bus, 6);
+    }
+    const auto &descriptor = *algo->descriptor;
+    require(nearlyEqual(algo->controls.currentFormant, (float)formant, 0.01f),
+            "extended formant endpoint was not reached");
+    const float ratio = powf(2.0f, formant / 120.0f);
+    bool foundFadedBand = false;
+    for (int band = 0; band < descriptor.activeBands; ++band) {
+      const float shifted = descriptor.analysisFreq[band] * ratio;
+      require(descriptor.synthesisFreq[band] >= 20.0f - 0.01f &&
+                  descriptor.synthesisFreq[band] <= ceiling + 0.01f,
+              "formant shift put a synthesis filter beyond the safe bounds");
+      if (shifted >= ceiling || shifted < 10.0f) {
+        foundFadedBand = true;
+        require(fabsf(descriptor.synthesisBandGain[band]) < 0.001f,
+                "out-of-range formant bands must fade instead of piling up");
+      } else if (shifted > 40.0f && shifted < 10000.0f) {
+        require(nearlyEqual(descriptor.synthesisFreq[band], shifted, shifted * 0.001f),
+                "formant shift uses the wrong semitone conversion");
+      }
+    }
+    require(foundFadedBand, "extreme formant test did not reach a bank edge");
+    requireOwnedFilterPointers(*algo);
+  }
 }
 
 static void testBlockRateCoefficientTimebase() {
@@ -700,14 +1008,6 @@ static void testBlockRateCoefficientTimebase() {
   require(nearlyEqual(block24.synthesisScalarMix,
                       block24.synthesisCoeffMix, 1.0e-7f),
           "synthesis scalar smoothing must share the block timebase");
-  require(nearlyEqual(block24.levelAvgRiseMix,
-                      vocoderMixCoeffFromSeconds(blockRate24, 0.01f),
-                      1.0e-6f),
-          "level averaging must use the block rate");
-  require(nearlyEqual(block24.makeupRiseMix,
-                      vocoderMixCoeffFromSeconds(blockRate24, 0.05f),
-                      1.0e-6f),
-          "makeup smoothing must use the block rate");
   require(nearlyEqual(block24.guardReleaseMix,
                       vocoderMixCoeffFromSeconds(blockRate24, 0.05f),
                       1.0e-6f),
@@ -718,150 +1018,127 @@ static void testBlockRateCoefficientTimebase() {
                       coeffs.synthesisCoeffMix * coeffs.synthesisCoeffMix,
                       2.0e-6f),
           "synthesis smoothing time must be invariant to block size");
-  require(nearlyEqual(block24.makeupRiseMix,
-                      coeffs.makeupRiseMix * coeffs.makeupRiseMix, 2.0e-6f),
-          "makeup smoothing time must be invariant to block size");
   require(nearlyEqual(block24.guardReleaseMix,
                       coeffs.guardReleaseMix * coeffs.guardReleaseMix,
                       2.0e-6f),
           "guard smoothing time must be invariant to block size");
 }
 
-static void testLevelControlRampsAcrossBlock() {
+static void testOutputGuardRampsAcrossBlock() {
   HostAlgorithm host = makeAlgorithm();
   auto *algo = (_vocoderAlgorithm *)host.algorithm;
   VocoderDSPState &state = *algo->state;
   const int numBuses = 28;
 
-  state.wetMakeup[0] = 1.0f;
-  state.wetMakeupTarget[0] = 3.0f;
   state.outputGuard[0] = 0.5f;
   state.outputGuardTarget[0] = 0.75f;
 
   const int firstBlock = 12;
   float firstBus[firstBlock * numBuses] = {};
   factory.step(host.algorithm, firstBus, firstBlock / 4);
-  require(nearlyEqual(state.wetMakeup[0], 3.0f, 1.0e-6f),
-          "makeup ramp must reach target on a 12-sample block");
   require(nearlyEqual(state.outputGuard[0], 0.75f, 1.0e-6f),
           "guard ramp must reach target on a 12-sample block");
 
   // Phase 5 produced the next targets. A different-sized callback must use its
   // own N when consuming them, not the preceding block's N.
-  const float nextMakeupTarget = state.wetMakeupTarget[0];
   const float nextGuardTarget = state.outputGuardTarget[0];
   const int secondBlock = 24;
   float secondBus[secondBlock * numBuses] = {};
   factory.step(host.algorithm, secondBus, secondBlock / 4);
-  require(nearlyEqual(state.wetMakeup[0], nextMakeupTarget, 1.0e-6f),
-          "makeup ramp must reach target after a block-size change");
   require(nearlyEqual(state.outputGuard[0], nextGuardTarget, 1.0e-6f),
           "guard ramp must reach target after a block-size change");
 }
 
-static void testMonoDoesNotRetainRightLevelGain() {
+static void testMonoDoesNotRetainRightGuardGain() {
   HostAlgorithm host = makeAlgorithm();
   auto *algo = (_vocoderAlgorithm *)host.algorithm;
   VocoderDSPState &state = *algo->state;
   const int block = 24;
   const int numBuses = 28;
 
-  state.wetMakeup[1] = 6.0f;
-  state.wetMakeupTarget[1] = 6.0f;
   state.outputGuard[1] = 0.25f;
   state.outputGuardTarget[1] = 0.25f;
   float monoBus[block * numBuses] = {};
   factory.step(host.algorithm, monoBus, block / 4);
-  require(nearlyEqual(state.wetMakeup[1], state.wetMakeup[0], 1.0e-7f) &&
-              nearlyEqual(state.wetMakeupTarget[1],
-                          state.wetMakeupTarget[0], 1.0e-7f),
-          "mono mode must discard stale right-channel makeup");
   require(nearlyEqual(state.outputGuard[1], state.outputGuard[0], 1.0e-7f) &&
               nearlyEqual(state.outputGuardTarget[1],
                           state.outputGuardTarget[0], 1.0e-7f),
           "mono mode must discard stale right-channel guard gain");
 
   host.values[kCarrierStereo] = 1;
+  const float currentGuard = state.outputGuard[0];
   float stereoBus[block * numBuses] = {};
   factory.step(host.algorithm, stereoBus, block / 4);
-  require(state.wetMakeup[1] < 1.001f,
-          "stereo re-enable must not restore stale right-channel makeup");
+  require(state.outputGuard[1] > currentGuard - 0.01f,
+          "stereo re-enable must not restore stale right-channel guard gain");
 }
 
-static void testSilentWetDoesNotChargeMakeup() {
-  const int block = 24;
-  const int numBuses = 28;
-  const int frames = 48000;
-
-  HostAlgorithm quiet = makeAlgorithm();
-  quiet.values[kDepth] = 100;
-  auto *quietAlgo = (_vocoderAlgorithm *)quiet.algorithm;
-  float maxMakeupTarget = 1.0f;
-  for (int offset = 0; offset < frames; offset += block) {
-    float bus[block * numBuses] = {};
-    for (int i = 0; i < block; ++i) {
-      bus[i] = 0.6f * sinf(2.0f * 3.14159265359f * 110.0f *
-                           (float)(offset + i) / 48000.0f);
-    }
-    factory.step(quiet.algorithm, bus, block / 4);
-    if (quietAlgo->state->wetMakeupTarget[0] > maxMakeupTarget) {
-      maxMakeupTarget = quietAlgo->state->wetMakeupTarget[0];
-    }
-  }
-  require(maxMakeupTarget < 1.001f,
-          "silent wet path must not charge automatic makeup");
-
-  HostAlgorithm recovering = makeAlgorithm();
-  recovering.values[kDepth] = 100;
-  auto *recoveringAlgo = (_vocoderAlgorithm *)recovering.algorithm;
-  recoveringAlgo->state->wetMakeup[0] = 6.0f;
-  recoveringAlgo->state->wetMakeupTarget[0] = 6.0f;
-  for (int offset = 0; offset < frames; offset += block) {
-    float bus[block * numBuses] = {};
-    for (int i = 0; i < block; ++i) {
-      bus[i] = 0.6f * sinf(2.0f * 3.14159265359f * 110.0f *
-                           (float)(offset + i) / 48000.0f);
-    }
-    factory.step(recovering.algorithm, bus, block / 4);
-  }
-  require(recoveringAlgo->state->wetMakeupTarget[0] < 1.01f &&
-              recoveringAlgo->state->wetMakeup[0] < 1.01f,
-          "silent wet path must return stored makeup gently to unity");
-}
-
-static void testMotionStaysFinite() {
+static void testFullRangeMotionStaysFiniteAndRecovers() {
   HostAlgorithm host = makeAlgorithm();
-  const int frames = 24 * 40;
-  std::vector<float> carL(frames), carR(frames), modL(frames), modR(frames);
-  for (int i = 0; i < frames; ++i) {
-    carL[i] = 0.7f * sinf(2.0f * 3.14159265359f * 90.0f * i / 48000.0f);
-    carR[i] = 0.7f * sinf(2.0f * 3.14159265359f * 130.0f * i / 48000.0f);
-    modL[i] = ((i % 11) - 5) * 0.12f;
-    modR[i] = modL[i];
-  }
-
+  configureProbe(host, 200, 0);
+  host.values[kCarrierStereo] = 1;
+  host.values[kModulatorStereo] = 1;
+  factory.parameterChanged(host.algorithm, kCarrierStereo);
+  factory.parameterChanged(host.algorithm, kModulatorStereo);
+  auto *algorithm = (_vocoderAlgorithm *)host.algorithm;
   const int block = 24;
-  const int numBuses = 28;
+  const int frames = 48000;
   for (int offset = 0; offset < frames; offset += block) {
-    host.values[kFormant] = (int16_t)(120.0f * sinf(offset / 240.0f));
-    host.values[kBandWidth] = (int16_t)(50.0f + 40.0f * sinf(offset / 180.0f));
-    factory.parameterChanged(host.algorithm, kFormant);
-    factory.parameterChanged(host.algorithm, kBandWidth);
-
-    float bus[block * numBuses];
-    memset(bus, 0, sizeof(bus));
-    for (int i = 0; i < block; ++i) {
-      bus[0 * block + i] = carL[offset + i];
-      bus[1 * block + i] = carR[offset + i];
-      bus[2 * block + i] = modL[offset + i];
-      bus[3 * block + i] = modR[offset + i];
+    // Hold the narrow endpoint first, then jump across the full range with
+    // independent stereo input and periodic band-count rebuilds.
+    if (offset >= 9600 && offset % 240 == 0) {
+      host.values[kFormant] = (offset / 240) % 2 ? -360 : 360;
+      host.values[kBandWidth] = (offset / 480) % 2 ? 0 : 200;
+      factory.parameterChanged(host.algorithm, kFormant);
+      factory.parameterChanged(host.algorithm, kBandWidth);
     }
-
+    if (offset % 6000 == 0) {
+      host.values[kBandCount] = (offset / 6000) % 2 ? 4 : 40;
+      factory.parameterChanged(host.algorithm, kBandCount);
+    }
+    float bus[block * kNT_lastBus] = {};
+    for (int index = 0; index < block; ++index) {
+      const float phase = 2.0f * 3.14159265359f * (offset + index) / 48000.0f;
+      bus[index] = 0.6f * sinf(23.0f * phase) + 0.2f * sinf(1700.0f * phase);
+      bus[block + index] = 0.6f * sinf(37.0f * phase) + 0.2f * sinf(6700.0f * phase);
+      bus[2 * block + index] = 0.4f * sinf(120.0f * phase) + 0.3f * sinf(2700.0f * phase);
+      bus[3 * block + index] = 0.5f * sinf(61.0f * phase) + 0.3f * sinf(5700.0f * phase);
+    }
     factory.step(host.algorithm, bus, block / 4);
-    for (int i = 0; i < block * numBuses; ++i) {
-      require(std::isfinite(bus[i]), "motion sweep produced non-finite sample");
+    requireOwnedFilterPointers(*algorithm);
+    for (int index = 0; index < block; ++index) {
+      for (int channel = 0; channel < 2; ++channel) {
+        const float output = bus[(12 + channel) * block + index];
+        require(std::isfinite(output) && fabsf(output) <= 10.001f,
+                "full-range motion exceeded output protection or became non-finite");
+      }
+    }
+    for (int channel = 0; channel < 2; ++channel) {
+      for (int band = 0; band < algorithm->activeBands; ++band) {
+        const auto &analysis = algorithm->state->anState[channel][band];
+        const auto &synthesis = algorithm->state->syState[channel][band];
+        for (unsigned index = 0; index < 2 * analysis.inst.numStages; ++index) {
+          require(std::isfinite(analysis.state[index]),
+                  "analysis cascade became unstable behind the output guard");
+        }
+        for (unsigned index = 0; index < 2 * synthesis.inst.numStages; ++index) {
+          require(std::isfinite(synthesis.state[index]),
+                  "synthesis cascade became unstable behind the output guard");
+        }
+      }
     }
   }
+
+  // Return to a broad, unshifted bank and silence. All stages, including ones
+  // hidden by temporary band-count changes, must shed the stressed history.
+  configureProbe(host, 100, 100);
+  host.values[kFormant] = 0;
+  factory.parameterChanged(host.algorithm, kFormant);
+  std::vector<float> silence(144000, 0.0f), outputL, outputR;
+  processAndMeasureAbs(host, silence, silence, silence, silence, &outputL, &outputR);
+  require(rms(outputL, 132000, 144000) < 1.0e-5 &&
+              rms(outputR, 132000, 144000) < 1.0e-5,
+          "filterbank failed to return to silence after extreme control motion");
 }
 
 static void testMetersRespondToModulator() {
@@ -909,6 +1186,8 @@ static void testMetersRespondToModulator() {
 }
 
 int main() {
+  testCascadeReseatPreservesAllStagesAndGain();
+  testCascadeCenterGainAtDifficultFrequencies();
   testDescriptorLayout();
   testWetZeroPassthrough();
   testMonoDefaultIgnoresNextCarrierBus();
@@ -919,16 +1198,18 @@ int main() {
   testRightOutputDescription();
   testBypassPreservesOverlappingStereoInputs();
   testLastOutputBusUsesMonoFallback();
-  testExtremeDepthPowerInterpolation();
+  testSustainedDepthChangesContrast();
+  testDepthZeroRemainsLevelLinear();
+  testReleaseDoesNotDipAndRecoverSlowly();
   testImpulseProducesResponse();
   testLegacyEnhanceIsHiddenAndNoop();
   testFormantSmoothingMovesDescriptor();
-  testHighFormantBandsFadeBeforeNyquist();
+  testSupportedRangesAndWidthMotion();
+  testExtremeFormantBandsFadeAtBothEdges();
   testBlockRateCoefficientTimebase();
-  testLevelControlRampsAcrossBlock();
-  testMonoDoesNotRetainRightLevelGain();
-  testSilentWetDoesNotChargeMakeup();
-  testMotionStaysFinite();
+  testOutputGuardRampsAcrossBlock();
+  testMonoDoesNotRetainRightGuardGain();
+  testFullRangeMotionStaysFiniteAndRecovers();
   testMetersRespondToModulator();
   std::cout << "vocoder tests passed\n";
   return 0;

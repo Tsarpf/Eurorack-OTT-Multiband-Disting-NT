@@ -1,44 +1,66 @@
 #ifndef VOCODER_BATCH_BIQUAD_H
 #define VOCODER_BATCH_BIQUAD_H
 
-// Batch biquad filter abstraction using CMSIS-DSP arm_biquad_cascade_df2T_f32.
-//
-// On ARM target the library uses hand-optimised assembly with pipeline-aware
-// scheduling for the Cortex-M7 FPU.
-//
-// On host (macOS/Linux tests) the same CMSIS-DSP source is compiled but the
-// generic C fallback is selected automatically (no ARM SIMD extensions defined).
-// This means the tests exercise the real CMSIS-DSP code paths, including the
-// pCoeffs/pState pointer lifetime semantics that the host-only reimplementation
-// previously masked.
+// Two-section bandpass cascade. The production bank uses trapezoidal
+// state-variable sections to preserve float precision at low frequencies.
+// CMSIS DF2T remains available for coefficient-reference tests and legacy
+// coefficient construction. Both paths use the same persistent state storage.
 
 #include "dsp/filtering_functions.h"
 
+static const int kVocoderFilterStages = 2;
+
 struct BatchBiquadCoeffs {
   // CMSIS-DSP coefficient order: {b0, b1, b2, a1, a2} per stage
-  // For our bandpass: b1 = 0, so coefficients are {b0, 0, b2, a1, a2}
-  float coeffs[5];
+  float coeffs[5 * kVocoderFilterStages];
+  // TPT realization of the same poles, used by the production filterbank.
+  // {a1,a2,a3,bandGain} avoids subtracting nearly equal denominator
+  // coefficients at 20 Hz, where float DF2T loses narrow-band accuracy.
+  float svf[4 * kVocoderFilterStages];
+  bool useSvf;
 };
 
 struct BatchBiquadState {
   arm_biquad_cascade_df2T_instance_f32 inst;
-  float state[2]; // DF2T: 2 state variables per stage
+  float state[2 * kVocoderFilterStages];
+  const BatchBiquadCoeffs *coefficients;
 };
 
 inline void batchBiquadInit(BatchBiquadState &s, const BatchBiquadCoeffs &c) {
-  arm_biquad_cascade_df2T_init_f32(&s.inst, 1, c.coeffs, s.state);
+  arm_biquad_cascade_df2T_init_f32(&s.inst, kVocoderFilterStages, c.coeffs, s.state);
+  s.coefficients = &c;
 }
 
-inline void batchBiquadProcess(const BatchBiquadCoeffs &, BatchBiquadState &s,
+inline void batchBiquadProcess(const BatchBiquadCoeffs &c, BatchBiquadState &s,
                                const float *src, float *dst, int blockSize) {
+  if (c.useSvf) {
+    for (int stage = 0; stage < kVocoderFilterStages; ++stage) {
+      const float *p = c.svf + 4 * stage;
+      float ic1 = s.state[2 * stage], ic2 = s.state[2 * stage + 1];
+      for (int i = 0; i < blockSize; ++i) {
+        const float v3 = src[i] - ic2;
+        const float v1 = p[0] * ic1 + p[1] * v3;
+        const float v2 = ic2 + p[1] * ic1 + p[2] * v3;
+        ic1 = 2.0f * v1 - ic1;
+        ic2 = 2.0f * v2 - ic2;
+        dst[i] = p[3] * v1;
+      }
+      // Far below any audio level; avoids denormal slow paths on hosts without
+      // flush-to-zero and gives decaying silence a finite endpoint.
+      s.state[2 * stage] = ic1 > -1.0e-20f && ic1 < 1.0e-20f ? 0.0f : ic1;
+      s.state[2 * stage + 1] = ic2 > -1.0e-20f && ic2 < 1.0e-20f ? 0.0f : ic2;
+      src = dst;
+    }
+    return;
+  }
   arm_biquad_cascade_df2T_f32(&s.inst, src, dst, (uint32_t)blockSize);
 }
 
-inline float batchBiquadProcessWithEnvelope(const BatchBiquadCoeffs &,
+inline float batchBiquadProcessWithEnvelope(const BatchBiquadCoeffs &c,
                                             BatchBiquadState &s,
                                             const float *src, float *dst,
                                             int blockSize) {
-  arm_biquad_cascade_df2T_f32(&s.inst, src, dst, (uint32_t)blockSize);
+  batchBiquadProcess(c, s, src, dst, blockSize);
   float peak = 0.0f;
   for (int i = 0; i < blockSize; ++i) {
     const float ay = dst[i] < 0.0f ? -dst[i] : dst[i];
@@ -48,6 +70,7 @@ inline float batchBiquadProcessWithEnvelope(const BatchBiquadCoeffs &,
   return peak;
 }
 
+// Construct a repeated DF2T cascade for reference tests.
 // Convert DF1 feedback coefficients to CMSIS-DSP DF2T format.
 //
 // The descriptor stores a1/a2 with the DF1 sign convention:
@@ -59,12 +82,14 @@ inline float batchBiquadProcessWithEnvelope(const BatchBiquadCoeffs &,
 // so a1_cmsis = -a1_df1 and a2_cmsis = -a2_df1.
 inline BatchBiquadCoeffs batchBiquadFromDF1(float b0, float b2, float a1,
                                             float a2) {
-  BatchBiquadCoeffs c;
-  c.coeffs[0] = b0;
-  c.coeffs[1] = 0.0f; // b1 = 0 for bandpass
-  c.coeffs[2] = b2;
-  c.coeffs[3] = -a1; // negate: DF1 sign convention is opposite to CMSIS-DSP
-  c.coeffs[4] = -a2;
+  BatchBiquadCoeffs c = {};
+  for (int stage = 0; stage < kVocoderFilterStages; ++stage) {
+    c.coeffs[5 * stage] = b0;
+    c.coeffs[5 * stage + 1] = 0.0f;
+    c.coeffs[5 * stage + 2] = b2;
+    c.coeffs[5 * stage + 3] = -a1;
+    c.coeffs[5 * stage + 4] = -a2;
+  }
   return c;
 }
 
@@ -75,6 +100,7 @@ inline BatchBiquadCoeffs batchBiquadFromDF1(float b0, float b2, float a1,
 inline void batchBiquadUpdateCoeffs(BatchBiquadState &s,
                                     const BatchBiquadCoeffs &c) {
   s.inst.pCoeffs = c.coeffs;
+  s.coefficients = &c;
 }
 
 // Reseat pCoeffs and pState pointers without zeroing state.
@@ -85,12 +111,13 @@ inline void batchBiquadUpdateCoeffs(BatchBiquadState &s,
 inline void batchBiquadReseat(BatchBiquadState &s, const BatchBiquadCoeffs &c) {
   s.inst.pCoeffs = c.coeffs;
   s.inst.pState  = s.state;
+  s.inst.numStages = kVocoderFilterStages;
+  s.coefficients = &c;
 }
 
-// Process one DF2T biquad stage (b1=0 bandpass) and immediately apply
-// per-sample smoothed gain, accumulating into accum[].
-// Fuses the synthesis filter pass with the gain-smoothing+accumulation pass
-// into a single N-sample loop, eliminating the intermediate synthesisBuf.
+// Process the cascade and apply the envelope once after its final stage.
+// The small bounded scratch buffer follows the NT's maximum callback size;
+// chunking also keeps this helper valid for larger host-side test buffers.
 // gainMix and gainMixComp (= 1 - gainMix) must be pre-computed for the block.
 inline void batchBiquadProcessAndAccum(BatchBiquadState &s,
                                        const float *src, float *accum,
@@ -98,22 +125,16 @@ inline void batchBiquadProcessAndAccum(BatchBiquadState &s,
                                        float gainTarget, float gainMix,
                                        float gainMixComp,
                                        float bandGainScale) {
-  float d1  = s.state[0];
-  float d2  = s.state[1];
-  const float b0  = s.inst.pCoeffs[0];
-  const float b2  = s.inst.pCoeffs[2];
-  const float a1c = s.inst.pCoeffs[3]; // stored as -a1_df1 (CMSIS DF2T sign)
-  const float a2c = s.inst.pCoeffs[4]; // stored as -a2_df1
-  for (int i = 0; i < blockSize; ++i) {
-    const float x = src[i];
-    const float y = b0 * x + d1;
-    d1 = d2 + a1c * y;          // b1 = 0 for bandpass; CMSIS: d1 = b1*x + a1*y + d2
-    d2 = b2 * x + a2c * y;      // CMSIS: d2 = b2*x + a2*y
-    gainState = gainMix * gainState + gainMixComp * gainTarget;
-    accum[i] += y * gainState * bandGainScale;
+  float filtered[24];
+  for (int offset = 0; offset < blockSize; offset += 24) {
+    const int count = blockSize - offset < 24 ? blockSize - offset : 24;
+    batchBiquadProcess(*s.coefficients, s, src + offset, filtered, count);
+    for (int i = 0; i < count; ++i) {
+      gainState = gainMix * gainState + gainMixComp * gainTarget;
+      accum[offset + i] += filtered[i] * gainState * bandGainScale;
+    }
   }
-  s.state[0] = d1;
-  s.state[1] = d2;
+  if (gainState >= 0.0f && gainState < 1.0e-20f) gainState = 0.0f;
 }
 
 #endif // VOCODER_BATCH_BIQUAD_H

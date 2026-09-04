@@ -63,13 +63,13 @@ static const _NT_parameter parameters[kNumParams] = {
 
     /* Controls */
     P("Bands", 4, 40, 16, kNT_unitNone, 0),
-    P("Width", 0, 100, 50, kNT_unitPercent, 0),
-    P("Depth", 0, 800, 100, kNT_unitPercent, 0),
-    P("Formant", -240, 240, 0, kNT_unitSemitones, kNT_scaling10),
-    P("Min Freq", 30, 1000, 30, kNT_unitHz, 0),
+    P("Width", 0, 200, 100, kNT_unitPercent, 0),
+    P("Depth", 0, 200, 100, kNT_unitPercent, 0),
+    P("Formant", -360, 360, 0, kNT_unitSemitones, kNT_scaling10),
+    P("Min Freq", 20, 1000, 20, kNT_unitHz, 0),
     P("Max Freq", 2000, 20000, 18000, kNT_unitHz, 0),
     P("Attack", 1, 500, 10, kNT_unitMs, 0),
-    P("Decay", 1, 1000, 100, kNT_unitMs, 0),
+    P("Decay", 1, 1000, 30, kNT_unitMs, 0),
     /* Retained but not paged so existing presets keep their parameter layout. */
     P("Reserved", 0, 1, 0, kNT_unitEnum, 0),
     P("Wet", 0, 100, 100, kNT_unitPercent, 0),

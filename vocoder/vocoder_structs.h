@@ -10,29 +10,15 @@ struct VocoderDescriptor {
   float analysisFreq[kVocoderMaxBands];
   float synthesisFreq[kVocoderMaxBands];
   float synthesisBandGain[kVocoderMaxBands];
-  // DF1 coefficients computed by vocoderCalculateBandpass
-  float an_b0[kVocoderMaxBands];
-  float an_b2[kVocoderMaxBands];
-  float an_a1[kVocoderMaxBands];
-  float an_a2[kVocoderMaxBands];
-  float sy_b0[kVocoderMaxBands];
-  float sy_b2[kVocoderMaxBands];
-  float sy_a1[kVocoderMaxBands];
-  float sy_a2[kVocoderMaxBands];
+  BatchBiquadCoeffs analysisCoeffs[kVocoderMaxBands];
+  BatchBiquadCoeffs synthesisCoeffs[kVocoderMaxBands];
   float bandwidthCompensation;
   float analysisQ;
   float synthesisQ;
 };
 
-struct VocoderDepthShape {
-  float depthControl;
-  float depthMix;
-  float peakExponent;
-  bool peakMode;
-};
-
 struct VocoderDSPState {
-  // Batch biquad DF2T state (2 floats per filter vs 4 in old DF1)
+  // Independent state for every section of every analysis/synthesis band.
   BatchBiquadState anState[2][kVocoderMaxBands];
   BatchBiquadState syState[2][kVocoderMaxBands];
 
@@ -40,39 +26,20 @@ struct VocoderDSPState {
   BatchBiquadCoeffs anCoeffs[kVocoderMaxBands];
   BatchBiquadCoeffs syCoeffs[kVocoderMaxBands];
 
-  // DF1-level synthesis coefficients for smoothing (plain floats)
-  // Smoothed per-block, then converted to BatchBiquadCoeffs
-  float sy_b0_smooth[kVocoderMaxBands];
-  float sy_b2_smooth[kVocoderMaxBands];
-  float sy_a1_smooth[kVocoderMaxBands];
-  float sy_a2_smooth[kVocoderMaxBands];
-
-  float sy_b0_target[kVocoderMaxBands];
-  float sy_b2_target[kVocoderMaxBands];
-  float sy_a1_target[kVocoderMaxBands];
-  float sy_a2_target[kVocoderMaxBands];
-
   // Envelope follower state
   float env[2][kVocoderMaxBands];
-  float eAvg[2][kVocoderMaxBands];
   float gainState[2][kVocoderMaxBands];
 
   // Metering
   float meters[kVocoderMaxBands];
   float meterPeakHold[kVocoderMaxBands];
 
-  // Level matching
-  float dryAvg[2];
-  float wetAvg[2];
-  float wetMakeup[2];
-  float wetMakeupTarget[2];
-  float wetMakeupStep[2];
+  // Overload protection (attenuation only, no automatic makeup gain).
   float inputPeakSmoothed[2];
   float inputGuard[2];
   float outputGuard[2];
   float outputGuardTarget[2];
   float outputGuardStep[2];
-  float dryPeakHold[2];
   float wetPeakHold[2];
 
   // Band gain smoothing
@@ -98,20 +65,14 @@ struct VocoderDSPState {
 struct VocoderCachedCoeffs {
   float attackMix;
   float releaseMix;
-  float envAvgRiseMix;
-  float envAvgFallMix;
   float synthesisCoeffMix;
   float synthesisScalarMix;
   float gainRiseMix;
   float gainFallMix;
   float masterScale;
   float dcBlockR;
-  float levelAvgRiseMix;
-  float levelAvgFallMix;
   float meterRiseMix;
   float meterFallMix;
-  float makeupRiseMix;
-  float makeupFallMix;
   float inputPeakRiseMix;
   float inputPeakFallMix;
   float inputGuardAttackMix;

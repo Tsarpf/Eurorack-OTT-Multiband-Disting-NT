@@ -48,10 +48,10 @@ static void formatDecay(char *buf, size_t bufSize, int valueMs) {
 
 void setupUi(_NT_algorithm *self, _NT_float3 &pots) {
   auto *a = (_vocoderAlgorithm *)self;
-  pots[0] = vocoderClamp((float)a->v[kBandWidth] / 100.0f, 0.0f, 1.0f);
-  pots[1] = vocoderClamp((float)a->v[kDepth] / 800.0f, 0.0f, 1.0f);
+  pots[0] = vocoderClamp((float)a->v[kBandWidth] / 200.0f, 0.0f, 1.0f);
+  pots[1] = vocoderClamp((float)a->v[kDepth] / 200.0f, 0.0f, 1.0f);
   pots[2] =
-      vocoderClamp(((float)a->v[kFormant] + 240.0f) / 480.0f, 0.0f, 1.0f);
+      vocoderClamp(((float)a->v[kFormant] + 360.0f) / 720.0f, 0.0f, 1.0f);
   a->uiReleaseDisplay = a->v[kRelease];
   a->uiWetDisplay = a->v[kWet];
   a->uiOutputGainDisplay = a->v[kPreGain];
@@ -140,17 +140,17 @@ void customUi(_NT_algorithm *self, const _NT_uiData &data) {
   auto *a = (_vocoderAlgorithm *)self;
 
   if (data.controls & kNT_potL) {
-    const int value = (int)(data.pots[0] * 100.0f);
+    const int value = (int)(data.pots[0] * 200.0f);
     NT_setParameterFromUi(NT_algorithmIndex(self),
                           kBandWidth + NT_parameterOffset(), value);
   }
   if (data.controls & kNT_potC) {
-    const int value = (int)(data.pots[1] * 800.0f);
+    const int value = (int)(data.pots[1] * 200.0f);
     NT_setParameterFromUi(NT_algorithmIndex(self), kDepth + NT_parameterOffset(),
                           value);
   }
   if (data.controls & kNT_potR) {
-    const int value = (int)(data.pots[2] * 480.0f - 240.0f);
+    const int value = (int)(data.pots[2] * 720.0f - 360.0f);
     NT_setParameterFromUi(NT_algorithmIndex(self),
                           kFormant + NT_parameterOffset(), value);
   }
