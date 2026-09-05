@@ -51,12 +51,16 @@ def read_audio(path: Path) -> np.ndarray:
 
 
 def render_native(root: Path, renderer: Path, widths: list[int]) -> None:
+    # These historical comparisons deliberately measure the Enhance-off bank.
+    # Older revision renderers predate the toggle and already render Off.
+    help_text = subprocess.check_output([str(renderer), "--help"], text=True)
+    enhance_args = ["--enhance", "0"] if "--enhance" in help_text else []
     directory = root / "native" / "width"
     directory.mkdir(parents=True, exist_ok=True)
     for width in widths:
         stem = directory / f"width-{width:03d}"
         subprocess.run([
-            str(renderer), "--input", str(root / "inputs" / "white.wav"),
+            str(renderer), *enhance_args, "--input", str(root / "inputs" / "white.wav"),
             "--output", str(stem.with_suffix(".wav")),
             "--metadata", str(stem.with_suffix(".json")), "--bands", "40",
             "--width", str(width), "--depth", "0", "--formant-semitones", "0",

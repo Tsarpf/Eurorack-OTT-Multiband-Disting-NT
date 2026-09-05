@@ -1,0 +1,58 @@
+[
+  {
+    "width": 100,
+    "depth": 0,
+    "formant": 0,
+    "max_absolute_error": 0.0,
+    "error_db_relative": -568.7255145318484
+  },
+  {
+    "width": 50,
+    "depth": 100,
+    "formant": 0,
+    "max_absolute_error": 0.0,
+    "error_db_relative": -565.5297551823245
+  },
+  {
+    "width": 100,
+    "depth": 100,
+    "formant": 0,
+    "max_absolute_error": 0.0,
+    "error_db_relative": -576.3070408764504
+  },
+  {
+    "width": 200,
+    "depth": 100,
+    "formant": 0,
+    "max_absolute_error": 0.0,
+    "error_db_relative": -574.7021452096626
+  },
+  {
+    "width": 100,
+    "depth": 50,
+    "formant": 0,
+    "max_absolute_error": 1.1175870895385742e-07,
+    "error_db_relative": -131.73692200896198
+  },
+  {
+    "width": 100,
+    "depth": 170,
+    "formant": 0,
+    "max_absolute_error": 2.2351741790771484e-07,
+    "error_db_relative": -119.14407121610098
+  },
+  {
+    "width": 0,
+    "depth": 170,
+    "formant": -36,
+    "max_absolute_error": 8.294591680169106e-10,
+    "error_db_relative": -101.59389719717643
+  },
+  {
+    "width": 200,
+    "depth": 170,
+    "formant": 36,
+    "max_absolute_error": 1.564621925354004e-07,
+    "error_db_relative": -114.83986909216063
+  }
+]

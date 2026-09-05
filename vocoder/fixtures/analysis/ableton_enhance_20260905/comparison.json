@@ -1,0 +1,1185 @@
+{
+  "renderer_sha256": "d4debad9c07eb7627d7eab34b55fb96937ad37ae93d1ac6a44b542fc07b64228",
+  "sample_rate": 48000,
+  "bus_volts_per_full_scale": 5,
+  "bands": 40,
+  "range_hz": [
+    20,
+    18000
+  ],
+  "spectral_centers_hz": [
+    40,
+    100,
+    300,
+    1000,
+    3000,
+    6000,
+    12000,
+    16000
+  ],
+  "alignment": "Live first sample above 1e-6 minus 0.5s input silence; native metadata. Steady windows only, not latency measurements.",
+  "inputs": {
+    "tones": "2ff8996fe1ad7ef1e6fc1d9805bc0d29e053f5d3839dc607ce3996f1e3f17b84",
+    "noise": "ec6f13439625761ba5252410ae54cbf6f05f7df4a89e27b40ec3cda960f4651c"
+  },
+  "cases": [
+    {
+      "case": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260905-enhance/runs/20260905T133704Z-68123896/cases/0001-tones",
+      "reference_sha256": "cf88d18658a4243a9fbe0516448612888981cb0184617a7bcf8cf4649fadd0dc",
+      "native_sha256": "db1e4b812fdd24c2a6d8f456743c5534749e27732ae45349401e5624c8347772",
+      "width": 100,
+      "depth": 0,
+      "enhance": 0,
+      "signal": "tones",
+      "offsets_seconds": [
+        0.3402291666666667,
+        0.5
+      ],
+      "measurements": [
+        {
+          "segment": {
+            "frequency": 40,
+            "level": -42,
+            "start": 24000,
+            "end": 72000
+          },
+          "live_rms_dbfs": -60.52996878804936,
+          "native_rms_dbfs": -60.246732812649846,
+          "level_error_db": 0.2832359753995135
+        },
+        {
+          "segment": {
+            "frequency": 40,
+            "level": -18,
+            "start": 72000,
+            "end": 120000
+          },
+          "live_rms_dbfs": -36.271761278077214,
+          "native_rms_dbfs": -36.24654787027913,
+          "level_error_db": 0.02521340779808412
+        },
+        {
+          "segment": {
+            "frequency": 40,
+            "level": -6,
+            "start": 120000,
+            "end": 168000
+          },
+          "live_rms_dbfs": -24.282302403425753,
+          "native_rms_dbfs": -24.246022266185463,
+          "level_error_db": 0.03628013724028989
+        },
+        {
+          "segment": {
+            "frequency": 100,
+            "level": -42,
+            "start": 168000,
+            "end": 216000
+          },
+          "live_rms_dbfs": -60.13604397741203,
+          "native_rms_dbfs": -59.84498928994584,
+          "level_error_db": 0.2910546874661861
+        },
+        {
+          "segment": {
+            "frequency": 100,
+            "level": -18,
+            "start": 216000,
+            "end": 264000
+          },
+          "live_rms_dbfs": -36.02329013472609,
+          "native_rms_dbfs": -35.92123135183418,
+          "level_error_db": 0.10205878289190906
+        },
+        {
+          "segment": {
+            "frequency": 100,
+            "level": -6,
+            "start": 264000,
+            "end": 312000
+          },
+          "live_rms_dbfs": -24.020135446406776,
+          "native_rms_dbfs": -23.921089020652424,
+          "level_error_db": 0.09904642575435219
+        },
+        {
+          "segment": {
+            "frequency": 300,
+            "level": -42,
+            "start": 312000,
+            "end": 360000
+          },
+          "live_rms_dbfs": -60.481372111939066,
+          "native_rms_dbfs": -60.1601535448405,
+          "level_error_db": 0.321218567098569
+        },
+        {
+          "segment": {
+            "frequency": 300,
+            "level": -18,
+            "start": 360000,
+            "end": 408000
+          },
+          "live_rms_dbfs": -36.336319706983474,
+          "native_rms_dbfs": -36.164041735294916,
+          "level_error_db": 0.1722779716885583
+        },
+        {
+          "segment": {
+            "frequency": 300,
+            "level": -6,
+            "start": 408000,
+            "end": 456000
+          },
+          "live_rms_dbfs": -24.292286201711875,
+          "native_rms_dbfs": -24.164018149697274,
+          "level_error_db": 0.1282680520146009
+        },
+        {
+          "segment": {
+            "frequency": 1000,
+            "level": -42,
+            "start": 456000,
+            "end": 504000
+          },
+          "live_rms_dbfs": -60.561482862086805,
+          "native_rms_dbfs": -60.10860387905926,
+          "level_error_db": 0.4528789830275457
+        },
+        {
+          "segment": {
+            "frequency": 1000,
+            "level": -18,
+            "start": 504000,
+            "end": 552000
+          },
+          "live_rms_dbfs": -36.45444445620985,
+          "native_rms_dbfs": -36.10897292093034,
+          "level_error_db": 0.3454715352795077
+        },
+        {
+          "segment": {
+            "frequency": 1000,
+            "level": -6,
+            "start": 552000,
+            "end": 600000
+          },
+          "live_rms_dbfs": -24.242511306497224,
+          "native_rms_dbfs": -24.108972076835464,
+          "level_error_db": 0.13353922966176057
+        },
+        {
+          "segment": {
+            "frequency": 3000,
+            "level": -42,
+            "start": 600000,
+            "end": 648000
+          },
+          "live_rms_dbfs": -60.0333941059106,
+          "native_rms_dbfs": -59.90972248667062,
+          "level_error_db": 0.12367161923998538
+        },
+        {
+          "segment": {
+            "frequency": 3000,
+            "level": -18,
+            "start": 648000,
+            "end": 696000
+          },
+          "live_rms_dbfs": -35.95837126965887,
+          "native_rms_dbfs": -35.90976056230658,
+          "level_error_db": 0.048610707352288784
+        },
+        {
+          "segment": {
+            "frequency": 3000,
+            "level": -6,
+            "start": 696000,
+            "end": 744000
+          },
+          "live_rms_dbfs": -23.95788140510252,
+          "native_rms_dbfs": -23.909758095586263,
+          "level_error_db": 0.04812330951625654
+        },
+        {
+          "segment": {
+            "frequency": 6000,
+            "level": -42,
+            "start": 744000,
+            "end": 792000
+          },
+          "live_rms_dbfs": -60.049806447637394,
+          "native_rms_dbfs": -59.9578013076016,
+          "level_error_db": 0.09200514003579485
+        },
+        {
+          "segment": {
+            "frequency": 6000,
+            "level": -18,
+            "start": 792000,
+            "end": 840000
+          },
+          "live_rms_dbfs": -36.020113874080735,
+          "native_rms_dbfs": -35.95780158039832,
+          "level_error_db": 0.06231229368241742
+        },
+        {
+          "segment": {
+            "frequency": 6000,
+            "level": -6,
+            "start": 840000,
+            "end": 888000
+          },
+          "live_rms_dbfs": -24.01708117746211,
+          "native_rms_dbfs": -23.957802225372312,
+          "level_error_db": 0.059278952089798054
+        },
+        {
+          "segment": {
+            "frequency": 12000,
+            "level": -42,
+            "start": 888000,
+            "end": 936000
+          },
+          "live_rms_dbfs": -59.89745347180694,
+          "native_rms_dbfs": -60.15484355058049,
+          "level_error_db": -0.2573900787735468
+        },
+        {
+          "segment": {
+            "frequency": 12000,
+            "level": -18,
+            "start": 936000,
+            "end": 984000
+          },
+          "live_rms_dbfs": -35.97521899955521,
+          "native_rms_dbfs": -36.15484262678778,
+          "level_error_db": -0.17962362723257286
+        },
+        {
+          "segment": {
+            "frequency": 12000,
+            "level": -6,
+            "start": 984000,
+            "end": 1032000
+          },
+          "live_rms_dbfs": -23.98701533582827,
+          "native_rms_dbfs": -24.154842489529248,
+          "level_error_db": -0.16782715370097634
+        },
+        {
+          "segment": {
+            "frequency": 16000,
+            "level": -42,
+            "start": 1032000,
+            "end": 1080000
+          },
+          "live_rms_dbfs": -59.371045184897,
+          "native_rms_dbfs": -59.05737122029776,
+          "level_error_db": 0.31367396459923924
+        },
+        {
+          "segment": {
+            "frequency": 16000,
+            "level": -18,
+            "start": 1080000,
+            "end": 1128000
+          },
+          "live_rms_dbfs": -35.39639724314096,
+          "native_rms_dbfs": -35.05736881697468,
+          "level_error_db": 0.33902842616627993
+        },
+        {
+          "segment": {
+            "frequency": 16000,
+            "level": -6,
+            "start": 1128000,
+            "end": 1176000
+          },
+          "live_rms_dbfs": -23.395788913325237,
+          "native_rms_dbfs": -23.057370250473205,
+          "level_error_db": 0.3384186628520318
+        }
+      ]
+    },
+    {
+      "case": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260905-enhance/runs/20260905T133704Z-68123896/cases/0002-noise",
+      "reference_sha256": "b21740293dc206e52e09feab92efc6ce6a30880255410977e73dbf16c61e765c",
+      "native_sha256": "c3a7119cf8c7291bca709fdaecc276ba99338bdccfc9f208952154d6e44a5d06",
+      "width": 100,
+      "depth": 0,
+      "enhance": 0,
+      "signal": "noise",
+      "offsets_seconds": [
+        0.33077083333333335,
+        0.5
+      ],
+      "measurements": [
+        {
+          "segment": {
+            "color": "white",
+            "start": 24000,
+            "end": 168000
+          },
+          "live_rms_dbfs": -46.145436993534396,
+          "native_rms_dbfs": -45.880255354470066,
+          "level_error_db": 0.26518163906433045,
+          "spectral_error_db": [
+            1.9125736158856674,
+            1.0547209796511345,
+            0.8644982323965616,
+            0.5985854566259012,
+            0.3929219119334419,
+            0.31114766805268,
+            0.23237796037198372,
+            -0.01972693033888939
+          ]
+        },
+        {
+          "segment": {
+            "color": "pink",
+            "start": 168000,
+            "end": 312000
+          },
+          "live_rms_dbfs": -45.939291672145956,
+          "native_rms_dbfs": -45.617729107077515,
+          "level_error_db": 0.32156256506844016,
+          "spectral_error_db": [
+            0.19328132081721777,
+            0.3201333767933772,
+            0.38038022971049645,
+            0.39740328738172953,
+            0.40069142332662666,
+            0.3957437778372542,
+            0.3788064824332699,
+            0.15173755747824344
+          ]
+        },
+        {
+          "segment": {
+            "color": "brown",
+            "start": 312000,
+            "end": 456000
+          },
+          "live_rms_dbfs": -46.29146999025302,
+          "native_rms_dbfs": -46.108697470120134,
+          "level_error_db": 0.18277252013288603,
+          "spectral_error_db": [
+            0.14505624969231268,
+            0.3356624417295405,
+            0.4647732795244367,
+            0.903522049496536,
+            1.5328686428662834,
+            2.2028000336488636,
+            3.1694565577068525,
+            3.499111215112828
+          ]
+        }
+      ]
+    },
+    {
+      "case": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260905-enhance/runs/20260905T133704Z-68123896/cases/0003-tones",
+      "reference_sha256": "1ab6e1d52c6a289db1f5dbb5259c88223ec8737d933e24d058a7e8e9b919c583",
+      "native_sha256": "97d0925bca4050d8208c80d4fbe881a018f16c42b196bd190ea5fe62e110192b",
+      "width": 100,
+      "depth": 0,
+      "enhance": 1,
+      "signal": "tones",
+      "offsets_seconds": [
+        0.34506250000000005,
+        0.5
+      ],
+      "measurements": [
+        {
+          "segment": {
+            "frequency": 40,
+            "level": -42,
+            "start": 24000,
+            "end": 72000
+          },
+          "live_rms_dbfs": -51.30806194815176,
+          "native_rms_dbfs": -50.92188572540085,
+          "level_error_db": 0.3861762227509118
+        },
+        {
+          "segment": {
+            "frequency": 40,
+            "level": -18,
+            "start": 72000,
+            "end": 120000
+          },
+          "live_rms_dbfs": -37.954458977474204,
+          "native_rms_dbfs": -38.45314912218444,
+          "level_error_db": -0.4986901447102383
+        },
+        {
+          "segment": {
+            "frequency": 40,
+            "level": -6,
+            "start": 120000,
+            "end": 168000
+          },
+          "live_rms_dbfs": -32.13058603381303,
+          "native_rms_dbfs": -32.48893126731395,
+          "level_error_db": -0.35834523350091985
+        },
+        {
+          "segment": {
+            "frequency": 100,
+            "level": -42,
+            "start": 168000,
+            "end": 216000
+          },
+          "live_rms_dbfs": -50.47579174426645,
+          "native_rms_dbfs": -50.337004477818034,
+          "level_error_db": 0.13878726644841777
+        },
+        {
+          "segment": {
+            "frequency": 100,
+            "level": -18,
+            "start": 216000,
+            "end": 264000
+          },
+          "live_rms_dbfs": -37.98317314555797,
+          "native_rms_dbfs": -38.178010262471396,
+          "level_error_db": -0.1948371169134262
+        },
+        {
+          "segment": {
+            "frequency": 100,
+            "level": -6,
+            "start": 264000,
+            "end": 312000
+          },
+          "live_rms_dbfs": -31.95275754601504,
+          "native_rms_dbfs": -32.10536141448244,
+          "level_error_db": -0.15260386846739848
+        },
+        {
+          "segment": {
+            "frequency": 300,
+            "level": -42,
+            "start": 312000,
+            "end": 360000
+          },
+          "live_rms_dbfs": -49.6985675909345,
+          "native_rms_dbfs": -49.634745628698376,
+          "level_error_db": 0.06382196223612624
+        },
+        {
+          "segment": {
+            "frequency": 300,
+            "level": -18,
+            "start": 360000,
+            "end": 408000
+          },
+          "live_rms_dbfs": -38.16285125620441,
+          "native_rms_dbfs": -38.29861678322057,
+          "level_error_db": -0.1357655270161544
+        },
+        {
+          "segment": {
+            "frequency": 300,
+            "level": -6,
+            "start": 408000,
+            "end": 456000
+          },
+          "live_rms_dbfs": -32.08327690262762,
+          "native_rms_dbfs": -32.308389427466935,
+          "level_error_db": -0.22511252483931798
+        },
+        {
+          "segment": {
+            "frequency": 1000,
+            "level": -42,
+            "start": 456000,
+            "end": 504000
+          },
+          "live_rms_dbfs": -50.01021769151191,
+          "native_rms_dbfs": -49.75518069732406,
+          "level_error_db": 0.2550369941878543
+        },
+        {
+          "segment": {
+            "frequency": 1000,
+            "level": -18,
+            "start": 504000,
+            "end": 552000
+          },
+          "live_rms_dbfs": -38.31390489905702,
+          "native_rms_dbfs": -38.27527123992899,
+          "level_error_db": 0.038633659128031184
+        },
+        {
+          "segment": {
+            "frequency": 1000,
+            "level": -6,
+            "start": 552000,
+            "end": 600000
+          },
+          "live_rms_dbfs": -32.10239674278085,
+          "native_rms_dbfs": -32.2781511959511,
+          "level_error_db": -0.1757544531702493
+        },
+        {
+          "segment": {
+            "frequency": 3000,
+            "level": -42,
+            "start": 600000,
+            "end": 648000
+          },
+          "live_rms_dbfs": -50.247870511131026,
+          "native_rms_dbfs": -50.32589549190982,
+          "level_error_db": -0.0780249807787925
+        },
+        {
+          "segment": {
+            "frequency": 3000,
+            "level": -18,
+            "start": 648000,
+            "end": 696000
+          },
+          "live_rms_dbfs": -37.882629536562554,
+          "native_rms_dbfs": -38.217057424881226,
+          "level_error_db": -0.33442788831867176
+        },
+        {
+          "segment": {
+            "frequency": 3000,
+            "level": -6,
+            "start": 696000,
+            "end": 744000
+          },
+          "live_rms_dbfs": -31.841817030563075,
+          "native_rms_dbfs": -32.184659035914365,
+          "level_error_db": -0.34284200535129017
+        },
+        {
+          "segment": {
+            "frequency": 6000,
+            "level": -42,
+            "start": 744000,
+            "end": 792000
+          },
+          "live_rms_dbfs": -50.21710530304244,
+          "native_rms_dbfs": -50.29155178289984,
+          "level_error_db": -0.07444647985740005
+        },
+        {
+          "segment": {
+            "frequency": 6000,
+            "level": -18,
+            "start": 792000,
+            "end": 840000
+          },
+          "live_rms_dbfs": -38.12568655316704,
+          "native_rms_dbfs": -38.2927253121982,
+          "level_error_db": -0.16703875903115772
+        },
+        {
+          "segment": {
+            "frequency": 6000,
+            "level": -6,
+            "start": 840000,
+            "end": 888000
+          },
+          "live_rms_dbfs": -32.13106144437677,
+          "native_rms_dbfs": -32.320637298348494,
+          "level_error_db": -0.18957585397172494
+        },
+        {
+          "segment": {
+            "frequency": 12000,
+            "level": -42,
+            "start": 888000,
+            "end": 936000
+          },
+          "live_rms_dbfs": -50.29353521477539,
+          "native_rms_dbfs": -50.44185350336954,
+          "level_error_db": -0.14831828859415452
+        },
+        {
+          "segment": {
+            "frequency": 12000,
+            "level": -18,
+            "start": 936000,
+            "end": 984000
+          },
+          "live_rms_dbfs": -38.45660793596255,
+          "native_rms_dbfs": -38.549297607810146,
+          "level_error_db": -0.09268967184759447
+        },
+        {
+          "segment": {
+            "frequency": 12000,
+            "level": -6,
+            "start": 984000,
+            "end": 1032000
+          },
+          "live_rms_dbfs": -32.42852896725173,
+          "native_rms_dbfs": -32.51854228785819,
+          "level_error_db": -0.0900133206064595
+        },
+        {
+          "segment": {
+            "frequency": 16000,
+            "level": -42,
+            "start": 1032000,
+            "end": 1080000
+          },
+          "live_rms_dbfs": -48.84692910789576,
+          "native_rms_dbfs": -49.05822973993316,
+          "level_error_db": -0.2113006320373998
+        },
+        {
+          "segment": {
+            "frequency": 16000,
+            "level": -18,
+            "start": 1080000,
+            "end": 1128000
+          },
+          "live_rms_dbfs": -36.61050101673294,
+          "native_rms_dbfs": -36.9316419353776,
+          "level_error_db": -0.32114091864465877
+        },
+        {
+          "segment": {
+            "frequency": 16000,
+            "level": -6,
+            "start": 1128000,
+            "end": 1176000
+          },
+          "live_rms_dbfs": -30.621729800292556,
+          "native_rms_dbfs": -30.929010508346344,
+          "level_error_db": -0.3072807080537885
+        }
+      ]
+    },
+    {
+      "case": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260905-enhance/runs/20260905T133704Z-68123896/cases/0004-noise",
+      "reference_sha256": "8a9a21efe0f00c90e9acdc9ad4577a18edc37c37bccaa6ea7a3bc88f4103531e",
+      "native_sha256": "ca9901d4e389f6725b5c7b499c41f44188ac0f06525d02979a8fc51896d0076e",
+      "width": 100,
+      "depth": 0,
+      "enhance": 1,
+      "signal": "noise",
+      "offsets_seconds": [
+        0.3307083333333334,
+        0.5
+      ],
+      "measurements": [
+        {
+          "segment": {
+            "color": "white",
+            "start": 24000,
+            "end": 168000
+          },
+          "live_rms_dbfs": -37.90961365941485,
+          "native_rms_dbfs": -38.112268556641745,
+          "level_error_db": -0.20265489722689267,
+          "spectral_error_db": [
+            1.9174633740034621,
+            1.0564833141320369,
+            0.8666653094485898,
+            0.6930655594928637,
+            -0.11123225947706125,
+            -0.37525650908450986,
+            -0.5013944899931407,
+            -0.7519032187070905
+          ]
+        },
+        {
+          "segment": {
+            "color": "pink",
+            "start": 168000,
+            "end": 312000
+          },
+          "live_rms_dbfs": -36.62325892604814,
+          "native_rms_dbfs": -36.39254188858361,
+          "level_error_db": 0.23071703746452954,
+          "spectral_error_db": [
+            0.4512882581576081,
+            0.849056166079583,
+            0.6392727992557402,
+            0.3306891357565722,
+            -0.05213758882247092,
+            -0.24070722557774396,
+            -0.35224283424424824,
+            -0.5693478305690062
+          ]
+        },
+        {
+          "segment": {
+            "color": "brown",
+            "start": 312000,
+            "end": 456000
+          },
+          "live_rms_dbfs": -39.132645591950876,
+          "native_rms_dbfs": -38.64517995811617,
+          "level_error_db": 0.4874656338347094,
+          "spectral_error_db": [
+            0.3200851448742885,
+            0.3847813717884224,
+            0.6896971202709153,
+            0.9040921167118429,
+            1.5346478385103457,
+            2.20474468964416,
+            3.1715967157881697,
+            3.501052576745326
+          ]
+        }
+      ]
+    },
+    {
+      "case": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260905-enhance/runs/20260905T134425Z-69067705/cases/0001-noise",
+      "reference_sha256": "21e3dd3db5b3df71112cad7a63b921d127d2b23611e779cf0a46d25ba53d71e1",
+      "native_sha256": "d1ccb5eb80005af702b1ec9d3a4692c20641ccaf7923ff107abc4c57b906c1eb",
+      "width": 50,
+      "depth": 0,
+      "enhance": 1,
+      "signal": "noise",
+      "offsets_seconds": [
+        0.33610416666666665,
+        0.5
+      ],
+      "measurements": [
+        {
+          "segment": {
+            "color": "white",
+            "start": 24000,
+            "end": 168000
+          },
+          "live_rms_dbfs": -39.38601581976383,
+          "native_rms_dbfs": -38.293410624289756,
+          "level_error_db": 1.0926051954740714,
+          "spectral_error_db": [
+            1.649098700725427,
+            1.1848574430681373,
+            0.7572737144828923,
+            0.7409990727298877,
+            1.1378754692851092,
+            1.014039172859815,
+            0.943002391085322,
+            0.8802616147162696
+          ]
+        },
+        {
+          "segment": {
+            "color": "pink",
+            "start": 168000,
+            "end": 312000
+          },
+          "live_rms_dbfs": -38.10142461495248,
+          "native_rms_dbfs": -36.65424501404703,
+          "level_error_db": 1.44717960090545,
+          "spectral_error_db": [
+            1.580352616466914,
+            1.551324517190011,
+            1.586154662055946,
+            1.5006315906019043,
+            1.1771180609626233,
+            1.101029044516225,
+            1.0394736928359567,
+            1.0052438820093619
+          ]
+        },
+        {
+          "segment": {
+            "color": "brown",
+            "start": 312000,
+            "end": 456000
+          },
+          "live_rms_dbfs": -40.682082420836906,
+          "native_rms_dbfs": -39.056927257136365,
+          "level_error_db": 1.6251551637005406,
+          "spectral_error_db": [
+            1.8792115003769037,
+            1.5304861670557368,
+            1.032467387254748,
+            0.9383367049257427,
+            1.563346247503855,
+            2.1921768884257915,
+            3.141638690662497,
+            3.62996893203523
+          ]
+        }
+      ]
+    },
+    {
+      "case": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260905-enhance/runs/20260905T134425Z-69067705/cases/0002-noise",
+      "reference_sha256": "85c1303e5ad7c7d8d0ddb3686d40e0c2876cd248669ee2687f6a532600d2034c",
+      "native_sha256": "58a167b3923047ca01f3f263638d5cb969aad1685cb9d91536fccd7d0e5408e8",
+      "width": 50,
+      "depth": 100,
+      "enhance": 1,
+      "signal": "noise",
+      "offsets_seconds": [
+        0.3415208333333334,
+        0.5
+      ],
+      "measurements": [
+        {
+          "segment": {
+            "color": "white",
+            "start": 24000,
+            "end": 168000
+          },
+          "live_rms_dbfs": -47.67028203676254,
+          "native_rms_dbfs": -49.55057423131571,
+          "level_error_db": -1.8802921945531637,
+          "spectral_error_db": [
+            -6.748093399272012,
+            -5.015711331732132,
+            -3.5096263645532395,
+            -3.490174192536403,
+            -3.4515138265169396,
+            -2.9779134291548757,
+            -2.0826915847140377,
+            -1.348096504840466
+          ]
+        },
+        {
+          "segment": {
+            "color": "pink",
+            "start": 168000,
+            "end": 312000
+          },
+          "live_rms_dbfs": -50.45155230712347,
+          "native_rms_dbfs": -53.29563894856834,
+          "level_error_db": -2.844086641444868,
+          "spectral_error_db": [
+            -6.065762623394754,
+            -4.683745133316602,
+            -2.0643939804511846,
+            -2.3958056002148655,
+            -3.3801785378548295,
+            -3.0455617572065927,
+            -2.1141568054252318,
+            -1.4854893466514973
+          ]
+        },
+        {
+          "segment": {
+            "color": "brown",
+            "start": 312000,
+            "end": 456000
+          },
+          "live_rms_dbfs": -49.54958026800987,
+          "native_rms_dbfs": -54.22584071146676,
+          "level_error_db": -4.67626044345689,
+          "spectral_error_db": [
+            -4.874323390359603,
+            -4.758807388245619,
+            -2.6587292469352612,
+            -3.744117447161012,
+            -4.518342997028894,
+            -3.718148699812913,
+            -2.4808894115569267,
+            -1.6642296342081035
+          ]
+        }
+      ]
+    },
+    {
+      "case": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260905-enhance/runs/20260905T134425Z-69067705/cases/0003-noise",
+      "reference_sha256": "986da7af462095cbbd65ed369cd01273aecc1b2b456fafd5cdc9bb238b10fd79",
+      "native_sha256": "ca9901d4e389f6725b5c7b499c41f44188ac0f06525d02979a8fc51896d0076e",
+      "width": 100,
+      "depth": 0,
+      "enhance": 1,
+      "signal": "noise",
+      "offsets_seconds": [
+        0.341375,
+        0.5
+      ],
+      "measurements": [
+        {
+          "segment": {
+            "color": "white",
+            "start": 24000,
+            "end": 168000
+          },
+          "live_rms_dbfs": -37.9096139303583,
+          "native_rms_dbfs": -38.112268556641745,
+          "level_error_db": -0.20265462628344721,
+          "spectral_error_db": [
+            1.913876843662405,
+            1.0564809275144023,
+            0.8666650576816064,
+            0.6930656340206122,
+            -0.11123225598610992,
+            -0.3752565147153542,
+            -0.5013944935167999,
+            -0.751903220391386
+          ]
+        },
+        {
+          "segment": {
+            "color": "pink",
+            "start": 168000,
+            "end": 312000
+          },
+          "live_rms_dbfs": -36.62345410388965,
+          "native_rms_dbfs": -36.39254188858361,
+          "level_error_db": 0.23091221530604145,
+          "spectral_error_db": [
+            0.45207313288477113,
+            0.8488983158797543,
+            0.6392166056929524,
+            0.3306758369974431,
+            -0.05213967091355028,
+            -0.24070050709213597,
+            -0.3522308696258421,
+            -0.569344357133089
+          ]
+        },
+        {
+          "segment": {
+            "color": "brown",
+            "start": 312000,
+            "end": 456000
+          },
+          "live_rms_dbfs": -39.13267410415522,
+          "native_rms_dbfs": -38.64517995811617,
+          "level_error_db": 0.4874941460390545,
+          "spectral_error_db": [
+            0.3192749261689606,
+            0.38477380991011373,
+            0.689770827397336,
+            0.9040576664773422,
+            1.5345990761653725,
+            2.2047575979251754,
+            3.1714628904038236,
+            3.501294879945261
+          ]
+        }
+      ]
+    },
+    {
+      "case": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260905-enhance/runs/20260905T134425Z-69067705/cases/0004-noise",
+      "reference_sha256": "3fc247adb144c8233b75dd3d970368bd78f152fa5baad34a39db8588fe7d768a",
+      "native_sha256": "53ea72c95b4b08ef502cbcc3a93fab86ecf521ac9406efb94bbe8f346eefe459",
+      "width": 100,
+      "depth": 100,
+      "enhance": 1,
+      "signal": "noise",
+      "offsets_seconds": [
+        0.3307916666666667,
+        0.5
+      ],
+      "measurements": [
+        {
+          "segment": {
+            "color": "white",
+            "start": 24000,
+            "end": 168000
+          },
+          "live_rms_dbfs": -46.42488765855661,
+          "native_rms_dbfs": -45.8070277778965,
+          "level_error_db": 0.6178598806601059,
+          "spectral_error_db": [
+            -2.272408309335554,
+            -2.0550363013023394,
+            -0.9366917519290079,
+            -1.1862361633378866,
+            -1.2684310800806535,
+            -0.25290270980490404,
+            0.7511331466836413,
+            1.1670224158758014
+          ]
+        },
+        {
+          "segment": {
+            "color": "pink",
+            "start": 168000,
+            "end": 312000
+          },
+          "live_rms_dbfs": -48.74229683451513,
+          "native_rms_dbfs": -49.99957677963896,
+          "level_error_db": -1.2572799451238268,
+          "spectral_error_db": [
+            -3.362323833148002,
+            -0.8694280584074086,
+            -1.0496910987694916,
+            -1.368789393661184,
+            -1.255550850311434,
+            -0.2591804385028344,
+            0.8071277645957492,
+            1.2275680667457487
+          ]
+        },
+        {
+          "segment": {
+            "color": "brown",
+            "start": 312000,
+            "end": 456000
+          },
+          "live_rms_dbfs": -47.43355148981163,
+          "native_rms_dbfs": -50.624611540856336,
+          "level_error_db": -3.1910600510447082,
+          "spectral_error_db": [
+            -3.9745199410511467,
+            -2.988414347294099,
+            -1.0411398834803534,
+            -1.2995795200917781,
+            -0.8393976141862033,
+            0.4968494754548073,
+            1.9467261868661279,
+            2.5558443220403793
+          ]
+        }
+      ]
+    },
+    {
+      "case": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260905-enhance/runs/20260905T134425Z-69067705/cases/0005-noise",
+      "reference_sha256": "97c857fc93af490791e02414ad65c6bf7821f5832787a112119600a11be158a7",
+      "native_sha256": "bb67918d90e0c5bd9cfad99570207a840a5892621ffda783b467fe1cb46cd9a8",
+      "width": 200,
+      "depth": 0,
+      "enhance": 1,
+      "signal": "noise",
+      "offsets_seconds": [
+        0.3360208333333333,
+        0.5
+      ],
+      "measurements": [
+        {
+          "segment": {
+            "color": "white",
+            "start": 24000,
+            "end": 168000
+          },
+          "live_rms_dbfs": -43.637881063652095,
+          "native_rms_dbfs": -44.96048802230811,
+          "level_error_db": -1.3226069586560172,
+          "spectral_error_db": [
+            0.879849825959232,
+            1.0636391995188825,
+            0.7612671818964525,
+            -0.04733176354065426,
+            -1.485328113143624,
+            -1.7375585093477082,
+            -1.8959783436602988,
+            -1.9028914379988318
+          ]
+        },
+        {
+          "segment": {
+            "color": "pink",
+            "start": 168000,
+            "end": 312000
+          },
+          "live_rms_dbfs": -42.54687398946284,
+          "native_rms_dbfs": -43.89756151910052,
+          "level_error_db": -1.350687529637682,
+          "spectral_error_db": [
+            -1.922446569420449,
+            -1.593790203666393,
+            -0.8872733485392361,
+            -0.9486054178527471,
+            -1.4171268337553962,
+            -1.6945253474653823,
+            -1.8381883297219872,
+            -1.8135403383423891
+          ]
+        },
+        {
+          "segment": {
+            "color": "brown",
+            "start": 312000,
+            "end": 456000
+          },
+          "live_rms_dbfs": -44.651311588763924,
+          "native_rms_dbfs": -46.07138237279212,
+          "level_error_db": -1.4200707840281979,
+          "spectral_error_db": [
+            -2.076839266744836,
+            -1.9498805759576006,
+            -0.47314882175949,
+            0.8675685626217254,
+            1.5018946549238255,
+            2.2100550745310104,
+            3.150523313251041,
+            3.3492754257722095
+          ]
+        }
+      ]
+    },
+    {
+      "case": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260905-enhance/runs/20260905T134425Z-69067705/cases/0006-noise",
+      "reference_sha256": "129ba103f247918c40df8dc2fac0ed5fbb0d389541b18f4722bf7c3bf6d58f08",
+      "native_sha256": "4d1694a54852246e12b5eefcec064dd05ff85c29cb9743ca44891730adacfd97",
+      "width": 200,
+      "depth": 100,
+      "enhance": 1,
+      "signal": "noise",
+      "offsets_seconds": [
+        0.33077083333333335,
+        0.5
+      ],
+      "measurements": [
+        {
+          "segment": {
+            "color": "white",
+            "start": 24000,
+            "end": 168000
+          },
+          "live_rms_dbfs": -51.68618025711205,
+          "native_rms_dbfs": -48.11675208251423,
+          "level_error_db": 3.5694281745978174,
+          "spectral_error_db": [
+            0.6790640959325086,
+            0.6053645765811198,
+            2.060459169933282,
+            1.3082339903368407,
+            1.5205904818376785,
+            2.721702844127729,
+            3.278645465147565,
+            3.5516599581165047
+          ]
+        },
+        {
+          "segment": {
+            "color": "pink",
+            "start": 168000,
+            "end": 312000
+          },
+          "live_rms_dbfs": -53.65592912624112,
+          "native_rms_dbfs": -53.38944605902568,
+          "level_error_db": 0.26648306721543946,
+          "spectral_error_db": [
+            -4.230947750907072,
+            -0.37013963729695715,
+            0.5576863797008311,
+            0.46938971851590133,
+            1.427115096415648,
+            2.697436006030427,
+            3.417653214009768,
+            3.671935158321986
+          ]
+        },
+        {
+          "segment": {
+            "color": "brown",
+            "start": 312000,
+            "end": 456000
+          },
+          "live_rms_dbfs": -50.98807544385412,
+          "native_rms_dbfs": -53.678478617823885,
+          "level_error_db": -2.690403173969763,
+          "spectral_error_db": [
+            -3.7969447550110917,
+            -1.9258568815289294,
+            0.3979145940949821,
+            1.70111126074221,
+            3.156282429245381,
+            4.781410394473819,
+            6.233805424327075,
+            6.3861152096758405
+          ]
+        }
+      ]
+    }
+  ]
+}

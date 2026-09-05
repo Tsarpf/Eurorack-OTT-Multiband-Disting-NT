@@ -55,12 +55,16 @@ def native_stem(root: Path, width: int, shift: int) -> Path:
 
 
 def render_native(root: Path, renderer: Path, widths: list[int]) -> None:
+    # These historical comparisons deliberately measure the Enhance-off bank.
+    # Older revision renderers predate the toggle and already render Off.
+    help_text = subprocess.check_output([str(renderer), "--help"], text=True)
+    enhance_args = ["--enhance", "0"] if "--enhance" in help_text else []
     (root / "native" / "formant").mkdir(parents=True, exist_ok=True)
     for width in widths:
         for shift in SHIFTS:
             stem = native_stem(root, width, shift)
             subprocess.run([
-                str(renderer), "--input", str(root / "inputs" / "vowel-noise.wav"),
+                str(renderer), *enhance_args, "--input", str(root / "inputs" / "vowel-noise.wav"),
                 "--output", str(stem.with_suffix(".wav")),
                 "--metadata", str(stem.with_suffix(".json")), "--bands", "40",
                 "--width", str(width), "--depth", "100", "--formant-semitones", str(shift),

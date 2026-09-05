@@ -152,6 +152,10 @@ def native_paths(root: Path, width: int, depth: int) -> tuple[Path, Path]:
 def render_native(root: Path, executable: Path, force: bool = False,
                   depths: tuple[int, ...] = DEPTHS,
                   check_input_scaling: bool = False) -> None:
+    # These historical comparisons deliberately measure the Enhance-off bank.
+    # Older revision renderers predate the toggle and already render Off.
+    help_text = subprocess.check_output([str(executable), "--help"], text=True)
+    enhance_args = ["--enhance", "0"] if "--enhance" in help_text else []
     source = root / "inputs/steps.wav"
     input_hash, renderer_hash = sha256(source), sha256(executable)
     manifest_path = root / "native/depth/render-manifest.json"
@@ -163,7 +167,7 @@ def render_native(root: Path, executable: Path, force: bool = False,
         for depth in depths:
             output, metadata = native_paths(root, width, depth)
             output.parent.mkdir(parents=True, exist_ok=True)
-            command = [str(executable), "--input", str(source), "--output", str(output),
+            command = [str(executable), *enhance_args, "--input", str(source), "--output", str(output),
                        "--metadata", str(metadata), "--bands", "40", "--width", str(width),
                        "--depth", str(depth), "--min-hz", "30", "--max-hz", "18000",
                        "--attack-ms", "10", "--release-ms", "30", "--wet", "100",
@@ -179,7 +183,7 @@ def render_native(root: Path, executable: Path, force: bool = False,
         for depth in (100, 200):
             stem = root / "native/depth" / f"width-100-depth-{depth:03d}-input-times-five"
             output, metadata = stem.with_suffix(".wav"), stem.with_suffix(".json")
-            command = [str(executable), "--input", str(scaled_input), "--output", str(output),
+            command = [str(executable), *enhance_args, "--input", str(scaled_input), "--output", str(output),
                        "--metadata", str(metadata), "--bands", "40", "--width", "100",
                        "--depth", str(depth), "--min-hz", "30", "--max-hz", "18000",
                        "--attack-ms", "10", "--release-ms", "30", "--wet", "100",
