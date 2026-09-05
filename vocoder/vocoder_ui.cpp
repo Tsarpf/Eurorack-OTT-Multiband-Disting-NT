@@ -78,7 +78,11 @@ bool draw(_NT_algorithm *self) {
     }
   }
 
-  snprintf(buf, sizeof(buf), "BANDS %d", a->activeBands);
+  if (self->vIncludingCommon && self->vIncludingCommon[0]) {
+    snprintf(buf, sizeof(buf), "BYPASS");
+  } else {
+    snprintf(buf, sizeof(buf), "BANDS %d", a->activeBands);
+  }
   NT_drawText(34, footerY, buf, 15, kNT_textCentre, kNT_textTiny);
 
   char decayBuf[24];
@@ -109,11 +113,21 @@ bool draw(_NT_algorithm *self) {
 
 uint32_t hasCustomUi(_NT_algorithm *) {
   return kNT_potL | kNT_potC | kNT_potR | kNT_encoderL | kNT_encoderR |
-         kNT_encoderButtonL | kNT_encoderButtonR;
+         kNT_button1 | kNT_encoderButtonL | kNT_encoderButtonR;
 }
 
 void customUi(_NT_algorithm *self, const _NT_uiData &data) {
   auto *a = (_vocoderAlgorithm *)self;
+
+  if ((data.controls & kNT_button1) && !(data.lastButtons & kNT_button1)) {
+    // Use the host's common bypass parameter, matching OTT's first button.
+    if (self->vIncludingCommon) {
+      const int numCommon = (int)(self->v - self->vIncludingCommon);
+      const int bypassGlobalIdx = (int)NT_parameterOffset() - numCommon;
+      NT_setParameterFromUi(NT_algorithmIndex(self), bypassGlobalIdx,
+                            self->vIncludingCommon[0] ? 0 : 1);
+    }
+  }
 
   if (data.controls & kNT_potL) {
     const int value = (int)(data.pots[0] * 200.0f);

@@ -70,6 +70,10 @@ Depth values above 200% clamp to 200%. Existing presets retain their stored
 values, but sound different because the filter and envelope behavior changed.
 Enhance is not implemented; the comparison measures it separately.
 
+In the custom UI, button 1 toggles the disting NT's common bypass parameter,
+matching OTT. The footer shows `BYPASS` while bypassed; holding the button does
+not repeatedly toggle it.
+
 ## Build and validation
 
 ```sh
