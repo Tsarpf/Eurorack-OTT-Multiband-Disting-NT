@@ -64,11 +64,12 @@ States below `1e-20` are flushed to zero to avoid denormal CPU costs.
 | Maximum frequency | 2000–20000 Hz | 18000 Hz |
 | Attack | 1–500 ms | 10 ms |
 | Decay / Release | 1–1000 ms | 30 ms |
+| Enhance | Off / On | On |
 
-Parameter indices and the reserved former Enhance slot are preserved. Legacy
-Depth values above 200% clamp to 200%. Existing presets retain their stored
-values, but sound different because the filter and envelope behavior changed.
-Enhance is not implemented; the comparison measures it separately.
+Parameter indices are preserved; the former reserved slot now exposes Enhance.
+New instances default On. Existing presets keep their stored value (0 means Off).
+Legacy Depth values above 200% clamp to 200%. The current device instance was
+explicitly switched On while preserving the rest of its preset.
 
 In the custom UI, button 1 toggles the disting NT's common bypass parameter,
 matching OTT. The footer shows `BYPASS` while bypassed; holding the button does
@@ -184,3 +185,49 @@ Final device stress results for this follow-up: mono algorithm average 49.3%
 whole module max91%. These are isolated-plugin motion tests, so additional
 algorithms consume further CPU. Results and the exact object hash are in
 [width-transition-fix.json](fixtures/analysis/ableton_filterbank_update/width-transition-fix.json).
+
+
+## Enhance and CPU update — 2026-09-05
+
+Enhance now normalizes each synthesis/carrier band's RMS before applying the
+modulator's Depth gain. The measured approximation is 2:1 compression with a
+maximum 11 dB boost: `sqrt(0.212132 / max(carrierRmsVolts, 0.0168503))`.
+A 20 ms mean-square follower and 20 ms toggle transition precede the existing
+1 ms gain interpolation. Quiet carrier bands receive more gain than strong
+ones. This is an additional carrier process, independent of the modulator's
+Attack/Release controls; it does not replace or normalize the Depth curve.
+
+The 40-band Modulator/Precise captures use Release30 and the reference device's
+actual 20 Hz–18 kHz range. Native processing still supports 20 kHz. At Width100,
+Depth0, all 24 steady tones (40 Hz–16 kHz, -42/-18/-6 dBFS) match Enhance-on
+output levels within 0.5 dB. White/pink broadband levels differ by less than
+0.25 dB; individual spectral regions differ by up to about 2 dB. This remains
+an approximation: Width50/200 and active Depth retain several-dB differences,
+especially brown noise and quiet high bands. The 20 ms Enhance time constant
+is a practical choice, not an identification of Live's exact transient law.
+
+Enhance Off preserves the previous filterbank. Tested Depth0/100 renders are
+bit-identical; other tested Depth/formant cases differ by at most 2.3e-7 full
+scale, with residual RMS more than 100 dB below the signal. The bounded fast
+power calculation is checked across Depth1–200 and a broad envelope range.
+
+Performance changes reuse a filter pass where inputs and coefficients match
+and filter-history residuals are below 1e-8 state units; retain coefficient
+values across each sample loop; fuse carrier RMS measurement with filtering;
+cache gain conversion; and avoid interpolating unused CMSIS reference arrays.
+Coefficient convergence now uses a relative tolerance for large SVF values,
+so float rounding cannot keep settled controls interpolating indefinitely.
+
+Envelope and gain targets update after accumulating 24 samples (2 kHz at
+48 kHz), including when the host delivers four-sample callbacks. Peak detection
+and carrier power accumulate all samples. Audio filtering and gain interpolation
+remain per sample. Coefficient construction retains the existing one-band-pair
+per24frames budget, reaching 50 complete 40-band target banks per second.
+
+In isolated NT tests, 40-band mono Depth100 averaged38% before, 30% with Enhance
+Off, and32.2% with Enhance On. Stereo at those settings averaged75%,65.2%,72.2%
+respectively. The final Enhance-on full-range stereo motion test reached90%
+algorithm CPU and98% whole-module CPU: additional algorithms need headroom.
+The current object was installed and all four original algorithms/parameters
+were restored, with Enhance intentionally enabled on the existing vocoder.
+See [measurements and limitations](fixtures/analysis/ableton_enhance_20260905/README.md).

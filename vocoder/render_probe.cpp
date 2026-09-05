@@ -15,7 +15,7 @@ struct Options {
   std::string input, output, metadata;
   int bands = 40, width = 100, depth = 100, formant = 0;
   int minHz = 30, maxHz = 18000, attackMs = 10, releaseMs = 30;
-  int wet = 100, pregain = 0;
+  int wet = 100, pregain = 0, enhance = 1;
   double settleSeconds = 0.5, tailSeconds = 0.5;
   double busVoltsPerFullScale = 5.0;
 };
@@ -198,6 +198,7 @@ static void help() {
       "Native DSP guards remain active; no peak normalization or additional limiting.\n\n"
       "  --bands N                 4..40, default 40\n"
       "  --width PERCENT           0..200, default 100\n"
+      "  --enhance N               0=off, 1=on (default)\n"
       "  --depth PERCENT           0..200, default 100\n"
       "  --formant-semitones N     -36..36 in 0.1 steps, default 0\n"
       "  --min-hz N                20..1000, default 30\n"
@@ -240,6 +241,7 @@ int main(int argc, char **argv) {
       else if (name == "--metadata") options.metadata = value;
       else if (name == "--bands") options.bands = parameter(value, name, kBandCount);
       else if (name == "--width") options.width = parameter(value, name, kBandWidth);
+      else if (name == "--enhance") options.enhance = parameter(value, name, kEnhance);
       else if (name == "--depth") options.depth = parameter(value, name, kDepth);
       else if (name == "--formant-semitones") options.formant = parameter(value, name, kFormant, 10);
       else if (name == "--min-hz") options.minHz = parameter(value, name, kMinFreq);
@@ -291,7 +293,7 @@ int main(int argc, char **argv) {
       {kOut, 13}, {kOutMode, 1}, {kBandCount, options.bands},
       {kBandWidth, options.width}, {kDepth, options.depth}, {kFormant, options.formant},
       {kMinFreq, options.minHz}, {kMaxFreq, options.maxHz}, {kAttack, options.attackMs},
-      {kRelease, options.releaseMs}, {kEnhance, 0}, {kWet, options.wet}, {kPreGain, options.pregain},
+      {kRelease, options.releaseMs}, {kEnhance, options.enhance}, {kWet, options.wet}, {kPreGain, options.pregain},
     };
     for (const auto &setting : settings)
       hostSetParameter(host, setting.first, static_cast<int16_t>(setting.second));
@@ -324,8 +326,9 @@ int main(int argc, char **argv) {
       << ",\n  \"bus_volts_per_full_scale\": " << options.busVoltsPerFullScale
       << ",\n  \"applied_gain_after_dsp\": " << 1.0 / options.busVoltsPerFullScale
       << ",\n  \"filter_stages_per_band\": " << kVocoderFilterStages
-      << ",\n  \"native_enhance_implemented\": false,\n  \"parameters\": {"
+      << ",\n  \"native_enhance_implemented\": true,\n  \"parameters\": {"
       << "\"bands\":" << options.bands << ",\"width_percent\":" << options.width
+      << ",\"enhance\":" << options.enhance
       << ",\"depth_percent\":" << options.depth << ",\"formant_semitones\":" << options.formant / 10.0
       << ",\"min_hz\":" << options.minHz << ",\"max_hz\":" << options.maxHz
       << ",\"attack_ms\":" << options.attackMs << ",\"release_ms\":" << options.releaseMs

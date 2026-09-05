@@ -60,6 +60,14 @@ struct VocoderDSPState {
   bool stereoOutputWasActive;
   bool carrierStereoWasActive;
   bool modulatorStereoWasActive;
+
+  float carrierPower[2][kVocoderMaxBands];
+  float enhanceMix;
+  bool enhanceWasActive;
+  float analysisPeakPending[2][kVocoderMaxBands];
+  float carrierPowerPending[2][kVocoderMaxBands];
+  float gainTarget[2][kVocoderMaxBands];
+  int envelopeFrames;
 };
 
 struct VocoderCachedCoeffs {
@@ -79,6 +87,7 @@ struct VocoderCachedCoeffs {
   float inputGuardReleaseMix;
   float guardAttackMix;
   float guardReleaseMix;
+  float enhancePowerMix;
   // Keys used to detect staleness
   int   lastN;
   float lastSampleRate;
@@ -141,6 +150,8 @@ struct _vocoderAlgorithm : public _NT_algorithm {
   float pendingStep = 1.0f;
   int coefficientWorkPhase = 0;
   bool bankInitialized = false;
+  float cachedGainDb = -1000.0f;
+  float cachedGainLinear = 1.0f;
 };
 
 #endif // VOCODER_STRUCTS_H

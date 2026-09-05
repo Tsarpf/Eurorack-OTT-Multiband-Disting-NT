@@ -304,15 +304,17 @@ static void testEnvelopeOnlyMatchesBufferedCascade() {
       const BatchBiquadCoeffs coefficients =
           calculateCascade(frequency, q, 48000.0f);
       for (int blockSize : blockSizes) {
-        BatchBiquadState buffered = {}, fused = {};
+        BatchBiquadState buffered = {}, fused = {}, retained = {};
         batchBiquadInit(buffered, coefficients);
         batchBiquadInit(fused, coefficients);
+        batchBiquadInit(retained, coefficients);
         for (int index = 0; index < 2 * kVocoderFilterStages; ++index) {
           seed = 1664525u * seed + 1013904223u;
           const float initial =
               (float)(int32_t)(seed >> 8) * (0.02f / 8388608.0f);
           buffered.state[index] = initial;
           fused.state[index] = initial;
+          retained.state[index] = initial;
         }
 
         std::vector<float> input(blockSize), output(blockSize);
@@ -326,6 +328,18 @@ static void testEnvelopeOnlyMatchesBufferedCascade() {
             coefficients, buffered, input.data(), output.data(), blockSize);
         const float fusedPeak = batchBiquadEnvelopeOnly(
             coefficients, fused, input.data(), blockSize);
+        std::vector<float> retainedOutput(blockSize);
+        float retainedPower = 0.0f, referencePower = 0.0f;
+        const float retainedPeak = batchBiquadEnvelope<true, true>(
+            coefficients, retained, input.data(), blockSize, retainedOutput.data(), &retainedPower);
+        for (float sample : output) referencePower += sample * sample;
+        referencePower /= blockSize;
+        require(nearlyEqual(retainedPower, referencePower, 1.0e-6f * fmaxf(referencePower, 1.0f)),
+                "Fused carrier power must match buffered RMS detection");
+        require(sameFloatBits(bufferedPeak, retainedPeak) &&
+                    memcmp(output.data(), retainedOutput.data(), blockSize * sizeof(float)) == 0 &&
+                    memcmp(buffered.state, retained.state, sizeof(buffered.state)) == 0,
+                "retaining shared filter output must preserve samples, peak and history");
         require(sameFloatBits(bufferedPeak, fusedPeak),
                 "fused analysis changed the envelope peak");
         require(memcmp(buffered.state, fused.state, sizeof(buffered.state)) == 0,
@@ -344,7 +358,7 @@ static void testFusedSynthesisMatchesBufferedMotion() {
   uint32_t seed = 37;
   for (int size : sizes) {
     BatchBiquadCoeffs c = calculateCascade(1000.0f, 6.0f, 48000.0f);
-    BatchBiquadState buffered = {}, fused = {};
+    BatchBiquadState buffered = {}, fused = {}, retained = {};
     batchBiquadInit(buffered, c);
     batchBiquadInit(fused, c);
     float referenceGain = 0.0f, fusedGain = 0.0f;
@@ -947,39 +961,52 @@ static void testImpulseProducesResponse() {
           "modulator impulse failed to open the wet carrier path");
 }
 
-static void testLegacyEnhanceIsHiddenAndNoop() {
-  // Preserve the old parameter index for preset compatibility without exposing
-  // a control that has no DSP implementation.
-  for (uint32_t page = 0; page < paramPages.numPages; ++page) {
-    for (uint8_t index = 0; index < paramPages.pages[page].numParams; ++index) {
-      require(paramPages.pages[page].params[index] != kEnhance,
-              "legacy Enhance parameter should not appear on a page");
+static void testEnhance() {
+  require(parameters[kEnhance].def == 1 && parameters[kEnhance].enumStrings == onOffEnum,
+          "Enhance must default on and have valid enum strings");
+  bool paged = false;
+  for (uint32_t page = 0; page < paramPages.numPages; ++page)
+    for (uint8_t i = 0; i < paramPages.pages[page].numParams; ++i)
+      paged |= paramPages.pages[page].params[i] == kEnhance;
+  require(paged, "Enhance must be accessible");
+  double levels[2][2] = {};
+  const int frames = 48000;
+  for (int enabled = 0; enabled < 2; ++enabled) {
+    for (int level = 0; level < 2; ++level) {
+      HostAlgorithm host = makeAlgorithm();
+      host.values[kEnhance] = enabled;
+      host.values[kDepth] = 0;
+      host.values[kBandCount] = 40;
+      host.values[kBandWidth] = 100;
+      for (int p : {kEnhance, kDepth, kBandCount, kBandWidth})
+        factory.parameterChanged(host.algorithm, p);
+      std::vector<float> input(frames), output;
+      for (int i = 0; i < frames; ++i)
+        input[i] = (level ? 2.5f : 0.625f) * sinf(2 * 3.14159265359f * 1000 * i / 48000);
+      processAndMeasureAbs(host, input, input, input, input, &output);
+      levels[enabled][level] = rms(output, frames / 2, frames);
     }
   }
-  HostAlgorithm base = makeAlgorithm();
-  HostAlgorithm enhanced = makeAlgorithm();
-  enhanced.values[kEnhance] = 1;
-  factory.parameterChanged(enhanced.algorithm, kEnhance);
+  require(fabs(20 * log10(levels[0][1] / levels[0][0]) - 12.04) < .2,
+          "Enhance off must preserve linear Depth-zero behavior");
+  require(fabs(20 * log10(levels[1][1] / levels[1][0]) - 6.02) < .5,
+          "Enhance on must compress the carrier approximately 2:1");
+}
 
-  const int frames = 480;
-  std::vector<float> carL(frames), carR(frames), modL(frames), modR(frames);
-  for (int i = 0; i < frames; ++i) {
-    const float ramp = 0.1f + 0.9f * ((float)i / (float)(frames - 1));
-    carL[i] = ramp * sinf(2.0f * 3.14159265359f * 110.0f * i / 48000.0f);
-    carR[i] = carL[i];
-    modL[i] = 0.7f * sinf(2.0f * 3.14159265359f * 400.0f * i / 48000.0f);
-    modR[i] = modL[i];
+static void testFastEnvelopePower() {
+  for (int d = 1; d <= 200; ++d) {
+    const auto shape = vocoderMakeEnvelopeShape(float(d));
+    for (int step = -120; step <= 120; ++step) {
+      const float x = powf(10.0f, step / 10.0f);
+      float reference;
+      if (d < 100) reference = powf(x + .56f * (1 - shape.depth), shape.lowerExponent);
+      else if (d == 100) reference = x;
+      else reference = 5.5f * powf(fmaxf(0, 1 - shape.depth + shape.depth * powf(x / 5.5f, 2.f/7.f)), 3.5f);
+      const float actual = vocoderEnvelopeDepthGain(shape, x, 1);
+      require(fabsf(actual - reference) <= 0.0002f * fmaxf(reference, 1.0e-4f),
+              "Fast Depth gain exceeds approximation error budget");
+    }
   }
-
-  std::vector<float> outA, outB;
-  processAndMeasureAbs(base, carL, carR, modL, modR, &outA);
-  processAndMeasureAbs(enhanced, carL, carR, modL, modR, &outB);
-
-  float diff = 0.0f;
-  for (int i = 0; i < frames; ++i) {
-    diff += fabsf(outA[i] - outB[i]);
-  }
-  require(diff < 1.0e-4f, "legacy Enhance parameter should remain a no-op");
 }
 
 static void testFormantSmoothingMovesDescriptor() {
@@ -1111,6 +1138,10 @@ static void testBlockRateCoefficientTimebase() {
           "output guard smoothing must use the block rate");
 
   computeBlockCoeffs(algo, 12, 48000.0f);
+  require(nearlyEqual(block24.attackMix, coeffs.attackMix, 1.0e-7f) &&
+              nearlyEqual(block24.releaseMix, coeffs.releaseMix, 1.0e-7f) &&
+              nearlyEqual(block24.enhancePowerMix, coeffs.enhancePowerMix, 1.0e-7f),
+          "Envelope coefficients must retain a fixed 24-sample timebase");
   require(nearlyEqual(block24.synthesisCoeffMix,
                       coeffs.synthesisCoeffMix * coeffs.synthesisCoeffMix,
                       2.0e-6f),
@@ -1170,9 +1201,11 @@ static void testMonoDoesNotRetainRightGuardGain() {
           "stereo re-enable must not restore stale right-channel guard gain");
 }
 
-static void testFullRangeMotionStaysFiniteAndRecovers() {
+static void testFullRangeMotionStaysFiniteAndRecovers(bool enhance = false) {
   HostAlgorithm host = makeAlgorithm();
   configureProbe(host, 200, 0);
+  host.values[kEnhance] = enhance;
+  factory.parameterChanged(host.algorithm, kEnhance);
   host.values[kCarrierStereo] = 1;
   host.values[kModulatorStereo] = 1;
   factory.parameterChanged(host.algorithm, kCarrierStereo);
@@ -1347,6 +1380,59 @@ static void testWidthChangeDoesNotDuckSaw() {
           "Width 200->100 caused a temporary saw level collapse");
 }
 
+static void testCoefficientInterpolationFinishes() {
+  for (int formant : {-360, 120, 360}) {
+    HostAlgorithm host = makeAlgorithm();
+    configureProbe(host, 100, 200);
+    host.values[kFormant] = formant;
+    factory.parameterChanged(host.algorithm, kFormant);
+    auto *a = (_vocoderAlgorithm *)host.algorithm;
+    for (int i = 0; i < 4000; ++i) {
+      float buses[24 * kNT_lastBus] = {};
+      factory.step(host.algorithm, buses, 6);
+    }
+    require(!a->buildingDescriptor && !a->controls.synthesisCoeffSmoothing,
+            "Stationary extreme band gains must not interpolate forever");
+    for (int band = 0; band < a->activeBands; ++band)
+      require(memcmp(a->state->syCoeffs[band].svf,
+                     a->descriptor->synthesisCoeffs[band].svf, 8 * sizeof(float)) == 0,
+              "Settled filters must reach the exact designed coefficients");
+  }
+}
+
+static void testShortCallbacksKeepEnvelopeRate() {
+  double level[2][2] = {};
+  for (int enhanced = 0; enhanced < 2; ++enhanced) {
+    for (int shortBlocks = 0; shortBlocks < 2; ++shortBlocks) {
+      HostAlgorithm host = makeAlgorithm();
+      configureProbe(host, 100, 100);
+      host.values[kEnhance] = enhanced;
+      factory.parameterChanged(host.algorithm, kEnhance);
+      const int count = shortBlocks ? 4 : 24;
+      double sum = 0;
+      for (int offset = 0; offset < 48000; offset += count) {
+        float buses[24 * kNT_lastBus] = {};
+        for (int i = 0; i < count; ++i) {
+          const float t = (offset + i) / 48000.0f;
+          buses[i] = buses[2 * count + i] =
+              .2f * sinf(2 * 3.14159265359f * 3000 * t) +
+              .1f * sinf(2 * 3.14159265359f * 12000 * t);
+        }
+        factory.step(host.algorithm, buses, count / 4);
+        const auto *a = (_vocoderAlgorithm *)host.algorithm;
+        require(a->state->envelopeFrames == (offset + count) % 24,
+                "Envelope control work must accumulate short callbacks");
+        if (offset >= 24000)
+          for (int i = 0; i < count; ++i)
+            sum += double(buses[12 * count + i]) * buses[12 * count + i];
+      }
+      level[enhanced][shortBlocks] = sqrt(sum / 24000);
+    }
+    require(fabs(20 * log10(level[enhanced][0] / level[enhanced][1])) < .1,
+            "Short callbacks must preserve the measured sustained envelope level");
+  }
+}
+
 static void testSignedDisplay() {
   HostAlgorithm host = makeAlgorithm();
   auto *a = (_vocoderAlgorithm *)host.algorithm;
@@ -1362,6 +1448,8 @@ static void testSignedDisplay() {
 
 int main() {
   testSignedDisplay();
+  testShortCallbacksKeepEnvelopeRate();
+  testCoefficientInterpolationFinishes();
   testWidthChangeDoesNotDuckSaw();
   testCoefficientWorkBudget();
   testCascadeReseatPreservesAllStagesAndGain();
@@ -1382,7 +1470,8 @@ int main() {
   testDepthZeroRemainsLevelLinear();
   testReleaseDoesNotDipAndRecoverSlowly();
   testImpulseProducesResponse();
-  testLegacyEnhanceIsHiddenAndNoop();
+  testEnhance();
+  testFastEnvelopePower();
   testFormantSmoothingMovesDescriptor();
   testSupportedRangesAndWidthMotion();
   testExtremeFormantBandsFadeAtBothEdges();
@@ -1390,6 +1479,7 @@ int main() {
   testOutputGuardRampsAcrossBlock();
   testMonoDoesNotRetainRightGuardGain();
   testFullRangeMotionStaysFiniteAndRecovers();
+  testFullRangeMotionStaysFiniteAndRecovers(true);
   testMetersRespondToModulator();
   std::cout << "vocoder tests passed\n";
   return 0;

@@ -2,6 +2,7 @@
 #define VOCODER_ENVELOPE_SHAPE_H
 
 #include <math.h>
+#include "fast_math.h"
 
 // A static approximation to measured Ableton Modulator/Precise Depth curves,
 // not a reconstruction of Live's implementation. See tools/live_probe/fit_depth.py.
@@ -49,13 +50,13 @@ inline float vocoderEnvelopeDepthGain(const VocoderEnvelopeShape &shape,
     // Retain some unmodulated carrier below 100%, including at zero envelope.
     // At 0% the early return is exactly unity; at 100% this tends to x.
     const float floor = 0.56f * (1.0f - shape.depth);
-    return powf(x + floor, shape.lowerExponent);
+    return vocoderPositivePower(x + floor, shape.lowerExponent);
   }
   // Above 100%, an affine expansion in a compressed envelope domain gives
   // sustained contrast and progressively rejects quiet bands. It contains no
   // E/average(E) normalization, makeup gain, or secondary envelope follower.
   const float pivot = 5.5f;
-  const float compressed = powf(x / pivot, 2.0f / 7.0f);
+  const float compressed = vocoderPositivePower(x / pivot, 2.0f / 7.0f);
   const float expanded = 1.0f - shape.depth + shape.depth * compressed;
   if (!(expanded > 0.0f)) {
     return 0.0f;

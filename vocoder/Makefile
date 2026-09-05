@@ -82,7 +82,7 @@ test: $(HOST_CMSIS_OBJS)
 
 render-probe: $(OBJDIR)/render_probe
 
-$(OBJDIR)/render_probe: render_probe.cpp host_plugin.h wav_io.h vocoder_algo.cpp vocoder_parameters.h vocoder_structs.h vocoder_dsp.h envelope_shape.h batch_biquad.h $(HOST_CMSIS_OBJS)
+$(OBJDIR)/render_probe: render_probe.cpp host_plugin.h wav_io.h vocoder_algo.cpp vocoder_parameters.h vocoder_structs.h vocoder_dsp.h envelope_shape.h fast_math.h batch_biquad.h $(HOST_CMSIS_OBJS)
 	$(HOST_CXX) -O2 $(HOST_CXXFLAGS) render_probe.cpp $(HOST_CMSIS_OBJS) -o $@
 
 benchmark-host: $(HOST_CMSIS_OBJS)

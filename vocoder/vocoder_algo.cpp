@@ -39,6 +39,10 @@ static void synchroniseRightCarrierState(VocoderDSPState &state) {
     memcpy(state.syState[1][band].state, state.syState[0][band].state,
            sizeof(state.syState[0][band].state));
   }
+  memcpy(state.carrierPower[1], state.carrierPower[0],
+         sizeof(state.carrierPower[0]));
+  memcpy(state.carrierPowerPending[1], state.carrierPowerPending[0],
+         sizeof(state.carrierPowerPending[0]));
   state.carrierDcX1[1] = state.carrierDcX1[0];
   state.carrierDcY1[1] = state.carrierDcY1[0];
 }
@@ -47,6 +51,8 @@ static void synchroniseRightModulatorState(VocoderDSPState &state) {
   for (int band = 0; band < kVocoderMaxBands; ++band) {
     memcpy(state.anState[1][band].state, state.anState[0][band].state,
            sizeof(state.anState[0][band].state));
+    state.analysisPeakPending[1][band] = state.analysisPeakPending[0][band];
+    state.gainTarget[1][band] = state.gainTarget[0][band];
     state.env[1][band] = state.env[0][band];
     state.gainState[1][band] = state.gainState[0][band];
   }
@@ -151,6 +157,10 @@ static void rebuildDescriptor(_vocoderAlgorithm *a) {
                sizeof(a->state->anState[channel][band].state));
         memset(a->state->syState[channel][band].state, 0,
                sizeof(a->state->syState[channel][band].state));
+        a->state->carrierPower[channel][band] = 0.0f;
+        a->state->analysisPeakPending[channel][band] = 0.0f;
+        a->state->carrierPowerPending[channel][band] = 0.0f;
+        a->state->gainTarget[channel][band] = 0.0f;
         a->state->env[channel][band] = 0.0f;
         a->state->gainState[channel][band] = 0.0f;
       }
@@ -347,6 +357,10 @@ static void updateControlState(_vocoderAlgorithm *a) {
       memset(a->state->anState[ch][i].state, 0, sizeof(a->state->anState[ch][i].state));
       memset(a->state->syState[ch][i].state, 0, sizeof(a->state->syState[ch][i].state));
       a->state->env[ch][i] = a->state->gainState[ch][i] = 0;
+      a->state->carrierPower[ch][i] = 0;
+      a->state->analysisPeakPending[ch][i] = 0;
+      a->state->carrierPowerPending[ch][i] = 0;
+      a->state->gainTarget[ch][i] = 0;
     }
   }
   *a->descriptor = d;
@@ -371,6 +385,7 @@ static void smoothSynthesisCoefficients(VocoderDSPState &s,
                                         float mix) {
   const float oneMinusMix = 1.0f - mix;
   for (int band = 0; band < descriptor.activeBands; ++band) {
+    if (!descriptor.analysisCoeffs[band].useSvf)
     for (int coefficient = 0; coefficient < 5 * kVocoderFilterStages; ++coefficient)
       s.anCoeffs[band].coeffs[coefficient] =
           mix * s.anCoeffs[band].coeffs[coefficient] +
@@ -380,6 +395,7 @@ static void smoothSynthesisCoefficients(VocoderDSPState &s,
           mix * s.anCoeffs[band].svf[coefficient] +
           oneMinusMix * descriptor.analysisCoeffs[band].svf[coefficient];
     s.anCoeffs[band].useSvf = descriptor.analysisCoeffs[band].useSvf;
+    if (!descriptor.synthesisCoeffs[band].useSvf)
     for (int coefficient = 0; coefficient < 5 * kVocoderFilterStages; ++coefficient)
       s.syCoeffs[band].coeffs[coefficient] =
           mix * s.syCoeffs[band].coeffs[coefficient] +
@@ -399,11 +415,12 @@ static void computeBlockCoeffs(_vocoderAlgorithm *a, int N, float sampleRate) {
   const float blockRate = sampleRate / (float)N;
   const float meterControlSampleRate = sampleRate / 128.0f;
 
-  bc.attackMix           = vocoderMixCoeffFromSeconds(blockRate, (float)bc.lastAttack  * 0.001f);
+  bc.attackMix           = vocoderMixCoeffFromSeconds(sampleRate / 24.0f, (float)bc.lastAttack  * 0.001f);
   // Live's Release control describes a much shorter effective follower
   // constant than its displayed milliseconds. The 0.1 scale fits the recorded
   // 10/30/100 ms step responses; filter settling contributes additional time.
-  bc.releaseMix          = vocoderMixCoeffFromSeconds(blockRate, (float)bc.lastRelease * 0.0001f);
+  bc.releaseMix          = vocoderMixCoeffFromSeconds(sampleRate / 24.0f, (float)bc.lastRelease * 0.0001f);
+  bc.enhancePowerMix = vocoderMixCoeffFromSeconds(sampleRate / 24.0f, 0.02f);
   bc.synthesisCoeffMix   = vocoderMixCoeffFromSeconds(blockRate, 0.02f);
   bc.synthesisScalarMix  = vocoderMixCoeffFromSeconds(blockRate, 0.02f);
   bc.gainRiseMix         = vocoderMixCoeffFromSeconds(sampleRate, 0.001f);
@@ -437,10 +454,12 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
     updateControlState(a);
   }
   const float wet = vocoderClamp(a->controls.currentWet / 100.0f, 0.0f, 1.0f);
-  const float preGainLinear =
-      a->controls.currentOutputGainDb <= -59.9f
-          ? 0.0f
-          : powf(10.0f, a->controls.currentOutputGainDb / 20.0f);
+  if (a->cachedGainDb != a->controls.currentOutputGainDb) {
+    a->cachedGainDb = a->controls.currentOutputGainDb;
+    a->cachedGainLinear = a->cachedGainDb <= -59.9f
+        ? 0.0f : powf(10.0f, a->cachedGainDb / 20.0f);
+  }
+  const float preGainLinear = a->cachedGainLinear;
   const int carrierBusL = self->v[kInCarrier];
   const bool carrierStereo = self->v[kCarrierStereo] > 0 &&
                              carrierBusL < kNT_lastBus;
@@ -532,8 +551,18 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
   }
   const VocoderCachedCoeffs &bc = a->blockCoeffs;
 
-  const float attackMix           = bc.attackMix;
-  const float releaseMix          = bc.releaseMix;
+  // The NT may deliver only four samples. Envelope/gain work remains at
+  // 2 kHz instead of repeating expensive powers and square roots at 12 kHz.
+  const int envelopeFrames = s.envelopeFrames + N;
+  const bool updateEnvelope = envelopeFrames >= 24;
+  float attackMix = bc.attackMix, releaseMix = bc.releaseMix;
+  float enhancePowerMix = bc.enhancePowerMix;
+  if (updateEnvelope && envelopeFrames != 24) {
+    const float rate = sampleRate / envelopeFrames;
+    attackMix = vocoderMixCoeffFromSeconds(rate, self->v[kAttack] * 0.001f);
+    releaseMix = vocoderMixCoeffFromSeconds(rate, self->v[kRelease] * 0.0001f);
+    enhancePowerMix = vocoderMixCoeffFromSeconds(rate, 0.02f);
+  }
   const float synthesisCoeffMix   = bc.synthesisCoeffMix;
   const float synthesisScalarMix  = bc.synthesisScalarMix;
   const float gainRiseMix         = bc.gainRiseMix;
@@ -554,8 +583,8 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
   // Let the existing 9 V soft-knee stage define the usable headroom. The old
   // 5.5 V guard flattened high-Depth differences well before that limit.
   const float guardCeiling = 9.0f;
-  const VocoderEnvelopeShape depthShape =
-      vocoderMakeEnvelopeShape((float)self->v[kDepth]);
+  const VocoderEnvelopeShape depthShape = updateEnvelope
+      ? vocoderMakeEnvelopeShape((float)self->v[kDepth]) : VocoderEnvelopeShape{};
   VocoderDescriptor &d = *a->descriptor;
   const int channels = stereoOutput ? 2 : 1;
 
@@ -641,13 +670,58 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
   float wetAccum[2][24];
   memset(wetAccum, 0, sizeof(wetAccum));
 
+  const bool enhanceRequested = self->v[kEnhance] != 0;
+  s.enhanceMix = bc.synthesisScalarMix * s.enhanceMix +
+      (1.0f - bc.synthesisScalarMix) * (enhanceRequested ? 1.0f : 0.0f);
+  if (!enhanceRequested && s.enhanceMix < 1.0e-5f) s.enhanceMix = 0.0f;
+  const bool enhance = enhanceRequested || s.enhanceMix > 0.0f;
+  bool sameInput[2] = {};
+  for (int ch = 0; ch < channels; ++ch)
+    sameInput[ch] = batchBiquadNegligibleDifference(prepCarrier[ch], prepMod[ch], N);
+
   for (int band = 0; band < a->activeBands; ++band) {
+    const bool sameCoefficients = s.anCoeffs[band].useSvf && s.syCoeffs[band].useSvf &&
+        batchBiquadSameSamples(s.anCoeffs[band].svf, s.syCoeffs[band].svf, 8);
     float meterPeakBand = 0.0f;
 
     for (int ch = 0; ch < channels; ++ch) {
       // ── Analysis: filter directly into the block envelope peak ──
-      const float analysisPeak = batchBiquadEnvelopeOnly(
-          s.anCoeffs[band], s.anState[ch][band], prepMod[ch], N);
+      // Reuse identical coefficients/inputs once any history difference
+      // is below the numerical residual floor. Audible tails remain separate.
+      const bool shared = sameInput[ch] && sameCoefficients &&
+          batchBiquadNegligibleDifference(s.anState[ch][band].state, s.syState[ch][band].state, 4);
+      float filtered[24];
+      float power = 0.0f;
+      const float analysisPeak = shared
+          ? (enhance
+              ? batchBiquadEnvelope<true, true>(s.anCoeffs[band], s.anState[ch][band],
+                                               prepMod[ch], N, filtered, &power)
+              : batchBiquadEnvelope<true>(s.anCoeffs[band], s.anState[ch][band],
+                                          prepMod[ch], N, filtered))
+          : batchBiquadEnvelopeOnly(s.anCoeffs[band], s.anState[ch][band], prepMod[ch], N);
+
+      if (shared) {
+        memcpy(s.syState[ch][band].state, s.anState[ch][band].state,
+               sizeof(s.anState[ch][band].state));
+      } else if (enhance) {
+        (void)batchBiquadEnvelope<true, true>(s.syCoeffs[band], s.syState[ch][band],
+                                             prepCarrier[ch], N, filtered, &power);
+      }
+      s.analysisPeakPending[ch][band] = fmaxf(s.analysisPeakPending[ch][band], analysisPeak);
+      s.carrierPowerPending[ch][band] += power * (float)N;
+      float enhanceGain = 1.0f;
+      if (updateEnvelope && enhance) {
+        power = s.carrierPowerPending[ch][band] / (float)envelopeFrames;
+        float &envelope = s.carrierPower[ch][band];
+        if (!s.enhanceWasActive) envelope = power;
+        envelope = enhancePowerMix * envelope + (1.0f - enhancePowerMix) * power;
+        // Measured carrier compression: ~2:1 with an 11 dB maximum
+        // boost. RMS reference is in NT volts (5 V per WAV full-scale).
+        const float reference = 0.212132f;
+        const float floor = reference / 12.589254f;
+        const float normalizedGain = sqrtf(reference / sqrtf(fmaxf(envelope, floor * floor)));
+        enhanceGain += s.enhanceMix * (normalizedGain - 1.0f);
+      }
 
       // ── Envelope follower: update once per block ──
       // Meter tracks modulator (voice) energy per band.
@@ -655,15 +729,17 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
         meterPeakBand = analysisPeak;
       }
 
-      const float envInput = analysisPeak;
-      const float envMix = envInput > s.env[ch][band] ? attackMix : releaseMix;
-      s.env[ch][band] = (1.0f - envMix) * envInput + envMix * s.env[ch][band];
-      if (s.env[ch][band] < 1.0e-20f) s.env[ch][band] = 0.0f;
-
-      // A fixed voltage reference preserves sustained band contrast. Only the
-      // user envelope follower carries the slower attack/release state.
-      const float finalGainTarget = vocoderEnvelopeDepthGain(
-          depthShape, s.env[ch][band], 0.1362f);
+      if (updateEnvelope) {
+        const float envInput = s.analysisPeakPending[ch][band];
+        const float envMix = envInput > s.env[ch][band] ? attackMix : releaseMix;
+        s.env[ch][band] = (1.0f - envMix) * envInput + envMix * s.env[ch][band];
+        if (s.env[ch][band] < 1.0e-20f) s.env[ch][band] = 0.0f;
+        s.gainTarget[ch][band] = vocoderEnvelopeDepthGain(
+            depthShape, s.env[ch][band], 0.1362f) * enhanceGain;
+        s.analysisPeakPending[ch][band] = 0.0f;
+        s.carrierPowerPending[ch][band] = 0.0f;
+      }
+      const float finalGainTarget = s.gainTarget[ch][band];
       // ── C: hoist gain direction once per band/channel, before the N-loop ──
       // gainTarget doesn't change mid-block and exponential smoothing never
       // overshoots, so the rise/fall branch is constant for this block.
@@ -672,7 +748,11 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
       const float gainMixComp = 1.0f - gainMix;
 
       // ── B: fused synthesis biquad + gain smoothing + accumulation ──
-      batchBiquadProcessAndAccum(s.syState[ch][band], prepCarrier[ch],
+      if (shared || enhance) {
+        batchBiquadAccumFiltered(filtered, wetAccum[ch], N, s.gainState[ch][band],
+                                finalGainTarget, gainMix, gainMixComp,
+                                s.synthesisBandGainCurrent[band]);
+      } else batchBiquadProcessAndAccum(s.syState[ch][band], prepCarrier[ch],
                                  wetAccum[ch], N, s.gainState[ch][band],
                                  finalGainTarget, gainMix, gainMixComp,
                                  s.synthesisBandGainCurrent[band]);
@@ -682,6 +762,9 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
       s.meterPeakHold[band] = meterPeakBand;
     }
   }
+
+  s.envelopeFrames = updateEnvelope ? 0 : envelopeFrames;
+  if (updateEnvelope) s.enhanceWasActive = enhance;
 
   // ── PHASE 4: Crossfade, output mixing, metering ──
   for (int i = 0; i < N; ++i) {
@@ -764,27 +847,27 @@ static void step(_NT_algorithm *self, float *bus, int nfBy4) {
 
   // Check if coefficient smoothing has converged
   if (a->controls.synthesisCoeffSmoothing) {
-    float maxCoeffDelta = 0.0f;
-    for (int band = 0; band < a->activeBands; ++band) {
-      for (int coefficient = 0; coefficient < 5 * kVocoderFilterStages; ++coefficient) {
-        const float delta = fabsf(s.syCoeffs[band].coeffs[coefficient] -
-                                 d.synthesisCoeffs[band].coeffs[coefficient]);
-        if (delta > maxCoeffDelta) maxCoeffDelta = delta;
-      }
-      for (int coefficient = 0; coefficient < 4 * kVocoderFilterStages; ++coefficient) {
-        const float delta = fabsf(s.syCoeffs[band].svf[coefficient] -
-                                 d.synthesisCoeffs[band].svf[coefficient]);
-        if (delta > maxCoeffDelta) maxCoeffDelta = delta;
+    bool converged = true;
+    for (int band = 0; band < a->activeBands && converged; ++band) {
+      const BatchBiquadCoeffs *current[] = {&s.anCoeffs[band], &s.syCoeffs[band]};
+      const BatchBiquadCoeffs *target[] = {&d.analysisCoeffs[band], &d.synthesisCoeffs[band]};
+      for (int bank = 0; bank < 2 && converged; ++bank) {
+        const bool svf = target[bank]->useSvf;
+        const float *from = svf ? current[bank]->svf : current[bank]->coeffs;
+        const float *to = svf ? target[bank]->svf : target[bank]->coeffs;
+        const int count = svf ? 8 : 10;
+        for (int coefficient = 0; coefficient < count; ++coefficient) {
+          // A purely absolute threshold can stay below float rounding error
+          // for large SVF band gains, leaving interpolation running forever.
+          const float tolerance = 1.0e-4f * fmaxf(1.0f, fabsf(to[coefficient]));
+          if (fabsf(from[coefficient] - to[coefficient]) >= tolerance) {
+            converged = false;
+            break;
+          }
+        }
       }
     }
-
-    for (int band = 0; band < a->activeBands; ++band) {
-      for (int coefficient = 0; coefficient < 5 * kVocoderFilterStages; ++coefficient)
-        maxCoeffDelta = fmaxf(maxCoeffDelta, fabsf(s.anCoeffs[band].coeffs[coefficient] - d.analysisCoeffs[band].coeffs[coefficient]));
-      for (int coefficient = 0; coefficient < 4 * kVocoderFilterStages; ++coefficient)
-        maxCoeffDelta = fmaxf(maxCoeffDelta, fabsf(s.anCoeffs[band].svf[coefficient] - d.analysisCoeffs[band].svf[coefficient]));
-    }
-    if (maxCoeffDelta < 1.0e-4f) {
+    if (converged) {
       syncAnalysisCoefficients(a);
       syncSynthesisCoefficients(a);
       a->controls.synthesisCoeffSmoothing = false;
