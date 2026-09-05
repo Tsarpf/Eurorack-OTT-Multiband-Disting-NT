@@ -1,0 +1,87 @@
+{
+  "renderer_sha256": "3118b3229bf489648478de8d61de177d9725197543f97e8c9844e226d1be104d",
+  "reference_sha256": "41089facd78b0b032aa5bf74623fc82df54cca0dca21457180d2dd34ceffc8f5",
+  "block_size": 32,
+  "cases": {
+    "step_40": {
+      "purpose": "fit",
+      "native_peak": 3.9798059463500977,
+      "reference_peak": 0.22613820433616638,
+      "peak_error_db": 24.90975934382834,
+      "envelope_rmse_db": 8.376024570201205,
+      "envelope_max_error_db": 29.056895225271504
+    },
+    "step_500": {
+      "purpose": "fit",
+      "native_peak": 8.686799049377441,
+      "reference_peak": 0.4229513704776764,
+      "peak_error_db": 26.251386475344624,
+      "envelope_rmse_db": 5.360490373890653,
+      "envelope_max_error_db": 31.20931776949608
+    },
+    "step_8000": {
+      "purpose": "fit",
+      "native_peak": 9.870014190673828,
+      "reference_peak": 0.5639843940734863,
+      "peak_error_db": 24.86101373543481,
+      "envelope_rmse_db": 7.212783306160046,
+      "envelope_max_error_db": 26.726841591054562
+    },
+    "ramp": {
+      "purpose": "validation",
+      "native_peak": 1.95110023021698,
+      "reference_peak": 0.23996739089488983,
+      "peak_error_db": 18.2025466357204,
+      "envelope_rmse_db": 4.50577131039526,
+      "envelope_max_error_db": 21.347987268947097
+    },
+    "plucks": {
+      "purpose": "validation",
+      "native_peak": 3.06327748298645,
+      "reference_peak": 0.35419148206710815,
+      "peak_error_db": 18.738964696768686,
+      "envelope_rmse_db": 5.959357228465632,
+      "envelope_max_error_db": 18.033151974782104
+    },
+    "plucks_depth25": {
+      "purpose": "held_out",
+      "native_peak": 0.7933986783027649,
+      "reference_peak": 0.5412341952323914,
+      "peak_error_db": 3.3221247096530844,
+      "envelope_rmse_db": 1.254463279291164,
+      "envelope_max_error_db": 3.2619593010087815
+    },
+    "plucks_depth50": {
+      "purpose": "held_out",
+      "native_peak": 1.1289891004562378,
+      "reference_peak": 0.4806707799434662,
+      "peak_error_db": 7.416840324582168,
+      "envelope_rmse_db": 2.577292096279132,
+      "envelope_max_error_db": 8.284447823272366
+    },
+    "step_110": {
+      "purpose": "held_out",
+      "native_peak": 5.451703071594238,
+      "reference_peak": 0.31206831336021423,
+      "peak_error_db": 24.845650075333175,
+      "envelope_rmse_db": 6.626632536770493,
+      "envelope_max_error_db": 28.26593228618365
+    },
+    "stereo_steps": {
+      "purpose": "held_out",
+      "native_peak": 2.6550116539001465,
+      "reference_peak": 0.29913485050201416,
+      "peak_error_db": 18.96398882554773,
+      "envelope_rmse_db": 2.9617587509947882,
+      "envelope_max_error_db": 19.70511397994558
+    },
+    "noise_bursts": {
+      "purpose": "held_out",
+      "native_peak": 86.08283233642578,
+      "reference_peak": 0.5049694180488586,
+      "peak_error_db": 44.63302925773477,
+      "envelope_rmse_db": 14.060647162531184,
+      "envelope_max_error_db": 45.0895777974402
+    }
+  }
+}

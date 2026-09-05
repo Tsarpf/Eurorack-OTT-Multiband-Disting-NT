@@ -1,0 +1,65 @@
+{
+  "step_40": {
+    "native_peak": 3.9798059463500977,
+    "reference_peak": 0.22613820433616638,
+    "envelope_error_10ms_rmse_db": 8.376024570201213,
+    "transition_first_10ms_error_db": 24.705947256730756
+  },
+  "step_500": {
+    "native_peak": 8.686799049377441,
+    "reference_peak": 0.4229513704776764,
+    "envelope_error_10ms_rmse_db": 5.3604903738906575,
+    "transition_first_10ms_error_db": 31.20931776949609,
+    "fresh_vs_saved_relative_db": -600.0
+  },
+  "step_8000": {
+    "native_peak": 9.870014190673828,
+    "reference_peak": 0.5639843940734863,
+    "envelope_error_10ms_rmse_db": 7.212783292011725,
+    "transition_first_10ms_error_db": 26.176105374692227
+  },
+  "ramp": {
+    "native_peak": 1.95110023021698,
+    "reference_peak": 0.23996739089488983,
+    "envelope_error_10ms_rmse_db": 4.505771310395264,
+    "transition_first_10ms_error_db": 10.65874876987625
+  },
+  "plucks": {
+    "native_peak": 3.06327748298645,
+    "reference_peak": 0.35419148206710815,
+    "envelope_error_10ms_rmse_db": 5.808462933310524,
+    "transition_first_10ms_error_db": -2.689602499887137
+  },
+  "stereo": [
+    {
+      "left_peak_db": -60,
+      "right_peak_db": 0,
+      "native_gain_db": [
+        -17.201640327889866,
+        -17.201630227148463
+      ]
+    },
+    {
+      "left_peak_db": -60,
+      "right_peak_db": -20,
+      "native_gain_db": [
+        1.0830626150081084,
+        1.0830526531342817
+      ]
+    }
+  ],
+  "experimental_variants": {
+    "db_smoothing": {
+      "peak": 8.101954460144043,
+      "first_10ms_error_db": 30.73160938629713
+    },
+    "fast_up_removal": {
+      "peak": 8.106769561767578,
+      "first_10ms_error_db": 30.516159527195782
+    },
+    "both": {
+      "peak": 6.535421371459961,
+      "first_10ms_error_db": 28.42860651813819
+    }
+  }
+}

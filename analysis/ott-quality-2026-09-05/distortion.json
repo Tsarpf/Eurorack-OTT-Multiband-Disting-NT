@@ -1,0 +1,56 @@
+[
+  {
+    "frequency": 40,
+    "level": -35,
+    "native_residual_dbc": -57.09310629428272,
+    "reference_residual_dbc": -29.167037906596576
+  },
+  {
+    "frequency": 40,
+    "level": -20,
+    "native_residual_dbc": -57.342964002974625,
+    "reference_residual_dbc": -29.293932620804526
+  },
+  {
+    "frequency": 40,
+    "level": -10,
+    "native_residual_dbc": -60.76964443403136,
+    "reference_residual_dbc": -32.81136089019179
+  },
+  {
+    "frequency": 500,
+    "level": -35,
+    "native_residual_dbc": -85.59604111694685,
+    "reference_residual_dbc": -68.95048725245974
+  },
+  {
+    "frequency": 500,
+    "level": -20,
+    "native_residual_dbc": -79.19833148093207,
+    "reference_residual_dbc": -51.92911353848668
+  },
+  {
+    "frequency": 500,
+    "level": -10,
+    "native_residual_dbc": -78.97496683175984,
+    "reference_residual_dbc": -52.19429281902522
+  },
+  {
+    "frequency": 8000,
+    "level": -35,
+    "native_residual_dbc": -68.48474561507926,
+    "reference_residual_dbc": -69.36906693246063
+  },
+  {
+    "frequency": 8000,
+    "level": -20,
+    "native_residual_dbc": -72.10924830980514,
+    "reference_residual_dbc": -69.63346605230632
+  },
+  {
+    "frequency": 8000,
+    "level": -10,
+    "native_residual_dbc": -61.7948341801248,
+    "reference_residual_dbc": -69.85845166921189
+  }
+]
