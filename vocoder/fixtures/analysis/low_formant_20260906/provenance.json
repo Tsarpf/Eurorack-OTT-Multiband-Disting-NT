@@ -1,0 +1,124 @@
+{
+  "native_commit": "47cfaf5",
+  "reference_project": "Vocoder Probe.als",
+  "saved_carrier_source_type": 2,
+  "saved_band_count_enum": 9,
+  "note": "Saved set selects Modulator and 40 bands; these choices are not exposed in the Live parameter API.",
+  "alignment": "Correlate the first white-noise section in a Formant-scaled 4\u201314 kHz band; search 150\u2013700 ms delay. Earlier nonzero samples can be preceding low-frequency tails.",
+  "runs": [
+    {
+      "name": "run",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260906-low-formant/runs/20260905T223822Z-88271d8b",
+      "summary": {
+        "status": "complete",
+        "started_utc": "2026-09-05T22:38:45.646859+00:00",
+        "run_directory": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260906-low-formant/runs/20260905T223822Z-88271d8b",
+        "cleanup_errors": [],
+        "finished_utc": "2026-09-05T22:46:16.045052+00:00",
+        "completed": 36
+      }
+    },
+    {
+      "name": "tail-run",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260906-low-formant/runs/20260905T224742Z-70264d02",
+      "summary": {
+        "status": "complete",
+        "started_utc": "2026-09-05T22:47:42.491608+00:00",
+        "run_directory": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260906-low-formant/runs/20260905T224742Z-70264d02",
+        "cleanup_errors": [],
+        "finished_utc": "2026-09-05T22:48:05.074051+00:00",
+        "completed": 1
+      },
+      "parameters": {
+        "Device On": "On",
+        "Dry/Wet": 1,
+        "Output": 0,
+        "Enhance": "On",
+        "Precise/Retro": "Off",
+        "Unvoiced Level": 0,
+        "Mono/Stereo": "Mono",
+        "Gate Threshold": -60,
+        "Lower Filter Band": 1.3010299956639813,
+        "Upper Filter Band": {
+          "normalized": 1
+        },
+        "Attack Time": 1,
+        "Release Time": 1.4771212547196624,
+        "Formant Shift": -36,
+        "Filter Width": 0.75,
+        "Envelope Depth": 2
+      },
+      "input": {
+        "name": "tail",
+        "spec": {
+          "name": "tail",
+          "kind": "wav",
+          "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260906-low-formant/tail-probe.wav"
+        },
+        "path": "inputs/001-tail.wav",
+        "sha256": "d27c32100ba0829625dfad938c0a23430c7eb417761ee89b6f96d902528982e7",
+        "audio": {
+          "channels": 2,
+          "sample_rate": 48000,
+          "frames": 696000,
+          "duration_seconds": 14.5,
+          "bits_per_sample": 32,
+          "encoding": "float",
+          "source_path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260906-low-formant/tail-probe.wav"
+        }
+      },
+      "reference_sha256": "cfbf5bdc7e1a5a6a3e1e69cbc23192a44c3888806eb37a8ec7dffb3f96d2f7c3"
+    },
+    {
+      "name": "settling-run",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260906-low-formant/runs/20260905T224935Z-f3cddad1",
+      "summary": {
+        "status": "complete",
+        "started_utc": "2026-09-05T22:49:36.325490+00:00",
+        "run_directory": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260906-low-formant/runs/20260905T224935Z-f3cddad1",
+        "cleanup_errors": [],
+        "finished_utc": "2026-09-05T22:50:03.372484+00:00",
+        "completed": 1
+      },
+      "parameters": {
+        "Device On": "On",
+        "Dry/Wet": 1,
+        "Output": 0,
+        "Enhance": "On",
+        "Precise/Retro": "Off",
+        "Unvoiced Level": 0,
+        "Mono/Stereo": "Mono",
+        "Gate Threshold": -60,
+        "Lower Filter Band": 1.3010299956639813,
+        "Upper Filter Band": {
+          "normalized": 1
+        },
+        "Attack Time": 1,
+        "Release Time": 1.4771212547196624,
+        "Formant Shift": -36,
+        "Filter Width": 0.75,
+        "Envelope Depth": 2
+      },
+      "input": {
+        "name": "tail",
+        "spec": {
+          "name": "tail",
+          "kind": "wav",
+          "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260906-low-formant/settling-probe.wav"
+        },
+        "path": "inputs/001-tail.wav",
+        "sha256": "0c4f6c07e44b86a3a7f220799e95f9c8fa5abfd213c7a757c0a2d4cc20dca504",
+        "audio": {
+          "channels": 2,
+          "sample_rate": 48000,
+          "frames": 888000,
+          "duration_seconds": 18.5,
+          "bits_per_sample": 32,
+          "encoding": "float",
+          "source_path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260906-low-formant/settling-probe.wav"
+        }
+      },
+      "reference_sha256": "7fad928d1a95960f1436a022080e45fe0b4dbabea86b618860585eb82c44ecee"
+    }
+  ]
+}

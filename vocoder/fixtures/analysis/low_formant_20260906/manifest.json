@@ -1,0 +1,214 @@
+{
+  "version": 1,
+  "name": "Low Formant identification",
+  "device": "Filterbank",
+  "sample_rate": 48000,
+  "parameters": {
+    "Device On": "On",
+    "Dry/Wet": 1,
+    "Output": 0,
+    "Enhance": "On",
+    "Precise/Retro": "Off",
+    "Unvoiced Level": 0,
+    "Mono/Stereo": "Mono",
+    "Gate Threshold": -60,
+    "Lower Filter Band": 1.3010299956639813,
+    "Upper Filter Band": {
+      "normalized": 1
+    },
+    "Attack Time": 1,
+    "Release Time": 1.4771212547196624
+  },
+  "cases": [
+    {
+      "Formant Shift": 0,
+      "Filter Width": 0.5,
+      "Envelope Depth": 1.0
+    },
+    {
+      "Formant Shift": 0,
+      "Filter Width": 0.5,
+      "Envelope Depth": 1.5
+    },
+    {
+      "Formant Shift": 0,
+      "Filter Width": 0.5,
+      "Envelope Depth": 2.0
+    },
+    {
+      "Formant Shift": 0,
+      "Filter Width": 0.75,
+      "Envelope Depth": 1.0
+    },
+    {
+      "Formant Shift": 0,
+      "Filter Width": 0.75,
+      "Envelope Depth": 1.5
+    },
+    {
+      "Formant Shift": 0,
+      "Filter Width": 0.75,
+      "Envelope Depth": 2.0
+    },
+    {
+      "Formant Shift": 0,
+      "Filter Width": 1.0,
+      "Envelope Depth": 1.0
+    },
+    {
+      "Formant Shift": 0,
+      "Filter Width": 1.0,
+      "Envelope Depth": 1.5
+    },
+    {
+      "Formant Shift": 0,
+      "Filter Width": 1.0,
+      "Envelope Depth": 2.0
+    },
+    {
+      "Formant Shift": -24,
+      "Filter Width": 0.5,
+      "Envelope Depth": 1.0
+    },
+    {
+      "Formant Shift": -24,
+      "Filter Width": 0.5,
+      "Envelope Depth": 1.5
+    },
+    {
+      "Formant Shift": -24,
+      "Filter Width": 0.5,
+      "Envelope Depth": 2.0
+    },
+    {
+      "Formant Shift": -24,
+      "Filter Width": 0.75,
+      "Envelope Depth": 1.0
+    },
+    {
+      "Formant Shift": -24,
+      "Filter Width": 0.75,
+      "Envelope Depth": 1.5
+    },
+    {
+      "Formant Shift": -24,
+      "Filter Width": 0.75,
+      "Envelope Depth": 2.0
+    },
+    {
+      "Formant Shift": -24,
+      "Filter Width": 1.0,
+      "Envelope Depth": 1.0
+    },
+    {
+      "Formant Shift": -24,
+      "Filter Width": 1.0,
+      "Envelope Depth": 1.5
+    },
+    {
+      "Formant Shift": -24,
+      "Filter Width": 1.0,
+      "Envelope Depth": 2.0
+    },
+    {
+      "Formant Shift": -30,
+      "Filter Width": 0.5,
+      "Envelope Depth": 1.0
+    },
+    {
+      "Formant Shift": -30,
+      "Filter Width": 0.5,
+      "Envelope Depth": 1.5
+    },
+    {
+      "Formant Shift": -30,
+      "Filter Width": 0.5,
+      "Envelope Depth": 2.0
+    },
+    {
+      "Formant Shift": -30,
+      "Filter Width": 0.75,
+      "Envelope Depth": 1.0
+    },
+    {
+      "Formant Shift": -30,
+      "Filter Width": 0.75,
+      "Envelope Depth": 1.5
+    },
+    {
+      "Formant Shift": -30,
+      "Filter Width": 0.75,
+      "Envelope Depth": 2.0
+    },
+    {
+      "Formant Shift": -30,
+      "Filter Width": 1.0,
+      "Envelope Depth": 1.0
+    },
+    {
+      "Formant Shift": -30,
+      "Filter Width": 1.0,
+      "Envelope Depth": 1.5
+    },
+    {
+      "Formant Shift": -30,
+      "Filter Width": 1.0,
+      "Envelope Depth": 2.0
+    },
+    {
+      "Formant Shift": -36,
+      "Filter Width": 0.5,
+      "Envelope Depth": 1.0
+    },
+    {
+      "Formant Shift": -36,
+      "Filter Width": 0.5,
+      "Envelope Depth": 1.5
+    },
+    {
+      "Formant Shift": -36,
+      "Filter Width": 0.5,
+      "Envelope Depth": 2.0
+    },
+    {
+      "Formant Shift": -36,
+      "Filter Width": 0.75,
+      "Envelope Depth": 1.0
+    },
+    {
+      "Formant Shift": -36,
+      "Filter Width": 0.75,
+      "Envelope Depth": 1.5
+    },
+    {
+      "Formant Shift": -36,
+      "Filter Width": 0.75,
+      "Envelope Depth": 2.0
+    },
+    {
+      "Formant Shift": -36,
+      "Filter Width": 1.0,
+      "Envelope Depth": 1.0
+    },
+    {
+      "Formant Shift": -36,
+      "Filter Width": 1.0,
+      "Envelope Depth": 1.5
+    },
+    {
+      "Formant Shift": -36,
+      "Filter Width": 1.0,
+      "Envelope Depth": 2.0
+    }
+  ],
+  "settle_seconds": 0.75,
+  "preroll_seconds": 0.25,
+  "tail_seconds": 0.5,
+  "signals": [
+    {
+      "name": "probe",
+      "kind": "wav",
+      "path": "/mnt/c/Users/tsarpf/Documents/Ableton/LiveProbe/comparisons/20260906-low-formant/probe.wav"
+    }
+  ]
+}

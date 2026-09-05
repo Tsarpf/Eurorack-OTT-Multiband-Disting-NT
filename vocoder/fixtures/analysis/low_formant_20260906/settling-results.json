@@ -1,0 +1,44 @@
+[
+  {
+    "start_seconds": 5.3,
+    "end_seconds": 6.3,
+    "rms_dbfs": -46.544250620889194,
+    "strongest_frequency_hz": 110.0,
+    "power_fraction_below_40hz": 7.479059557020803e-05
+  },
+  {
+    "start_seconds": 7.3,
+    "end_seconds": 8.3,
+    "rms_dbfs": -66.31743375993203,
+    "strongest_frequency_hz": 14.0,
+    "power_fraction_below_40hz": 0.9989276273184331
+  },
+  {
+    "start_seconds": 9,
+    "end_seconds": 10,
+    "rms_dbfs": -95.51344360891045,
+    "strongest_frequency_hz": 110.0,
+    "power_fraction_below_40hz": 0.0012925142918025117
+  },
+  {
+    "start_seconds": 12.5,
+    "end_seconds": 14,
+    "rms_dbfs": -95.5422248320761,
+    "strongest_frequency_hz": 110.0,
+    "power_fraction_below_40hz": 0.0014193548923669137
+  },
+  {
+    "start_seconds": 15.5,
+    "end_seconds": 16.5,
+    "rms_dbfs": -101.54868465738501,
+    "strongest_frequency_hz": 14.0,
+    "power_fraction_below_40hz": 0.9999996922283041
+  },
+  {
+    "start_seconds": 17,
+    "end_seconds": 18,
+    "rms_dbfs": -152.04327274052355,
+    "strongest_frequency_hz": 14.0,
+    "power_fraction_below_40hz": 0.9999998686787607
+  }
+]

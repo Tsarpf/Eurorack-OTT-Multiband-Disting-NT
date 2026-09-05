@@ -1,0 +1,22 @@
+[
+  {
+    "name": "white",
+    "start": 24000,
+    "end": 120000
+  },
+  {
+    "name": "vowel",
+    "start": 120000,
+    "end": 216000
+  },
+  {
+    "name": "saw_loud",
+    "start": 216000,
+    "end": 312000
+  },
+  {
+    "name": "saw_quiet",
+    "start": 312000,
+    "end": 408000
+  }
+]
