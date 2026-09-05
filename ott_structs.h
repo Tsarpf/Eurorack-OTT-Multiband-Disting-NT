@@ -27,7 +27,7 @@ inline void ottLR4Init(OttLR4& f)
     arm_biquad_cascade_df2T_init_f32(&f.inst, 2, f.coeffs, f.state);
 }
 
-// Update coefficients without touching state — click-free crossover sweeps.
+// Update coefficients without resetting the running filter state.
 inline void ottLR4Reseat(OttLR4& f)
 {
     f.inst.numStages = 2;
@@ -76,8 +76,8 @@ struct OttXover {
 // Recomputed in parameterChanged() — never in step().
 
 struct OttCached {
-    float attackCoeff[kOttBands]; // per-sample gain attack coefficient
-    float releaseCoeff[kOttBands];// per-sample gain release coefficient
+    float attackCoeff[kOttBands]; // per-sample power averaging coefficient
+    float releaseCoeff[kOttBands];// per-sample peak power decay coefficient
     float thrDownDb[kOttBands];   // downward threshold in dB
     float thrUpDb[kOttBands];     // upward threshold in dB
     float exDown[kOttBands];      // 1 − 1/ratioDown
@@ -102,12 +102,9 @@ struct OttDSPState {
     OttCached cached;
     OttBands  bands;
     float     sr;
-    // Per-block timing cache, recomputed only when N or a time parameter changes.
-    float     attackCoeffPerBlock[kOttBands];
-    float     releaseCoeffPerBlock[kOttBands];
-    float     detectorCoeffPerBlock;
-    float     detectorPower[kOttBands]; // linked 5 ms power envelope per band
-    int       lastBlockN;
+    float detectorPower[kOttBands]; // RMS detector, per band, stereo linked
+    float envelopePower[kOttBands]; // decaying peak of detector power
+    float bandDelay[kOttBands][2][2]; // two-sample audio lookahead
 };
 
 // ── Per-instance algorithm struct ─────────────────────────────────────────────

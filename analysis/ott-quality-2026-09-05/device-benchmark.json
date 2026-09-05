@@ -1,0 +1,613 @@
+{
+  "version": "v1.18.0beta | Aug  7 2026 12:38:09",
+  "original_path": "/presets/matrix_mixer.json",
+  "original_name": "matrix_mixer        ",
+  "original_algorithms": [
+    [
+      "74756e66",
+      "Tuner (fancy)          "
+    ],
+    [
+      "4d783136",
+      "Matrix 12x16           "
+    ],
+    [
+      "564f4332",
+      "Vocoder                "
+    ]
+  ],
+  "cases": [
+    {
+      "build": "baseline",
+      "sha256": "ef283eeaf91c6d030569e19c472a2515bff6662e6a80fe0a795609927a228b77",
+      "stereo": false,
+      "motion": false,
+      "input_bus": 1,
+      "output_bus": 27,
+      "algorithm_avg": 3.0,
+      "algorithm_max": 3,
+      "module_avg": 7.0,
+      "module_max": 7,
+      "readings": [
+        [
+          3,
+          7,
+          [
+            3
+          ]
+        ],
+        [
+          3,
+          7,
+          [
+            3
+          ]
+        ],
+        [
+          3,
+          7,
+          [
+            3
+          ]
+        ],
+        [
+          3,
+          7,
+          [
+            3
+          ]
+        ],
+        [
+          3,
+          7,
+          [
+            3
+          ]
+        ],
+        [
+          3,
+          7,
+          [
+            3
+          ]
+        ],
+        [
+          3,
+          7,
+          [
+            3
+          ]
+        ],
+        [
+          3,
+          7,
+          [
+            3
+          ]
+        ],
+        [
+          3,
+          7,
+          [
+            3
+          ]
+        ],
+        [
+          3,
+          7,
+          [
+            3
+          ]
+        ],
+        [
+          3,
+          7,
+          [
+            3
+          ]
+        ],
+        [
+          3,
+          7,
+          [
+            3
+          ]
+        ]
+      ]
+    },
+    {
+      "build": "baseline",
+      "sha256": "ef283eeaf91c6d030569e19c472a2515bff6662e6a80fe0a795609927a228b77",
+      "stereo": true,
+      "motion": false,
+      "input_bus": 1,
+      "output_bus": 27,
+      "algorithm_avg": 5.083333333333333,
+      "algorithm_max": 6,
+      "module_avg": 9.5,
+      "module_max": 10,
+      "readings": [
+        [
+          6,
+          8,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          8,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          8,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ]
+      ]
+    },
+    {
+      "build": "baseline",
+      "sha256": "ef283eeaf91c6d030569e19c472a2515bff6662e6a80fe0a795609927a228b77",
+      "stereo": true,
+      "motion": true,
+      "input_bus": 1,
+      "output_bus": 27,
+      "algorithm_avg": 5.083333333333333,
+      "algorithm_max": 6,
+      "module_avg": 10.0,
+      "module_max": 10,
+      "readings": [
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          6,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ],
+        [
+          5,
+          10,
+          [
+            5
+          ]
+        ]
+      ]
+    },
+    {
+      "build": "fixed",
+      "sha256": "6f64d58bf18d424f88cae6237eaf675750afd773077b3eeb5ba0517233d5f862",
+      "stereo": false,
+      "motion": false,
+      "input_bus": 1,
+      "output_bus": 27,
+      "algorithm_avg": 7.0,
+      "algorithm_max": 7,
+      "module_avg": 11.0,
+      "module_max": 11,
+      "readings": [
+        [
+          7,
+          11,
+          [
+            6
+          ]
+        ],
+        [
+          7,
+          11,
+          [
+            6
+          ]
+        ],
+        [
+          7,
+          11,
+          [
+            6
+          ]
+        ],
+        [
+          7,
+          11,
+          [
+            6
+          ]
+        ],
+        [
+          7,
+          11,
+          [
+            6
+          ]
+        ],
+        [
+          7,
+          11,
+          [
+            6
+          ]
+        ],
+        [
+          7,
+          11,
+          [
+            6
+          ]
+        ],
+        [
+          7,
+          11,
+          [
+            6
+          ]
+        ],
+        [
+          7,
+          11,
+          [
+            6
+          ]
+        ],
+        [
+          7,
+          11,
+          [
+            6
+          ]
+        ],
+        [
+          7,
+          11,
+          [
+            6
+          ]
+        ],
+        [
+          7,
+          11,
+          [
+            6
+          ]
+        ]
+      ]
+    },
+    {
+      "build": "fixed",
+      "sha256": "6f64d58bf18d424f88cae6237eaf675750afd773077b3eeb5ba0517233d5f862",
+      "stereo": true,
+      "motion": false,
+      "input_bus": 1,
+      "output_bus": 27,
+      "algorithm_avg": 9.0,
+      "algorithm_max": 9,
+      "module_avg": 13.0,
+      "module_max": 13,
+      "readings": [
+        [
+          9,
+          13,
+          [
+            9
+          ]
+        ],
+        [
+          9,
+          13,
+          [
+            9
+          ]
+        ],
+        [
+          9,
+          13,
+          [
+            9
+          ]
+        ],
+        [
+          9,
+          13,
+          [
+            9
+          ]
+        ],
+        [
+          9,
+          13,
+          [
+            9
+          ]
+        ],
+        [
+          9,
+          13,
+          [
+            9
+          ]
+        ],
+        [
+          9,
+          13,
+          [
+            9
+          ]
+        ],
+        [
+          9,
+          13,
+          [
+            9
+          ]
+        ],
+        [
+          9,
+          13,
+          [
+            9
+          ]
+        ],
+        [
+          9,
+          13,
+          [
+            9
+          ]
+        ],
+        [
+          9,
+          13,
+          [
+            9
+          ]
+        ],
+        [
+          9,
+          13,
+          [
+            9
+          ]
+        ]
+      ]
+    },
+    {
+      "build": "fixed",
+      "sha256": "6f64d58bf18d424f88cae6237eaf675750afd773077b3eeb5ba0517233d5f862",
+      "stereo": true,
+      "motion": true,
+      "input_bus": 1,
+      "output_bus": 27,
+      "algorithm_avg": 9.0,
+      "algorithm_max": 9,
+      "module_avg": 14.0,
+      "module_max": 14,
+      "readings": [
+        [
+          9,
+          14,
+          [
+            8
+          ]
+        ],
+        [
+          9,
+          14,
+          [
+            8
+          ]
+        ],
+        [
+          9,
+          14,
+          [
+            8
+          ]
+        ],
+        [
+          9,
+          14,
+          [
+            9
+          ]
+        ],
+        [
+          9,
+          14,
+          [
+            8
+          ]
+        ],
+        [
+          9,
+          14,
+          [
+            8
+          ]
+        ],
+        [
+          9,
+          14,
+          [
+            9
+          ]
+        ],
+        [
+          9,
+          14,
+          [
+            9
+          ]
+        ],
+        [
+          9,
+          14,
+          [
+            8
+          ]
+        ],
+        [
+          9,
+          14,
+          [
+            8
+          ]
+        ],
+        [
+          9,
+          14,
+          [
+            8
+          ]
+        ],
+        [
+          9,
+          14,
+          [
+            9
+          ]
+        ]
+      ]
+    }
+  ],
+  "restored_path": "/presets/matrix_mixer.json",
+  "restored_values_equal": true,
+  "input_note": "Physical inputs 1/2; audio not controlled or amplitude-verified.",
+  "installed_plugin": "/programs/plug-ins/ott.o"
+}

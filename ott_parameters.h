@@ -55,6 +55,8 @@ static const char* const onOffEnum[] = { "Off", "On", nullptr };
 
 /* helper macros – scaling10 means 0.1 dB or 0.1 % steps */
 #define P(dbname,min,max,def,unit,sc) { dbname,min,max,def,unit,sc,nullptr }
+// Attack is the power-average time constant; Release is the peak envelope's
+// amplitude time constant. Factory times fit Xfer OTT at Time=100%.
 static const _NT_parameter params[kNumParams] = {
     /* routing: mono by default; stereo = left+1 */
     NT_PARAMETER_AUDIO_INPUT("In", 1, 1)
@@ -69,8 +71,8 @@ static const _NT_parameter params[kNumParams] = {
     P("Hi/UpRat",   100, 32767,  400,kNT_unitNone,     kNT_scaling100),
     P("Hi/PreGain", -240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Hi/PostGain",-240,  240,   0, kNT_unitDb,       kNT_scaling10),
-    P("Hi/Attack",     1,  5000, 135, kNT_unitMs,      kNT_scaling10),
-    P("Hi/Release",   10, 20000,1320, kNT_unitMs,      kNT_scaling10),
+    P("Hi/Attack",     1,  5000, 100, kNT_unitMs,      kNT_scaling10),
+    P("Hi/Release",   10, 20000,303, kNT_unitMs,      kNT_scaling10),
 
     /*  Mid band  */
     P("Mid/DownThr", -600,   0, -317, kNT_unitDb,       kNT_scaling10),
@@ -79,8 +81,8 @@ static const _NT_parameter params[kNumParams] = {
     P("Mid/UpRat",   100, 32767,  400, kNT_unitNone,     kNT_scaling100),
     P("Mid/PreGain", -240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Mid/PostGain",-240,  240,   0, kNT_unitDb,       kNT_scaling10),
-    P("Mid/Attack",     1,  5000, 224, kNT_unitMs,      kNT_scaling10),
-    P("Mid/Release",   10, 20000,2820, kNT_unitMs,      kNT_scaling10),
+    P("Mid/Attack",     1,  5000, 100, kNT_unitMs,      kNT_scaling10),
+    P("Mid/Release",   10, 20000,648, kNT_unitMs,      kNT_scaling10),
 
     /*  Low band  */
     P("Low/DownThr", -600,   0, -355, kNT_unitDb,       kNT_scaling10),
@@ -89,8 +91,8 @@ static const _NT_parameter params[kNumParams] = {
     P("Low/UpRat",   100, 32767,  400,kNT_unitNone,      kNT_scaling100),
     P("Low/PreGain", -240,  240,   0, kNT_unitDb,       kNT_scaling10),
     P("Low/PostGain",-240,  240,   0, kNT_unitDb,       kNT_scaling10),
-    P("Low/Attack",     1,  5000, 478, kNT_unitMs,      kNT_scaling10),
-    P("Low/Release",   10, 20000,2820, kNT_unitMs,      kNT_scaling10),
+    P("Low/Attack",     1,  5000, 100, kNT_unitMs,      kNT_scaling10),
+    P("Low/Release",   10, 20000,648, kNT_unitMs,      kNT_scaling10),
 
     /*  X-over & global  */
     P("Xover/LoMid",   40, 18000,  88,  kNT_unitHz,      0),

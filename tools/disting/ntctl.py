@@ -37,9 +37,9 @@ OTT_PARAM_NAMES = [
 # Default raw values matching the OTT reference preset in ott_parameters.h.
 OTT_PARAM_DEFAULTS = [
     1, 0, 13, 1,                 # routing (mono, replace)
-    -369, -422, 10000, 400, 0, 0, 135, 1320,    # Hi band
-    -317, -433, 10000, 400, 0, 0, 224, 2820,    # Mid band
-    -355, -425, 32767, 400, 0, 0, 478, 2820,    # Lo band
+    -369, -422, 10000, 400, 0, 0, 100, 303,    # Hi band
+    -317, -433, 10000, 400, 0, 0, 100, 648,    # Mid band
+    -355, -425, 32767, 400, 0, 0, 100, 648,    # Lo band
     88, 2500, 0, 100,             # xover + global
 ]
 VOCODER_PARAM_BAND_WIDTH = 8

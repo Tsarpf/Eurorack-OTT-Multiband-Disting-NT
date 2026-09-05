@@ -80,6 +80,19 @@ The command writes numerical metadata to JSON and the source/reference audio to
 a compressed NPZ file. Add `--extended` for the slower branch-isolation,
 band-makeup, crossover and stereo-link probes used for detailed calibration.
 
+## OTT dynamic reference validation
+
+The OTT detector and two-sample lookahead are fitted to isolated Xfer dynamics.
+Factory Attack is 10.0 ms in all bands; Release is 64.8 ms in low/mid and
+30.3 ms in high. Existing presets retain saved values, so use these times or
+create a fresh instance to get the measured default sound.
+
+`make test` includes measured transient-envelope and peak regressions. For a
+larger offline comparison, build `make build/ott_render`, then use
+`tools/ott_dynamics.py capture`, `compare`, and `export-tests`. See the
+[measurement and correction report](analysis/ott-quality-2026-09-05/FIX.md)
+for commands, results, and remaining differences.
+
 ## Ableton Live reference renders
 
 [Live Probe](tools/live_probe/README.md) runs batches through native Live effects

@@ -20,7 +20,9 @@ static const float kReferenceGainFull[kOttBands] = {
 static const float kReferenceDepthLinear[kOttBands] = {
     0.702699f, 0.750127f, 0.702699f
 };
-static const float kReferenceDetectorGainDb = 5.2f;
+// Isolated branch fits with power averaging, peak decay and two samples of
+// lookahead; see analysis/ott-quality-2026-09-05/FIX.md.
+static const float kReferenceDetectorGainDb[kOttBands] = {4.979f, 5.147f, 5.245f};
 
 // Align the dormant/duplicated right channel without copying filter instances:
 // their internal pointers must continue to refer to their own state arrays.
@@ -37,6 +39,8 @@ static void mirrorRightChannelState(OttDSPState& d)
     memcpy(d.xover.lowPhase2[1].state, d.xover.lowPhase2[0].state,
            sizeof(d.xover.lowPhase2[0].state));
     for (int band = 0; band < kOttBands; ++band) {
+        memcpy(d.bandDelay[band][1], d.bandDelay[band][0],
+               sizeof(d.bandDelay[band][0]));
         d.bands.downGain[1][band] = d.bands.downGain[0][band];
         d.bands.upGain[1][band] = d.bands.upGain[0][band];
     }
@@ -91,7 +95,8 @@ static void recomputeBand(OttDSPState& d, const int16_t* v, int band,
     const float safeAttack = attackMs < 0.01f ? 0.01f : attackMs;
     const float safeRelease = releaseMs < 0.01f ? 0.01f : releaseMs;
     c.attackCoeff[band] = expf(-1.0f / (safeAttack * 0.001f * d.sr));
-    c.releaseCoeff[band] = expf(-1.0f / (safeRelease * 0.001f * d.sr));
+    // Release is an amplitude time constant; the held state is power.
+    c.releaseCoeff[band] = expf(-2.0f / (safeRelease * 0.001f * d.sr));
 }
 
 // Recompute everything from the full parameter array.
@@ -131,9 +136,6 @@ static void recomputeAll(_ottAlgorithm* a)
         d.cached.referenceGain[band] =
             1.0f + referenceDepth * (kReferenceGainFull[band] - 1.0f);
     }
-
-    // Force per-block release cache to recompute on next step()
-    d.lastBlockN = 0;
 }
 
 // ── Plugin entry points ───────────────────────────────────────────────────────
@@ -156,7 +158,6 @@ static _NT_algorithm* construct(const _NT_algorithmMemoryPtrs& p,
 
     OttDSPState& d = a->dsp;
     d.sr         = (float)NT_globals.sampleRate;
-    d.lastBlockN = 0;
 
     // Both directional gain states start at unity.
     for (int ch = 0; ch < 2; ++ch)
@@ -177,7 +178,7 @@ static _NT_algorithm* construct(const _NT_algorithmMemoryPtrs& p,
         d.cached.preGainDb[b]= 0.0f;
         d.cached.postGain[b] = 1.0f;
         d.cached.attackCoeff[b] = expf(-1.0f / (0.01f * d.sr));
-        d.cached.releaseCoeff[b] = expf(-1.0f / (0.1f * d.sr));
+        d.cached.releaseCoeff[b] = expf(-2.0f / (0.1f * d.sr));
     }
     d.cached.outGain    = 1.0f;
     d.cached.depth      = 1.0f;
@@ -300,17 +301,6 @@ static void step(_NT_algorithm* s, float* bus, int nfBy4)
     if (stereoOutput && !stereoInput)
         mirrorRightChannelState(d);
 
-    // Lazily convert the configured per-sample time constants to this block.
-    if (Nc != d.lastBlockN) {
-        d.lastBlockN = Nc;
-        d.detectorCoeffPerBlock =
-            expf(-(float)Nc / (kOttDetectorSeconds * d.sr));
-        for (int b = 0; b < kOttBands; ++b) {
-            d.attackCoeffPerBlock[b] = powf(c.attackCoeff[b], (float)Nc);
-            d.releaseCoeffPerBlock[b] = powf(c.releaseCoeff[b], (float)Nc);
-        }
-    }
-
     // Stack scratch buffers
     float dry[2][kOttMaxBlock];
     float rest[2][kOttMaxBlock];   // hp1 output (above f1), feeds lp2 + hp2
@@ -331,67 +321,49 @@ static void step(_NT_algorithm* s, float* bus, int nfBy4)
         ottLR4Process(d.xover.hp2[ch], rest[ch], band[2][ch], Nc);
     }
 
-    // ── Per-band compression ──────────────────────────────────────────────────
+    // Measured Xfer dynamics fit a short power average and a decaying peak.
+    // Apply the curve directly to that envelope: smoothing gain independently
+    // leaves large upward gain on an arriving transient. Two samples of audio
+    // lookahead reproduce the measured crossover latency and transient peaks.
     for (int b = 0; b < kOttBands; ++b) {
-        const float attackN = d.attackCoeffPerBlock[b];
-        const float releaseN = d.releaseCoeffPerBlock[b];
-        const float pre  = c.preGain[b];
-        const float post = c.postGain[b];
-
-        // One linked detector/target per band preserves the stereo image and
-        // halves the block-rate logarithm/exponential work in stereo mode.
-        float sumSquares = 0.0f;
+        const float attack = c.attackCoeff[b];
+        const float release = c.releaseCoeff[b];
+        const float scale = c.referenceGain[b] * c.preGain[b] * c.postGain[b];
+        float levelDb = -200.0f;
+        bool activeSignal = false;
         for (int i = 0; i < Nc; ++i) {
-            sumSquares += band[b][0][i] * band[b][0][i];
+            float power = band[b][0][i] * band[b][0][i];
             if (numCh == 2)
-                sumSquares += band[b][1][i] * band[b][1][i];
+                power = 0.5f * (power + band[b][1][i] * band[b][1][i]);
+            d.detectorPower[b] = attack * d.detectorPower[b] +
+                                 (1.0f - attack) * power;
+            d.envelopePower[b] = fmaxf(d.detectorPower[b],
+                                      release * d.envelopePower[b]);
+            activeSignal = d.envelopePower[b] > 1.0e-20f;
+            if (!activeSignal) {
+                d.detectorPower[b] = 0.0f;
+                d.envelopePower[b] = 0.0f;
+            }
+            levelDb = 3.0102999566f * ottLog2(fmaxf(d.envelopePower[b], 1.0e-20f)) +
+                      kReferenceDetectorGainDb[b] + c.preGainDb[b];
+            const float gainDb = ottGainDb(levelDb, c.thrDownDb[b], c.thrUpDb[b],
+                                           c.exDown[b], c.exUp[b], c.depth, activeSignal);
+            const float gain = scale * ottExp2(gainDb * 0.1660964047f);
+            for (int ch = 0; ch < numCh; ++ch) {
+                // N is always a multiple of four, so each block starts on
+                // the same phase of this two-sample delay.
+                float& delayed = d.bandDelay[b][ch][i & 1];
+                const float sample = delayed;
+                delayed = band[b][ch][i];
+                band[b][ch][i] = sample * gain;
+            }
         }
-        const float meanSquare = sumSquares / (float)(Nc * numCh);
-        const bool activeSignal = meanSquare > 1.0e-20f;
-        float& detectorPower = d.detectorPower[b];
-        detectorPower = d.detectorCoeffPerBlock * detectorPower +
-                        (1.0f - d.detectorCoeffPerBlock) * meanSquare;
-        // Avoid a denormal tail during true silence. Upward compression is also
-        // suppressed for a silent current block; only the bounded reference
-        // balance remains, so silence cannot charge a maximum-gain onset.
-        if (!activeSignal && detectorPower < 1.0e-20f)
-            detectorPower = 0.0f;
-        const float levelDb = 10.0f * log10f(detectorPower > 1.0e-20f
-                                               ? detectorPower : 1.0e-20f)
-                              + kReferenceDetectorGainDb + c.preGainDb[b];
-        float targetDown, targetUp;
+        // Meter/debug state only: no expensive exponentials in the sample loop.
         ottGainTargets(levelDb, c.thrDownDb[b], c.thrUpDb[b],
-                       c.exDown[b], c.exUp[b], c.depth,
-                       c.referenceGain[b], activeSignal,
-                       targetDown, targetUp);
-
-        for (int ch = 0; ch < numCh; ++ch) {
-            float* buf = band[b][ch];
-
-            float& down = d.bands.downGain[ch][b];
-            float& up   = d.bands.upGain[ch][b];
-            const float oldComposite = down * up * pre * post;
-            const float downMix = targetDown < down ? attackN : releaseN;
-            const float upMix   = targetUp > up ? attackN : releaseN;
-            down = downMix * down + (1.0f - downMix) * targetDown;
-            up   = upMix * up + (1.0f - upMix) * targetUp;
-            if (ch == 1) {
-                // Keep linked gain state bit-identical even after a preceding
-                // mono interval or preset/routing transition.
-                down = d.bands.downGain[0][b];
-                up = d.bands.upGain[0][b];
-            }
-
-            // A linear ramp across the block is click-free and reaches the
-            // exact block-rate state without a separate per-sample smoother.
-            const float newComposite = down * up * pre * post;
-            const float gainStep = (newComposite - oldComposite) / (float)Nc;
-            float gain = oldComposite;
-            for (int i = 0; i < Nc; ++i) {
-                gain += gainStep;
-                buf[i] *= gain;
-            }
-        }
+                       c.exDown[b], c.exUp[b], c.depth, c.referenceGain[b],
+                       activeSignal, d.bands.downGain[0][b], d.bands.upGain[0][b]);
+        d.bands.downGain[1][b] = d.bands.downGain[0][b];
+        d.bands.upGain[1][b] = d.bands.upGain[0][b];
     }
 
     // ── Sum bands + global output gain → bus ──────────────────────────────────

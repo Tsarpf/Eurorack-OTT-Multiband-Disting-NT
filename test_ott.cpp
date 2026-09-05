@@ -375,57 +375,113 @@ static void test_xfer_reference_transfer() {
                   << "  ref " << point.expectedGainDb << "  err " << error
                   << " dB\n";
     }
-    if (worstError > 2.1f)
-        fail("default transfer differs from Xfer reference by more than 2.1 dB");
+    if (worstError > 0.4f)
+        fail("default transfer differs from Xfer reference by more than 0.4 dB");
 }
 
 static void test_detector_timebase_and_block_size() {
-    // The linked detector is a 5 ms power-domain one-pole. After exactly one
-    // time constant of a constant-power signal it must reach 1-e^-1 regardless
-    // of the callback size used to advance it.
-    struct Result { float power; float coeff; };
-    auto run = [](int N) -> Result {
+    // Exercise the whole audio path across callback boundaries, including
+    // lookahead, envelope decay and quiet-to-loud transitions.
+    auto render = [](int N) {
         OttHost h = makeOtt();
-        disableDynamics(h);
-        h.v[kGlobalDepth] = 0;
-        factory.parameterChanged(h.alg, kGlobalDepth);
-        std::vector<float> bus(N * 4, 0.f);
-        // Inject the desired block mean-square directly. The audio path's
-        // crossover state is irrelevant to this state-equation unit test, but
-        // run step once so it exercises the real callback-size coefficient
-        // cache before the state equation is checked.
-        auto* a = (_ottAlgorithm*)h.alg;
-        factory.step(h.alg, bus.data(), N / 4);
-        a->dsp.detectorPower[0] = 0.0f;
-        const int blocks = 240 / N; // 5 ms at 48 kHz; N=32 and 48 divide it
-        // 32 does not divide 240, so advance its final eight samples with the
-        // coefficient the callback-size cache would compute for N=8.
-        for (int block = 0; block < blocks; ++block)
-            a->dsp.detectorPower[0] =
-                a->dsp.detectorCoeffPerBlock * a->dsp.detectorPower[0] +
-                (1.0f - a->dsp.detectorCoeffPerBlock);
-        const float configuredCoeff = a->dsp.detectorCoeffPerBlock;
-        if (N == 32) {
-            const float tailCoeff = expf(-16.0f / 240.0f);
-            a->dsp.detectorPower[0] = tailCoeff * a->dsp.detectorPower[0] +
-                                      (1.0f - tailCoeff);
+        std::vector<float> output(96000), bus(N * 4, 0.f);
+        for (int start = 0; start < 96000; start += N) {
+            for (int i = 0; i < N; ++i) {
+                const int t = start + i;
+                const double amplitude = t < 48000 ? .003 : .4;
+                const float x = float(amplitude * sin(2.0 * 3.141592653589793 * 500.0 * t / 48000));
+                bus[i] = bus[N + i] = x;
+            }
+            factory.step(h.alg, bus.data(), N / 4);
+            memcpy(output.data() + start, bus.data() + 2*N, N*sizeof(float));
         }
-        return { a->dsp.detectorPower[0], configuredCoeff };
+        return output;
     };
+    const auto reference = render(4);
+    for (int n : {16, 32, 48, 64}) {
+        const auto actual = render(n);
+        double error = 0, signal = 0;
+        for (int i = 0; i < 96000; ++i) {
+            const double diff = actual[i] - reference[i];
+            error += diff * diff;
+            signal += double(reference[i]) * reference[i];
+        }
+        if (sqrt(error / signal) > 1.0e-4)
+            fail("OTT envelope or lookahead depends on callback size");
+    }
+}
 
-    const Result n32 = run(32);
-    const Result n48 = run(48);
-    const float expectedPower = 1.0f - expf(-1.0f);
-    std::cout << "detector_timebase: n32=" << n32.power
-              << " n48=" << n48.power << " expected=" << expectedPower
-              << " c32=" << n32.coeff << " c48=" << n48.coeff << "\n";
-    if (fabsf(n32.power - expectedPower) > 1.0e-4f ||
-        fabsf(n48.power - expectedPower) > 1.0e-4f ||
-        fabsf(n32.power - n48.power) > 1.0e-5f)
-        fail("detector time constant changes with callback size");
-    if (fabsf(n32.coeff - expf(-32.0f / 240.0f)) > 1.0e-6f ||
-        fabsf(n48.coeff - expf(-48.0f / 240.0f)) > 1.0e-6f)
-        fail("detector per-block coefficient is incorrect");
+#include "fixtures/ott_dynamics_reference.h"
+
+static void test_xfer_dynamic_reference() {
+    for (const auto& ref : kOttDynamicReferences) {
+        std::vector<double> source(ref.frames, 0.0);
+        double peak = 0;
+        for (int i = 0; i < ref.frames; ++i) {
+            const double t = double(i) / 48000;
+            if (ref.hz) {
+                const int level = (i / 48000) % 2 ? -8 : -50;
+                source[i] = float(sin(2.0 * 3.141592653589793 * ref.hz * t)) *
+                            float(pow(10.0, double(level) / 20));
+            } else {
+                double tone = 0, env = 0;
+                for (int harmonic = 1; harmonic <= 20; ++harmonic)
+                    tone += sin(2.0 * 3.141592653589793 * 110 * harmonic * t) / harmonic;
+                for (int note = 0; note < 8; ++note) {
+                    const double dt = t - .25 - note * .5;
+                    if (dt >= 0) env += (1 - exp(-dt / .002)) * exp(-dt / .12);
+                }
+                source[i] = tone * env;
+            }
+            peak = fmax(peak, fabs(source[i]));
+        }
+        if (!ref.hz)
+            for (double& sample : source) sample *= .35 / peak;
+        OttHost h = makeOtt();
+        h.v[kGlobalDepth] = ref.depth;
+        factory.parameterChanged(h.alg, kGlobalDepth);
+        constexpr int N = 32;
+        std::vector<float> bus(N * 4, 0.f), output(ref.frames);
+        float outputPeak = 0;
+        for (int start = 0; start < ref.frames; start += N) {
+            for (int i = 0; i < N; ++i)
+                bus[i] = bus[N+i] = float(source[start+i]);
+            factory.step(h.alg, bus.data(), N/4);
+            for (int i = 0; i < N; ++i) {
+                output[start+i] = bus[2*N+i];
+                outputPeak = fmaxf(outputPeak, fabsf(bus[2*N+i]));
+            }
+        }
+        float worst = 0;
+        for (const auto& window : ref.windows) {
+            double squares = 0;
+            for (int i = window.start; i < window.end; ++i)
+                squares += double(output[i]) * output[i];
+            const float actual = float(sqrt(squares / (window.end - window.start)));
+            worst = fmaxf(worst, fabsf(dbFS(actual / window.rms)));
+        }
+        const float peakError = dbFS(outputPeak / ref.peak);
+        std::cout << "dynamic_reference " << ref.name << ": worst window=" << worst
+                  << " dB, peak error=" << peakError << " dB\n";
+        // Largest measured residual is 0.77 dB during the 500 Hz downward
+        // step recovery. Keep that bounded while rejecting the old >20 dB errors.
+        if (worst > .9f || fabsf(peakError) > .5f)
+            fail("OTT transient envelope differs from measured Xfer reference");
+    }
+}
+
+static void test_gain_math_accuracy() {
+    // Cover the actual detector floor and wide pre/post/threshold ranges.
+    for (int i = 0; i <= 20000; ++i) {
+        const float exponent = -66.0f + i * (86.0f / 20000.0f);
+        const float power = exp2f(exponent);
+        if (fabsf(ottLog2(power) - log2f(power)) > 1.0e-5f)
+            fail("fast detector logarithm is inaccurate");
+        const float gainExponent = -100.0f + i * (110.0f / 20000.0f);
+        const float exact = exp2f(gainExponent);
+        if (fabsf(ottExp2(gainExponent) / exact - 1.0f) > 1.0e-5f)
+            fail("fast gain exponential is inaccurate");
+    }
 }
 
 static void test_silence_does_not_charge_upward_gain() {
@@ -808,6 +864,8 @@ int main() {
     test_band_gains();
     test_xfer_reference_transfer();
     test_detector_timebase_and_block_size();
+    test_gain_math_accuracy();
+    test_xfer_dynamic_reference();
     test_silence_does_not_charge_upward_gain();
     test_depth_law_and_upward_bound();
     test_xfer_static_law_calibration();

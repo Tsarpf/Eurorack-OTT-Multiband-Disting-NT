@@ -29,13 +29,14 @@ C_SRCS := \
 CXX_OBJS := $(patsubst %.cpp,$(OBJDIR)/%.o,$(CXX_SRCS))
 C_OBJS   := $(patsubst $(CMSIS_DSP)/Source/FilteringFunctions/%.c,$(OBJDIR)/cmsis_%.o,$(C_SRCS))
 OBJS     := $(CXX_OBJS) $(C_OBJS)
+OTT_HEADERS := ott_structs.h ott_parameters.h ott_dsp.h ott_ui.h
 HOST_CMSIS_OBJS := $(OBJDIR)/host_cmsis_df2t.o $(OBJDIR)/host_cmsis_df2t_init.o
 
 # ── ARM cross-compiler ─────────────────────────────────────────────────────────
 CXX := arm-none-eabi-g++
 CC  := arm-none-eabi-gcc
 
-CXXFLAGS := \
+CXXFLAGS := -MMD -MP \
     -std=c++11 \
     -mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -fPIC \
     -I$(SDK)/include \
@@ -54,6 +55,7 @@ CFLAGS := \
 
 # ── build rules ────────────────────────────────────────────────────────────────
 .PHONY: all build test test-matrix matrix push push-matrix clean
+.DEFAULT_GOAL := all
 
 all: build
 
@@ -63,6 +65,8 @@ matrix: matrix_mixer.o
 
 matrix_mixer.o: matrix_mixer.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(CXX_OBJS): $(OTT_HEADERS)
 
 $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(OBJDIR)
@@ -82,6 +86,11 @@ $(OBJDIR)/host_cmsis_df2t_init.o: $(CMSIS_DSP)/Source/FilteringFunctions/arm_biq
 
 $(PLUGIN).o: $(OBJS)
 	$(CXX) -r $^ -o $@
+
+-include $(OBJS:.o=.d)
+
+build/ott_render: tools/ott_render.cpp test_ott.cpp fixtures/ott_dynamics_reference.h ott_algo.cpp ott_ui.cpp ott_dsp.h ott_structs.h ott_parameters.h ott_ui.h $(HOST_CMSIS_OBJS)
+	$(HOST_CXX) -O2 $(HOST_CXXFLAGS) $< $(HOST_CMSIS_OBJS) -o $@
 
 test: $(HOST_CMSIS_OBJS)
 	$(HOST_CXX) -O2 $(HOST_CXXFLAGS) test_ott.cpp $(HOST_CMSIS_OBJS) -o /tmp/test_$(PLUGIN) && /tmp/test_$(PLUGIN)

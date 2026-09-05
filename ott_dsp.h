@@ -1,18 +1,52 @@
 #pragma once
 #include <math.h>
 #include <stdint.h>
+#include <string.h>
 #include "dsp/filtering_functions.h"   // CMSIS-DSP (resolved via -I$(CMSIS_DSP)/Include)
 
 static const int kOttBands    = 3;
 static const int kOttMaxBlock = 64;    // hard ceiling on N passed to step()
 static const float kOttMaxUpGainDb = 36.0f;
-static const float kOttDetectorSeconds = 0.005f;
 
 // ── Scalar math ───────────────────────────────────────────────────────────────
 
 static inline float ottDbToLinear(float db)
 {
     return powf(10.0f, db * 0.05f);
+}
+
+// Bounded float approximations for the sample-rate gain computer. log2 uses
+// the atanh series on a mantissa in [1,2); exp2 uses a sixth-order Taylor
+// polynomial on [0,1). This avoids libm in the hot loop on Cortex-M7.
+// Inputs to log2 are positive normal floats (the detector is floored first).
+inline float ottLog2(float value)
+{
+    uint32_t bits;
+    memcpy(&bits, &value, sizeof(bits));
+    const int exponent = int((bits >> 23) & 255) - 127;
+    bits = (bits & 0x7fffffu) | 0x3f800000u;
+    float mantissa;
+    memcpy(&mantissa, &bits, sizeof(mantissa));
+    const float z = (mantissa - 1.0f) / (mantissa + 1.0f);
+    const float z2 = z * z;
+    return float(exponent) + 2.8853900818f * z *
+        (1.0f + z2 * (1.0f / 3.0f + z2 * (1.0f / 5.0f +
+         z2 * (1.0f / 7.0f + z2 * (1.0f / 9.0f)))));
+}
+
+inline float ottExp2(float value)
+{
+    value = fmaxf(-120.0f, fminf(120.0f, value));
+    int exponent = int(value);
+    if (value < float(exponent)) --exponent;
+    const float f = value - float(exponent);
+    const float polynomial = 1.0f + f * (0.69314718056f + f *
+        (0.24022650696f + f * (0.05550410866f + f *
+        (0.00961812911f + f * (0.00133335581f + f * 0.00015403530f)))));
+    const uint32_t bits = uint32_t(exponent + 127) << 23;
+    float scale;
+    memcpy(&scale, &bits, sizeof(scale));
+    return scale * polynomial;
 }
 
 // ── LR4 coefficient computation ───────────────────────────────────────────────
@@ -77,7 +111,7 @@ inline void ottComputeLR4Allpass(float fc, float sr, float* c5)
 
 // ── Bidirectional gain computer ───────────────────────────────────────────────
 //
-// Called once per band/channel/block. Xfer's settled transfer has a hard hinge,
+// Xfer's settled transfer has a hard hinge,
 // and Depth scales both compression slopes directly toward 1:1. Upward gain is
 // bounded before post/output gain so a vanishing detector level cannot turn
 // crossover noise into an arbitrarily large burst.
@@ -85,6 +119,16 @@ inline void ottComputeLR4Allpass(float fc, float sr, float* c5)
 inline float ottHingeDb(float beyondThresholdDb)
 {
     return beyondThresholdDb > 0.0f ? beyondThresholdDb : 0.0f;
+}
+
+inline float ottGainDb(float levelDb, float thrDownDb, float thrUpDb,
+                      float exDown, float exUp, float depth, bool activeSignal)
+{
+    const float downDb = -depth * exDown * ottHingeDb(levelDb - thrDownDb);
+    const float upDb = activeSignal
+        ? fminf(kOttMaxUpGainDb, depth * exUp * ottHingeDb(thrUpDb - levelDb))
+        : 0.0f;
+    return downDb + upDb;
 }
 
 inline void ottGainTargets(float levelDb, float thrDownDb, float thrUpDb,
